@@ -51,7 +51,7 @@ def test_initial_dataflow(dut):
     # Add an empty block that sits between input and output.
     # By default the empty block just copies input -> output.
     # But you can add callback functions to mutate and/or delay the data.
-    flow.add_empty_block("Input", "Output")
+    flow.add_empty_block("EmptyBlock", dut.input_buffer, dut.output_buffer)
 
     # Start the dataflow checker.
     # Right now, this only checks that start/end of event words
