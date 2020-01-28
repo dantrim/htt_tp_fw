@@ -4,6 +4,7 @@
 
 import random
 import os
+import struct
 
 from . import util
 
@@ -57,6 +58,13 @@ class DataWord(object):
             return True
         return False
 
+    def write(self, output, endian='little'):
+        """ Saves the word to a writable object (e.g. binary data file)."""
+        format_string = "<?Q"
+        if endian != 'little':
+            format_string = ">?Q"
+        output.write(struct.pack(format_string, self.is_metadata, self.contents))
+
 class DataEvent(object):
 
     # Does this class need to do anything else?
@@ -68,6 +76,11 @@ class DataEvent(object):
 
     def add_word(self, word):
         self.words.append(word)
+
+    def write(self, output, endian='little'):
+        """ Writes the event to a writable object by saving every word."""
+        for word in words:
+            word.write(output, endian)
 
     def __str__(self):
         return "DataEvent (L0ID " + str(l0id) + "), " + str(len(self.words)) + " words"
@@ -93,16 +106,36 @@ def get_l0id_from_event(word):
 # https://gitlab.cern.ch/atlas-tdaq-ph2upgrades/atlas-tdaq-htt/tdaq-htt-firmware/system-simulation/blob/master/DataFormat/DataFormat.py#L334
 def read_events_from_file(filename, endian='little'):
     events = []
+
+    # Make sure the file exists!
+    filename = os.path.abspath(filename)
+    print(filename)
+    if not os.path.exists(filename):
+        return events
+
     with open(filename, 'rb') as file:
 
         current_event = None
 
-        # TODO: actually test if file is EOF.
-        while file_not_eof:
+        # use os.stat() to check the number of bytes.
+        size = os.stat(filename).st_size
 
-            # Read a word from binary file.
-            is_metadata = bool(int.from_bytes(file.read(1), endian))
-            contents = int.from_bytes(file.read(8), endian)
+        # Loop through the file, reading 9 bytes at a time.
+        for _ in range(0, size, 9):
+            data = file.read(9)
+            if len(data) != 9:
+                raise result.TestFailure("Error: malformed event data file " + filename + "!")
+
+            # Use a struct format string to read in the object.
+            # https://docs.python.org/3/library/struct.html#struct.unpack
+            # See the Python struct documentation: this says:
+            # * use "standard" sizes in little (<) or big (>) endian mode.
+            # * expect a 1-byte boolean (?)
+            # * expect an "unsigned long long", which has a "standard" size of 8. (Q)
+            format_string = "<?Q"
+            if endian != 'little':
+                format_string = ">" + format_string
+            is_metadata, contents = struct.unpack(format_string, data)
 
             # Create a word object.
             word = DataWord(contents, is_metadata)
@@ -114,11 +147,13 @@ def read_events_from_file(filename, endian='little'):
                 current_event = DataEvent(header.getField("L0ID"))
 
             # Add the word to the current event we're reading.
-            event.add_word(word)
+            if current_event is not None:
+                current_event.add_word(word)
 
             # Add the word to our event object
             if word.is_end_of_event():
                 events.append(current_event)
+
     return events
 
 def get_random_events(n_random, max_words=10):

@@ -28,7 +28,7 @@ def reset(dut):
     dut.reset <= 1
 
 @cocotb.test()
-def test_initial_dataflow(dut):
+def test_001_initial_dataflow(dut):
     """ Initial test of dataflow driver and monitor."""
     # Default: 25ns clock for now. Change later!
     # This can be moved to a testbench class later.
@@ -46,7 +46,10 @@ def test_initial_dataflow(dut):
 
     # Add a driver to the input; let's call it "Input".
     flow.add_input_fifo("Input", dut.input_buffer)
-    flow.add_output_fifo("Output", dut.output_buffer)
+
+    # Add a driver to the output; let's call it "Output".
+    # Add a binary log file, so events read from the output buffer get saved.
+    flow.add_output_fifo("Output", dut.output_buffer, "test_001_output_buffer.evt")
 
     # Add an empty block that sits between input and output.
     # By default the empty block just copies input -> output.
@@ -58,21 +61,59 @@ def test_initial_dataflow(dut):
     # are in the right place.
     flow.start()
 
-    # TODO: add a way to configure where the output events go.
-
     # Let's generate some random fake events.
     # Yield on the return, which blocks until all the events are sent.
     # We could load a file here instead!
     hook = flow.send_random_events("Input", 10)
-
     yield hook.wait()
 
     # Hmm... we don't actually have a way to wait for the receipt
     # of all pending events yet. Just wait for some time.
     yield triggers.Timer(1, "us")
 
-# TODO: write a version of the above test, but it loads events
-# from a file instead.
+    # We probably _do_ want to explicitly call the stop() function here
+    # since it enables us to have a place to close output files.
+    flow.stop()
+
+@cocotb.test()
+def test_002_dataflow_from_file(dut):
+    """ Version of test 1, but with events coming from an input file."""
+    # Start a clock and reset.
+    sim_clock = clock.Clock(dut.clock, clock_speed, 'ns')
+    cocotb.fork(sim_clock.start())
+    initialize_wires(dut)
+    yield reset(dut)
+
+    dut._log.info("Initialized and reset TP skeleton.")
+
+    # Initialize a data flow object, with a driver and monitor.
+    flow = dataflow.DataflowController(dut, dut.clock)
+    flow.add_input_fifo("Input", dut.input_buffer)
+    # NOTE: it might be nice to automatically name these (or have an option to do so).
+    flow.add_output_fifo("Output", dut.output_buffer, "test_002_output_buffer.evt")
+
+    # Add empty block; start dataflow.
+    flow.add_empty_block("EmptyBlock", dut.input_buffer, dut.output_buffer)
+    flow.start()
+
+    # Load one of Elliot's binary files.
+    # The file to load could be passed in via configuration, environment variables,
+    # or some other way (a test could be written that loads all files in a directory!)
+    # NOTE: careful with relative paths! Questa runs from inside the "sim_build" directory,
+    # NOT inside the directory with the makefile.
+    filename = "../input_files/BoardToBoardInput_AMTP0_Strip0.evt"
+    hook = flow.send_events_from_file(filename, "Input")
+    if hook is None:
+        raise result.TestFailure("Error: failed to load events from input file: " + filename)
+    yield hook.wait()
+
+    # Hmm... we don't actually have a way to wait for the receipt
+    # of all pending events yet. Just wait for some time.
+    yield triggers.Timer(1, "us")
+
+    # We probably _do_ want to explicitly call the stop() function here
+    # since it enables us to have a place to close output files.
+    flow.stop()
 
 # TODO: write version of this test which also freezes a spy buffer
 # and dumps the contents. Require porting over spy buffer protocol

@@ -1,7 +1,7 @@
 import cocotb
 from cocotb import triggers, result
 
-from . import block, driver, monitor, events
+from . import block, driver, monitor, events, util
 
 class DataflowController(object):
 
@@ -26,11 +26,11 @@ class DataflowController(object):
             self.input_fifos[name] = driver.FifoDriver(path, self.clock)
         return self.input_fifos[name]
 
-    def add_output_fifo(self, name, path):
+    def add_output_fifo(self, name, path, output_file=None):
         """ Add an output FIFO monitor. Returns reference to the object."""
         if name not in self.output_fifos:
             # Create the FIFO monitor object; it also starts automatically.
-            self.output_fifos[name] = monitor.FifoMonitor(path, self.clock)
+            self.output_fifos[name] = monitor.FifoMonitor(path, self.clock, output_file)
         return self.output_fifos[name]
 
 
@@ -49,8 +49,14 @@ class DataflowController(object):
         """ Stop all coroutines. Not sure this is necessary."""
         for name, driver in self.input_fifos.items():
             driver.kill()
-        for name, driver in self.output_fifos.items():
-            driver.kill()
+
+        for name, monitor in self.output_fifos.items():
+            monitor.kill()
+
+            # Closes connected output file (if one was configured).
+            if monitor.output_file != None:
+                monitor.output_file.close()
+
         for name, empty_block in self.empty_blocks.items():
             empty_block.kill()
 
@@ -76,7 +82,7 @@ class DataflowController(object):
             self.input_fifos[name].append(words[-1].get_binary(), event=hook)
 
         # Log once an event was sent.
-        self.dut._log.info("Dataflow sent full event (L0ID " + hex(event.l0id)[:-1] + ") to FIFO '" + name + "'")
+        self.dut._log.info("Dataflow sent full event (L0ID " + util.hex(event.l0id) + ") to FIFO '" + name + "'")
 
         return hook
 
@@ -91,10 +97,12 @@ class DataflowController(object):
         """ Reads an event file (filename) and sends events to input 'name'.
             Returns hook which can be yielded."""
         input_events = events.read_events_from_file(filename)
-        for event in input_events:
-            hook = self.send_event(event, name)
-        else:
-            return hook
+        if len(input_events) != 0:
+            for event in input_events:
+                hook = self.send_event(event, name)
+            else:
+                return hook
+        return None
 
     def send_random_events(self, name, n_random):
         """ Sends n_random random events to input 'name'.
@@ -125,8 +133,9 @@ class DataflowController(object):
         # This coroutine is forked. If we _ever_ get this far, it means something
         # has gone badly wrong (i.e. the test will fail).
 
-        # TODO: add cleanup methods here!
-        # e.g. close files opened by monitors.
+        # Cleanup stage: call self.stop().
+        # This should automatically force output files to close.
+        self.stop()
 
         # This could be configured to allow other things to happen. e.g., continue after
         # failure but perform a reset.

@@ -6,7 +6,7 @@
 import cocotb
 from cocotb import triggers, result
 
-from . import driver, monitor
+from . import driver, monitor, util
 
 class EmptyBlock(object):
 
@@ -39,6 +39,13 @@ class EmptyBlock(object):
         self.input_fifo_monitor.kill()
         self.output_fifo_driver.kill()
 
+        # Just in case-- add this here.
+        # NOTE: maybe it makes more sense to override the kill() function
+        # in the monitor class rather than drop this everywhere.
+        if self.input_fifo_monitor.output_file != None:
+            monitor.output_file.close()
+
+
     def copy_input_to_output(self, transaction):
         """ Copies an input word from the monitor to the driver."""
 
@@ -61,4 +68,4 @@ class EmptyBlock(object):
 
         # NOTE: this could be used to implement sophisticated dataflow.
 
-        self.dut._log.info("Empty block received complete event, L0 ID " + hex(event.l0id)[:-1])
+        self.dut._log.info("Empty block received complete event, L0 ID " + util.hex(event.l0id))

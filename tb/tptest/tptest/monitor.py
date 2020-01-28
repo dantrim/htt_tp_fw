@@ -11,7 +11,7 @@ from . import events, util
 
 class FifoMonitor(monitors.Monitor):
 
-    def __init__(self, fifo, clock):
+    def __init__(self, fifo, clock, output_name=None):
         # The fifo to monitor.
         # It must have three wires:
         #  * empty: is the FIFO empty?
@@ -35,6 +35,14 @@ class FifoMonitor(monitors.Monitor):
 
         # Add callbacks.
         self.add_callback(self.build_event)
+
+        # Create output file if configured.
+        # If that was configured-- add a callback to write to it.
+        self.output_name = output_name
+        self.output_file = None
+        if output_name is not None:
+            self.output_file = open(self.output_name, 'wb')
+            self.add_callback(self.write_words)
 
     @cocotb.coroutine
     def _monitor_recv(self):
@@ -77,7 +85,7 @@ class FifoMonitor(monitors.Monitor):
         self.fifo._log.debug("Received word: " + str(word))
 
         if is_metadata:
-            self.fifo._log.debug("Word had flag: " + hex(word.flag)[:-1])
+            self.fifo._log.debug("Word had flag: " + util.hex(word.flag))
 
         # Build up the Event object as we go (for better monitoring).
         # If there is a problem while doing so, we set an event trigger that another coroutine is
@@ -87,14 +95,14 @@ class FifoMonitor(monitors.Monitor):
             if self.pending_event is None:
                 self.pending_event = events.DataEvent(l0id)
                 self.pending_event.add_word(word)
-                self.fifo._log.info("Spy buffer received start of event, L0 ID = " + hex(l0id)[:-1])
+                self.fifo._log.info("Spy buffer received start of event, L0 ID = " + util.hex(l0id))
             else:
-                self.on_error.set("Error: received start of event (L0 ID " + hex(l0id)[:-1] +
-                                  ") while processing event for L0 ID " + hex(self.pending_event.l0id)[:-1] + ".")
+                self.on_error.set("Error: received start of event (L0 ID " + util.hex(l0id) +
+                                  ") while processing event for L0 ID " + util.hex(self.pending_event.l0id) + ".")
         elif word.is_end_of_event():
             if self.pending_event is not None:
                 self.pending_event.add_word(word)
-                self.fifo._log.info("Spy buffer finished parsing event, L0 ID = " + hex(self.pending_event.l0id)[:-1])
+                self.fifo._log.info("Spy buffer finished parsing event, L0 ID = " + util.hex(self.pending_event.l0id))
                 self.process_event(self.pending_event)
 
                 # Support for callbacks when we finish processing an event!
@@ -112,6 +120,20 @@ class FifoMonitor(monitors.Monitor):
                 self.pending_event.add_word(word)
             else:
                 self.on_error.set("Error: received word without start of event.")
+
+    def write_words(self, transaction):
+        """ Writes a received transaction to the binary log file."""
+
+        # Create the word object.
+        # NOTE: This is duplicated as part of build_event... maybe I should override the bit that
+        # calls callbacks?
+        transaction = util.BinaryValue(int(transaction), n_bits=65)
+        is_metadata = bool(transaction[64])
+        contents = int(transaction[63:0])
+        word = events.DataWord(contents, is_metadata)
+
+        # Write the word to the output file.
+        word.write(self.output_file)
 
     def process_event(self, event):
         """ Processes a pending event when it is completed."""
