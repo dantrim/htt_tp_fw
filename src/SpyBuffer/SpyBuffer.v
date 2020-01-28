@@ -8,7 +8,7 @@
 
 module SpyBuffer #(
     // The width of input data (e.g. 2^WIDTH bytes + 1 for metadata).
-    parameter DATA_WIDTH = 32,
+    parameter DATA_WIDTH = 64,
 
     // Width of the spy buffer's memory block. (e.g. 2^WIDTH rows of DATA_WIDTH size).
     parameter SPY_MEM_WIDTH = 7,

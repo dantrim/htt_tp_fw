@@ -19,7 +19,7 @@
 
 module SpyController #(
     // Width of data being passed into the system, *without* extra metadata bit.
-    parameter DATAWIDTH = 32,
+    parameter DATAWIDTH = 64,
 
     // Width of the spy buffer's spy memory. This is also the width of addresess.
     parameter MEMWIDTH = 6,
@@ -244,7 +244,7 @@ module SpyController #(
     // I think this syntax is legal. Split "data_in".
     // We should do something smarter in the real system!
     // I think this (and the overflow detection code at the bottom) needs state-machine-ification.
-    assign start_event = data_in[DATAWIDTH] && (data_in[DATAWIDTH-1:DATAWIDTH-4] == START_EVENT);
+    assign start_event = data_in[DATAWIDTH] && (data_in[DATAWIDTH-1:DATAWIDTH-8] == START_EVENT);
 
     // TODO: This is redundant now: we store metadata bits!
     assign data[DATAWIDTH:0] = data_in[DATAWIDTH:0];

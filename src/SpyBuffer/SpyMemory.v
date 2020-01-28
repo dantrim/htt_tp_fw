@@ -18,7 +18,7 @@ module SpyMemory #(
     parameter WIDTH=6,
 
     // Width of the actual data.
-    parameter DATAWIDTH=32
+    parameter DATAWIDTH=64
 ) (
     input wire clock,
     input wire reset,
