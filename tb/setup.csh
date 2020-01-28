@@ -24,6 +24,10 @@ else
 	# Install cocotb
 	pip install cocotb
 
+	# If this is python2: install the enum34 package.
+	# (If it isn't, do nothing).
+	pip2 install enum34 || true
+
 	# Install the local "tptest" package.
 	pip install -e tptest
 

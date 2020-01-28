@@ -19,12 +19,19 @@ else
 
 	# Install dependencies into the virtualenv.
 
-	# Install cocotb
-	pip install cocotb
+    # Install cocotb
+    pip install cocotb
 
-	# Install the local "tptest" package.
-	pip install -e tptest
+    # If this is python2: install the enum34 package.
+    # (If it isn't, do nothing).
+    pip2 install enum34 || true
 
+    # Install the local "tptest" package.
+    pip install -e tptest
+
+    # Install the "system-simulation" DataFormat package,
+    # also in editable mode. Note: requires this to be cloned.
+    pip install -e ../../system-simulation/
 fi
 
 echo "Activated virtual environment for cocotb. Type 'deactivate' to restore normal environment."
