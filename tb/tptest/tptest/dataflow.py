@@ -21,26 +21,25 @@ class DataflowController(object):
     # Or perhaps this works automatically.
     # TODO: guards should be added here to check that the paths are _actually_ FIFOs.
 
-    def add_input_fifo(self, name, path, enable_port, data_port):
+    def add_input_fifo(self, name, path):
         """ Add an input FIFO driver."""
         if name in self.input_fifos:
             return False
 
         # Create the FIFO driver object; it starts automatically.
-        self.input_fifos[name] = driver.FifoDriver(path, self.clock, enable_port, data_port)
+        self.input_fifos[name] = driver.FifoDriver(path, self.clock)
         return True
 
-    def add_output_fifo(self, name, path, enable_port):
+    def add_output_fifo(self, name, path):
         """ Add an output FIFO monitor."""
         if name in self.output_fifos:
             return True
 
         # Create the FIFO monitor object; it also starts automatically.
         # TODO: register callback?
-        self.output_fifos[name] = monitor.FifoMonitor(path, self.clock, enable_port)
+        self.output_fifos[name] = monitor.FifoMonitor(path, self.clock)
 
-    def add_empty_block(self, input_name, output_name, if_output_enable, of_input_enable, of_data,
-                        callback=None, event_callback=None):
+    def add_empty_block(self, input_name, output_name, callback=None, event_callback=None):
         """ Creates an "empty block"-- another monitor/driver pair to create fake data flow."""
 
         # Don't allow this to happen if we already have a driver or monitor.
@@ -58,8 +57,7 @@ class DataflowController(object):
         except:
             raise result.TestFailure("Error: cannot create empty block without first creating a driver and monitor.")
 
-        empty_block = block.EmptyBlock(self.dut, input_fifo, output_fifo, self.clock, if_output_enable, of_input_enable, of_data,
-                                       callback, event_callback)
+        empty_block = block.EmptyBlock(self.dut, input_fifo, output_fifo, self.clock, callback, event_callback)
         self.empty_blocks.append(empty_block)
 
     def stop(self):

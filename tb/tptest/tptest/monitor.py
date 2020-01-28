@@ -11,7 +11,7 @@ from . import events, util
 
 class FifoMonitor(monitors.Monitor):
 
-    def __init__(self, fifo, clock, enable_port):
+    def __init__(self, fifo, clock):
         # The fifo to monitor.
         # It must have three wires:
         #  * empty: is the FIFO empty?
@@ -21,9 +21,6 @@ class FifoMonitor(monitors.Monitor):
 
         # The clock.
         self.clock = clock
-
-        # Enable port.
-        self.enable_port = enable_port
 
         # Event being built; it goes TODO somewhere.
         self.pending_event = None
@@ -54,13 +51,13 @@ class FifoMonitor(monitors.Monitor):
                 self.fifo._log.debug("Received transaction: " + bin(self.fifo.read_data.value))
                 # Need to get back to R/W phase.
                 yield triggers.NextTimeStep()
-                self.enable_port <= 1
+                self.fifo.read_enable <= 1
 
                 # Call the _recv() method in the base class.
                 self._recv(transaction)
             else:
                 yield triggers.NextTimeStep()
-                self.enable_port <= 0
+                self.fifo.read_enable <= 0
 
     def add_event_callback(self, callback):
         self.event_callbacks.append(callback)

@@ -10,17 +10,15 @@ from . import driver, monitor
 
 class EmptyBlock(object):
 
-    def __init__(self, dut, input_fifo, output_fifo, clock,
-                 if_output_enable, of_input_enable, of_data,
-                 callback=None, event_callback=None):
+    def __init__(self, dut, input_fifo, output_fifo, clock, callback=None, event_callback=None):
         self.input_fifo = input_fifo
         self.output_fifo = output_fifo
         self.clock = clock
         self.dut = dut
 
         # Construct new input/output FIFO monitor/drivers.
-        self.input_fifo_monitor = monitor.FifoMonitor(input_fifo, clock, if_output_enable)
-        self.output_fifo_driver = driver.FifoDriver(output_fifo, clock, of_input_enable, of_data)
+        self.input_fifo_monitor = monitor.FifoMonitor(input_fifo, clock)
+        self.output_fifo_driver = driver.FifoDriver(output_fifo, clock)
 
         # Callback that runs every time a word is seen.
         # Use a user-specified one if provided.

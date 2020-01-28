@@ -11,7 +11,7 @@ from cocotb import binary
 
 class FifoDriver(drivers.Driver):
 
-    def __init__(self, fifo, clock, enable_port, data_port):
+    def __init__(self, fifo, clock):
         # This is a pointer to a spy buffer / FIFO object.
         # It must have two wires:
         #  * almost_full = is the FIFO almost full?
@@ -21,10 +21,6 @@ class FifoDriver(drivers.Driver):
 
         # This is the clock.
         self.clock = clock
-
-        # These are the enable/data wires.
-        self.enable_port = enable_port
-        self.data_port = data_port
 
         # As currently written, there's no circumstance under which
         # the driver can fail the testbench.
@@ -49,10 +45,10 @@ class FifoDriver(drivers.Driver):
 
         # Perform the write by setting write enable high.
         # Wait for a rising edge for this to take affect.
-        self.data_port <= int(transaction)
-        self.enable_port <= 1
+        self.fifo.write_data <= int(transaction)
+        self.fifo.write_enable <= 1
         yield triggers.RisingEdge(self.clock)
 
         # Set the write enable back to zero.
-        self.enable_port <= 0
+        self.fifo.write_enable <= 0
         self.fifo._log.debug("Sent word: " + str(transaction))

@@ -45,13 +45,13 @@ def test_initial_dataflow(dut):
     flow = dataflow.DataflowController(dut, dut.clock)
 
     # Add a driver to the input; let's call it "Input".
-    flow.add_input_fifo("Input", dut.input_buffer, dut.input_we, dut.input_data)
-    flow.add_output_fifo("Output", dut.output_buffer, dut.output_re)
+    flow.add_input_fifo("Input", dut.input_buffer)
+    flow.add_output_fifo("Output", dut.output_buffer)
 
     # Add an empty block that sits between input and output.
     # By default the empty block just copies input -> output.
     # But you can add callback functions to mutate and/or delay the data.
-    flow.add_empty_block("Input", "Output", dut.input_re, dut.output_we, dut.output_data_in)
+    flow.add_empty_block("Input", "Output")
 
     # Start the dataflow checker.
     # Right now, this only checks that start/end of event words
