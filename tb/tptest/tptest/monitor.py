@@ -3,15 +3,9 @@ from cocotb import triggers, monitors
 
 from . import events, util
 
-# this class needs additional features. It needs to construct events!
-# And then store htem and offload them somewhere.
-
-# Where do the events go from FifoMonitor?
-# One option: fifo monitor simply creates an output file and writes to it.
-
 class FifoMonitor(monitors.Monitor):
 
-    def __init__(self, fifo, clock, output_name=None):
+    def __init__(self, fifo, clock, output_name=None, process_events=True):
         # The fifo to monitor.
         # It must have three wires:
         #  * empty: is the FIFO empty?
@@ -31,6 +25,18 @@ class FifoMonitor(monitors.Monitor):
         # Add another callback mechanism for processing events.
         self.event_callbacks = []
 
+        # Store a set of expected (e.g. outstanding) events.
+        # NOTE: this assumes L0IDs won't reoccur over short timescales!
+        # But it's useful to use a set here, because we can have multiple configured inputs.
+        # At least, I think it's useful...
+        self.expected_ids = set()
+
+        # When expect_empty is set to True
+        self.expect_empty = False
+        self.on_empty = triggers.Event()
+
+        self.process_events = process_events
+
         super(FifoMonitor, self).__init__()
 
         # Add callbacks.
@@ -48,6 +54,7 @@ class FifoMonitor(monitors.Monitor):
     def _monitor_recv(self):
 
         # Receive words while the FIFO is not empty.
+        # NOTE: this can probably be rewritten to sleep until empty goes from 1 -> 0.
         while True:
 
             yield triggers.RisingEdge(self.clock)
@@ -103,7 +110,9 @@ class FifoMonitor(monitors.Monitor):
             if self.pending_event is not None:
                 self.pending_event.add_word(word)
                 self.fifo._log.info("Spy buffer finished parsing event, L0 ID = " + util.hex(self.pending_event.l0id))
-                self.process_event(self.pending_event)
+
+                if self.process_events:
+                    self.process_event(self.pending_event)
 
                 # Support for callbacks when we finish processing an event!
                 for event_callback in self.event_callbacks:
@@ -138,13 +147,15 @@ class FifoMonitor(monitors.Monitor):
     def process_event(self, event):
         """ Processes a pending event when it is completed."""
 
-        # TODO: we want to add functionality here!
-        # Processing could include:
-        #  * Storing in a list or queue for online analysis
-        #  * Writing to a binary file for offline analysis (add support to events module).
-        #  * or more things!
+        # Complain if we got an unexpected L0ID.
+        if event.l0id not in self.expected_ids:
+            self.on_error.set("Error: got an unexpected L0ID at output FIFO monitor: " + util.hex(event.l0id))
 
-        # NOTE: now that there are callbacks for this, this function could perhaps
-        # be deleted (or at least, made a callback).
+        # Otherwise, remove the L0ID from the list of expected IDs now that we've seen it.
+        self.expected_ids.remove(event.l0id)
 
-        pass
+        # If the expect_empty flag is set, and we've just emptied expected_ids, fire the trigger.
+        if self.expect_empty and len(self.expected_ids) == 0:
+            self.on_empty.set()
+
+        # NOTE: could always add more functionality here.

@@ -30,7 +30,7 @@ def reset(dut):
 @cocotb.test()
 def test_001_initial_dataflow(dut):
     """ Initial test of dataflow driver and monitor."""
-    # Default: 25ns clock for now. Change later!
+    # Default: one 200ns clock for now. Could be changed!
     # This can be moved to a testbench class later.
     sim_clock = clock.Clock(dut.clock, clock_speed, 'ns')
     cocotb.fork(sim_clock.start())
@@ -67,9 +67,8 @@ def test_001_initial_dataflow(dut):
     hook = flow.send_random_events("Input", 10)
     yield hook.wait()
 
-    # Hmm... we don't actually have a way to wait for the receipt
-    # of all pending events yet. Just wait for some time.
-    yield triggers.Timer(1, "us")
+    # Now that we've finished sending data. Wait until all the monitors are finished.
+    yield flow.check_outstanding(timeout=10000, units='ns')
 
     # We probably _do_ want to explicitly call the stop() function here
     # since it enables us to have a place to close output files.
@@ -107,9 +106,8 @@ def test_002_dataflow_from_file(dut):
         raise result.TestFailure("Error: failed to load events from input file: " + filename)
     yield hook.wait()
 
-    # Hmm... we don't actually have a way to wait for the receipt
-    # of all pending events yet. Just wait for some time.
-    yield triggers.Timer(1, "us")
+    # Now that we've finished sending data. Wait until all the monitors are finished.
+    yield flow.check_outstanding(timeout=10000, units='ns')
 
     # We probably _do_ want to explicitly call the stop() function here
     # since it enables us to have a place to close output files.

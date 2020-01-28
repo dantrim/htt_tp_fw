@@ -15,6 +15,10 @@ class DataflowController(object):
         # We should maybe give these names?
         self.empty_blocks = {}
 
+        # Store a record of the events which were sent for each input.
+        # Currently, this isn't actually used.
+        self.input_log = {}
+
         self.on_error_coroutine = None
 
     # TODO: guards should be added here to check that the paths are _actually_ FIFOs.
@@ -24,6 +28,7 @@ class DataflowController(object):
         if name not in self.input_fifos:
             # Create the FIFO driver object; it starts automatically.
             self.input_fifos[name] = driver.FifoDriver(path, self.clock)
+            self.input_log[name] = []
         return self.input_fifos[name]
 
     def add_output_fifo(self, name, path, output_file=None):
@@ -47,17 +52,17 @@ class DataflowController(object):
 
     def stop(self):
         """ Stop all coroutines. Not sure this is necessary."""
-        for name, driver in self.input_fifos.items():
+        for driver in self.input_fifos.values():
             driver.kill()
 
-        for name, monitor in self.output_fifos.items():
+        for monitor in self.output_fifos.values():
             monitor.kill()
 
             # Closes connected output file (if one was configured).
             if monitor.output_file != None:
                 monitor.output_file.close()
 
-        for name, empty_block in self.empty_blocks.items():
+        for empty_block in self.empty_blocks.values():
             empty_block.kill()
 
         # Kill the coroutine waiting for errors.
@@ -74,6 +79,12 @@ class DataflowController(object):
 
     def send_event(self, event, name):
         """ Sends an event to input 'name'. Does not block."""
+        # Store the L0ID that we're sending. Also dispatch it to the monitors.
+        self.input_log[name].append(event.l0id)
+        for output_fifo in self.output_fifos.values():
+            output_fifo.expected_ids.add(event.l0id)
+
+        # Send it!
         words = list(event)
         for word in words[:-1]:
             self.input_fifos[name].append(word.get_binary())
@@ -112,6 +123,33 @@ class DataflowController(object):
             hook = self.send_event(event, name)
         else:
             return hook
+
+    @cocotb.coroutine
+    def check_outstanding(self, timeout=-1, units='ns'):
+        """ Coroutine that blocks until there are no outstanding events anywhere."""
+
+        done = True
+        hooks = []
+        for output_fifo in self.output_fifos.values():
+            # We can't exit if there are still events.
+            # If there are still events: tell the output FIFO to fire a trigger
+            # once there are no more.
+            if len(output_fifo.expected_ids) != 0:
+                output_fifo.on_empty.clear()
+                hooks.append(output_fifo.on_empty.wait())
+                output_fifo.expect_empty = True
+                done = False
+
+        # If there are still pending events:
+        # Use the with_timeout() + combine triggers.
+        # Exit either on timeout or after all the combined triggers fire.
+        if not done:
+            self.dut._log.info("Waiting for outstanding events...")
+            tr = triggers.Combine(*hooks)
+            if timeout == -1:
+                yield tr
+            else:
+                yield triggers.with_timeout(tr, timeout, units)
 
     @cocotb.coroutine
     def wait_for_errors(self):

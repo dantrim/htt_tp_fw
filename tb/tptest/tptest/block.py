@@ -17,7 +17,7 @@ class EmptyBlock(object):
         self.dut = dut
 
         # Construct new input/output FIFO monitor/drivers.
-        self.input_fifo_monitor = monitor.FifoMonitor(input_fifo, clock)
+        self.input_fifo_monitor = monitor.FifoMonitor(input_fifo, clock, process_events=False)
         self.output_fifo_driver = driver.FifoDriver(output_fifo, clock)
 
         # Callback that runs every time a word is seen.
