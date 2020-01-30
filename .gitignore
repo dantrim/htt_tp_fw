@@ -1,0 +1,12 @@
+# Python/cocotb ignores
+
+*.pyc
+*.log
+*.egg-info
+
+# Ignore our virtualenv directory
+tb/env
+
+# Ignore sim_build/build dirs.
+tb/*/sim_build
+tb/*/build
