@@ -50,5 +50,6 @@ class FifoDriver(drivers.Driver):
         yield triggers.RisingEdge(self.clock)
 
         # Set the write enable back to zero.
+        # dantrim WHY? Shouldn't the DUT do this?
         self.fifo.write_enable <= 0
         self.fifo._log.debug("Sent word: " + str(transaction))

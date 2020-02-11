@@ -9,6 +9,7 @@ class DataflowController(object):
         self.dut = dut
         self.clock = clock
 
+        self.fifos = {}
         self.input_fifos = {}
         self.output_fifos = {}
 
@@ -18,6 +19,7 @@ class DataflowController(object):
         # Store a record of the events which were sent for each input.
         # Currently, this isn't actually used.
         self.input_log = {}
+        self.fifo_log = {}
 
         self.on_error_coroutine = None
 
@@ -38,6 +40,15 @@ class DataflowController(object):
             self.output_fifos[name] = monitor.FifoMonitor(path, self.clock, output_file)
         return self.output_fifos[name]
 
+    def add_buffer(self, buffer_name, buffer_path) :
+        """
+        Add a SpyBuffer block driver and return an instance to that object.
+        """
+        if buffer_name not in self.fifos :
+            self.fifos[buffer_name] = driver.FifoDriver(buffer_path, self.clock)
+            self.fifo_log[buffer_name] = []
+        return self.fifos[buffer_name]
+
 
     def add_empty_block(self, name, input_path, output_path, callback=None, event_callback=None):
         """ Creates an "empty block"-- another monitor/driver pair to create fake data flow."""
@@ -49,6 +60,18 @@ class DataflowController(object):
             self.empty_blocks[name] = empty_block
 
         return self.empty_blocks[name]
+
+    def stop_dantrim(self) :
+        """
+        Stop all co-routines?
+        """
+
+        for driver in self.fifos.values() :
+            driver.kill()
+
+        if self.on_error_coroutine is not None :
+            self.on_error_coroutine.kill()
+            self.on_error_coroutine = None
 
     def stop(self):
         """ Stop all coroutines. Not sure this is necessary."""
@@ -77,6 +100,19 @@ class DataflowController(object):
         if not self.on_error_coroutine is None:
             self.on_error_coroutine = cocotb.fork(self.wait_for_errors())
 
+    def send_event_dantrim(self, event, name) :
+
+        self.fifo_log[name].append(event.l0id)
+        words = list(event)
+        for word in words[:-1] :
+            self.fifos[name].append(word.get_binary())
+        else :
+            hook = triggers.Event()
+            self.fifos[name].append(words[-1].get_binary(), event = hook)
+
+        self.dut._log.info("Dataflow sent full event (L0ID {}) to FIFO {}".format(util.hex(event.l0id), name))
+        return hook
+
     def send_event(self, event, name):
         """ Sends an event to input 'name'. Does not block."""
         # Store the L0ID that we're sending. Also dispatch it to the monitors.
@@ -103,6 +139,17 @@ class DataflowController(object):
         # Actually, how can this work?
         hook = self.send_event(event, name)
         yield hook.wait()
+
+    def send_events_from_file_dantrim(self, filename, buffer_name) :
+
+        input_events = events.read_events_from_file(filename)
+        self.dut._log.info("Sending {} input events".format(len(input_events)))
+        if len(input_events) != 0 :
+            for event in input_events :
+                hook = self.send_event_dantrim(event, buffer_name)
+            else :
+                return hook
+        return None
 
     def send_events_from_file(self, filename, name):
         """ Reads an event file (filename) and sends events to input 'name'.
