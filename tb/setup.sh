@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/bin/sh
 
 # Setup script for tp-fw cocotb testbench.
 # This requires: python 2.7+ with pip and virtualenv.
@@ -6,7 +6,7 @@
 # It should be portable to Windows, too.
 
 if [ -d env ]; then
-	source env/bin/activate.sh
+	source env/bin/activate
 else
 
 	# Create a virtualenv in the "env" directory.
@@ -15,7 +15,7 @@ else
 	python -m virtualenv env
 
 	# Activate the virtualenv.
-	source env/bin/activate.sh
+	source env/bin/activate
 
 	# Install dependencies into the virtualenv.
 
