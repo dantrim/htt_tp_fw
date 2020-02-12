@@ -38,33 +38,12 @@ class SpyBufferStatus() :
 
     @cocotb.coroutine
     def update(self) :
-        yield triggers.ReadOnly
+        yield triggers.ReadOnly()
         self.write_enable = (self._spy_buffer.write_enable == 1)
         self.read_enable = (self._spy_buffer.read_enable == 1)
         self.almost_full = (self._spy_buffer.almost_full == 1)
         self.empty = (self._spy_buffer.empty == 1)
 
-@cocotb.coroutine
-def process_event(event_data, read_write, status) :
-    success = True
-    if read_write : # read
-        yield triggers.RisingEdge(dut.clock)
-        if status.empty :
-            success = False
-        else :
-            event_data = input(dut.read_data)
-        dut.read_enable <= 1
-        yield triggers.RisingEdge(dut.clock)
-        dut.read_enable <= 0
-    else : # write
-        yield triggers.RisingEdge(dut.clock)
-        dut.write_data <= event_data
-        dut.write_enable <= 1
-        yield triggers.RisingEdge(dut.clock)
-        dut.write_enable <= 0
-        if status.almost_full :
-            success = False
-    return event_data, success
         
 
 @cocotb.test()
@@ -76,12 +55,40 @@ def test_001_initialization(dut) :
     Initial test to build up familiarity with things
     """
 
+    @cocotb.coroutine
+    def process_event(event_data, read_write, status) :
+        success = True
+        if read_write : # read
+            yield triggers.RisingEdge(dut.clock)
+            if status.empty :
+                success = False
+            else :
+                event_data = int(dut.output_data)
+            dut.buffer_read_enable <= 1
+            yield triggers.RisingEdge(dut.clock)
+            dut.buffer_read_enable <= 0
+        else : # write
 
-    status = SpyBufferStatus(dut.spybuffer)
+            yield triggers.RisingEdge(dut.clock)
+            dut.buffer_write_enable <= 0
+            while status.almost_full != 0 :
+                yield triggers.RisingEdge(dut.clock)
+
+            #yield triggers.RisingEdge(dut.clock)
+            dut.input_data <= event_data
+            dut.buffer_write_enable <= 1
+            yield triggers.RisingEdge(dut.clock)
+            dut.buffer_write_enable <= 0
+            if status.almost_full :
+                success = False
+        return event_data, success
+    
+
 
     # Setup the clock to drive the DUT
     simulation_clock = clock.Clock(dut.clock, clock_speed, "ns")
     cocotb.fork(simulation_clock.start())
+    status = SpyBufferStatus(dut.spybuffer)
 
     fifo_model = deque()
 
@@ -92,28 +99,36 @@ def test_001_initialization(dut) :
     filename = "../input_files/BoardToBoardInput_AMTP0_Strip0.evt"
     input_events = events.read_events_from_file(filename)
 
-    for event in input_events[:-1] :
-        read_write = random.choice([True, False])
-        data = event.get_binary()
+    for ievent, input_event in enumerate(input_events) :
+        sep = 45 * "="
+        dut._log.info(sep)
 
-        yield status.update()
-        data, process = yield process_event(data, read_write, status)
+        if ievent > 1 :
+            break
 
-        if read_write : # read
-            if success :
-                assert(data == fifo_model.pop())
-                dut._log.info("Data read from fifo: %X", data)
-            else :
-                log.info("Data not read from fifo, fifo EMPTY")
-        else : # write
-            if success :
-                fifo_model.appendleft(data)
-                dut._log.info("Data written to fifo: %X", data)
-            else :
-                dut._log.info("Data not written to fifo, fifo (ALMOST) FULL")
+        words = list(input_event)
+        for iword, word in enumerate(words[:-1]) :
+            sep = 22 * "- "
+            dut._log.info(sep)
+
+            data = word.get_binary()
+            for read_write in [False, True] :
+                yield status.update()
+                data, success = yield process_event(data, read_write, status)
         
-
-
+                if read_write : # read
+                    if success and len(fifo_model)!=0 : #status.empty :
+                        fifo_current = fifo_model.pop() 
+                        dut._log.info(" -> POPPED  : %X", fifo_current)
+                    else :
+                        dut._log.info("{} Data not read from fifo, fifo EMPTY".format(iword))
+                else : # write
+                    if success :
+                        dut._log.info(" -> WRITTEN : %X", data)
+                        fifo_model.appendleft(data)
+                    else :
+                        dut._log.info("Data not written to fifo, fifo (ALMOST) FULL")
+        
 
     ## Not sure we need this
     #initialize_wires(dut)
