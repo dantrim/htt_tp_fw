@@ -1,13 +1,14 @@
 import cocotb
 from cocotb.clock import Clock
 from cocotb.decorators import coroutine
-from cocotb.triggers import Timer, RisingEdge, ReadOnly, NextTimeStep, Event, ClockCycles
+from cocotb.triggers import Timer, RisingEdge, ReadOnly, NextTimeStep, Event, ClockCycles, Combine, with_timeout
 from cocotb.monitors import Monitor
 from cocotb.drivers import Driver, BitDriver
 from cocotb.binary import BinaryValue
 from cocotb.regression import TestFactory
 from cocotb.scoreboard import Scoreboard
 from cocotb.result import TestFailure, TestSuccess
+from collections import deque
 
 from tptest import events, util
 
@@ -15,14 +16,14 @@ CLOCK_SPEED = 200 # ns
 
 class OutputMonitor(Monitor) :
 
-    #def __init__(self, name, fifo, clock, callback = None, event = None) :
     def __init__(self, fifo, clock, callback = None, event = None) :
-        #self.name = name
         self.fifo = fifo
         self.clock = clock
+        self.expected_ids = deque()
+        self.expect_empty = False
+        self.on_empty = Event()
         super(OutputMonitor, self).__init__(callback = callback)
 
-        self.add_callback(self.check_event)
 
     @coroutine
     def _monitor_recv(self) :
@@ -39,23 +40,6 @@ class OutputMonitor(Monitor) :
             else :
                 yield NextTimeStep()
                 self.fifo.read_enable <= 0
-
-    def check_event(self, transaction) :
-        self.fifo._log.info("transaction: {}".format(util.hex(transaction)))
-
-class InputMonitor(Monitor) :
-
-    def __init__(self, fifo, clock, callback = None, event = None) :
-        self.fifo = fifo
-        self.clock = clock
-        super(InputMonitor, self).__init__()
-
-    @coroutine
-    def _monitor_recv(self) :
-
-        while True :
-            transaction = self.fifo.write_data.value
-            self._recv(transaction)
 
 class FifoMonitor(Monitor) :
 
@@ -103,6 +87,11 @@ class FifoMonitor(Monitor) :
                 transaction = self.signal.value
                 #cocotb.log.info("FIFO Received transaction INPUT  : {}".format(util.hex(self.signal.value)))
                 self._recv(transaction)
+
+N_WORDS_SENT = 0
+N_EXP_CALLS = 0
+N_DRIVEN = 0
+N_OUTPUT_APP = 0
                 
 
 class FifoDriver(Driver) :
@@ -115,6 +104,7 @@ class FifoDriver(Driver) :
 
     @coroutine
     def _driver_send(self, transaction, sync = True, **kwargs) :
+        global N_DRIVEN
         if sync :
             yield RisingEdge(self.clock)
             self.fifo.write_enable <= 0
@@ -122,6 +112,7 @@ class FifoDriver(Driver) :
         while self.fifo.almost_full != 0 :
             yield RisingEdge(self.clock)
         
+        N_DRIVEN += 1
         self.fifo.write_data <= int(transaction)
         self.fifo.write_enable <= 1
         yield RisingEdge(self.clock)
@@ -143,7 +134,7 @@ class FifoTB(object) :
         self.dut = dut
         self.stopped = False
 
-        self.fifo_driver = FifoDriver(name = "SpyFifoDriver_00", fifo = dut.spybuffer, clock = dut.clock)
+        self.fifo_driver = FifoDriver(name = "SpyFifoDriver_00", fifo = dut.spybuffer, clock = dut.clock)#, callback = self.fifo_input_callbacks)
         self.fifo_output_monitor = OutputMonitor(dut.spybuffer, dut.clock, callback = self.fifo_output_callback)
         #self.fifo_output_monitor = FifoMonitor(name = "SpyOutputMonitor_00", fifo = dut.spybuffer, clock = dut.clock, callback = self.fifo_output_callback)
 
@@ -153,14 +144,26 @@ class FifoTB(object) :
         #self.scoreboard.add_interface(self.fifo_output_monitor, self.expected_output)
 
         #self.fifo_input_monitor = FifoMonitor(name = "SpyInputMonitor_00", fifo = dut.spybuffer, clock = dut.clock, is_output = False, callback = self.fifo_input_callback)
-        #self.fifo_input_monitor = InputMonitor(dut.spybuffer, dut.clock)#, callback = self.fifo_input_callback)
+        #self.fifo_input_monitor = InputMonitor(fifo = dut.spybuffer, clock = dut.clock, callback = self.fifo_input_callback)
 
     def fifo_input_callback(self, transaction) :
-        if not self.stopped :
-            self.expected_output.append(transaction)
+        global N_EXP_CALLS
+        N_EXP_CALLS += 1
+        self.expected_output.append(transaction)
+        #cocotb.log.info("FifoTB input len      : {}".format(len(self.expected_output)))
+        #cocotb.log.info("FifoTB input len      : {}".format(util.hex(transaction)))
+    
 
     def fifo_output_callback(self, transaction) :
+        global N_OUTPUT_APP
+        N_OUTPUT_APP += 1
+        output_mon = self.fifo_output_monitor
+        output_mon.expected_ids.pop()
+        if output_mon.expect_empty and len(output_mon.expected_ids) == 0 :
+            output_mon.on_empty.set()
         self.output.append(transaction)
+        #cocotb.log.info("FifoTB output recv len: {}".format(len(self.output)))
+        #cocotb.log.info("FifoTB output recv len: {}".format(util.hex(transaction)))
 
     def start(self) :
         self.stopped = False
@@ -173,13 +176,19 @@ class FifoTB(object) :
 
     def send_event(self, event) :
         words = list(event)
+        global N_WORDS_SENT
+
+        #self.fifo_output_monitor.expected_ids.add(event.l0id)
+
         for iword, word in enumerate(words[:-1]) :
-            self.fifo_driver.append(word.get_binary())
-            self.expected_output.append(word.get_binary())
+            self.fifo_driver.append(word.get_binary(), callback = self.fifo_input_callback)
+            self.fifo_output_monitor.expected_ids.append(word)
+            N_WORDS_SENT += 1
         else :
             hook = Event()
-            self.fifo_driver.append(words[-1].get_binary(), event = hook)
-            self.expected_output.append(word.get_binary())
+            self.fifo_driver.append(words[-1].get_binary(), callback = self.fifo_input_callback, event = hook)
+            self.fifo_output_monitor.expected_ids.append(word)
+            N_WORDS_SENT += 1
         #hook = Event()
         #cocotb.log.info(sep)
         #cocotb.log.info(" > Sending word {}".format(len(words)-1))
@@ -191,7 +200,8 @@ class FifoTB(object) :
         input_events = events.read_events_from_file(filename)
         cocotb.log.info("Sending {} input events".format(len(input_events)))
         if len(input_events) != 0 :
-            for ievent, event in enumerate(input_events) :
+            #for ievent, event in enumerate(input_events) :
+            for ievent, event in enumerate(input_events[:1]) :
                 #if ievent > 1 : break
                 #sep = 80 * "="
                 #cocotb.log.info(sep)
@@ -200,6 +210,25 @@ class FifoTB(object) :
             else :
                 return hook
         return None
+
+    @cocotb.coroutine
+    def wait_for_remaining_events(self, timeout = -1, units = "ns") :
+        done = True
+        hooks = []
+        output_mon = self.fifo_output_monitor
+        n_rem = len(output_mon.expected_ids)
+        self.dut._log.info("Waiting for remaining events... -> {}".format(n_rem))
+        if len(output_mon.expected_ids) != 0 :
+            output_mon.on_empty.clear()
+            hooks.append(output_mon.on_empty.wait())
+            output_mon.expect_empty = True
+            done = False
+        if not done :
+            tr = Combine(*hooks)
+            if timeout == -1 :
+                yield tr
+            else :
+                yield with_timeout(tr, timeout, units)
 
 def initialize_wires(dut) :
     wires = [dut.buffer_write_enable, dut.buffer_read_enable, dut.input_data, dut.output_data]
@@ -217,24 +246,21 @@ def reset(dut) :
 @cocotb.test()
 def test_fifo(dut) :
 
-    dut._log.info("Hello world")
-
     simulation_clock = Clock(dut.clock, CLOCK_SPEED)
     cocotb.fork(simulation_clock.start())
 
     initialize_wires(dut)
     yield reset(dut)
 
-    dut._log.info("Print DUT reset")
 
     pos_edge = RisingEdge(dut.clock)
 
     fifo_tb = FifoTB(dut)
     hook = fifo_tb.start()
-    ##yield [Timer(100, unit = "ns"), hook.wait()]
     yield hook.wait()
+    yield fifo_tb.wait_for_remaining_events(timeout = 100, units = "ns")
     fifo_tb.stop()
-    dut._log.info("exp: {}, got: {}".format(len(fifo_tb.expected_output), len(fifo_tb.output)))
+    dut._log.info("N_OUTPUT_APP = {}, N_WORDS_SENT = {}, N_EXP_APP = {}, N_DRIVEN = {}".format(N_OUTPUT_APP, N_WORDS_SENT, N_EXP_CALLS, N_DRIVEN))
     exp = fifo_tb.expected_output
     got = fifo_tb.output
     for i, e in enumerate(exp) :
@@ -244,7 +270,7 @@ def test_fifo(dut) :
             break
         got_word = got[i]
         they_equal = (exp_word == got_word)
-        dut._log.info("[{}] GOT: {}, EXP: {} --> EQUAL? {}".format(i, util.hex(exp_word), util.hex(got_word), they_equal))
+        #dut._log.info("[{}] GOT: {}, EXP: {} --> EQUAL? {}".format(i, util.hex(exp_word), util.hex(got_word), they_equal))
     #n = len(fifo_tb.expected_output)
     #sep = 80 * "="
     #cocotb.log.info(sep)
