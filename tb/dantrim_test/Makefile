@@ -24,7 +24,7 @@ VHDL_SOURCES =
 # Toplevel (RTL) and module (Python) for tests.
 TOPLEVEL=TopLevel
 TOPLEVEL_LANG=verilog
-MODULE=DantrimTests2
+MODULE=DantrimTests3
 
 # We need to set the include path appropriately!
 EXTRA_ARGS += +incdir+$(SRCDIR)
