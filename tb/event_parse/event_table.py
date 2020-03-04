@@ -49,6 +49,9 @@ class EventTable :
 
             meta_flag = bool(int.from_bytes(input_file.read(1), DataFormat.ENDIAN)) # meta flag is 1 bit stored in a byte
             word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN) # 64-bit word
+            #print("meta_flag = {}", meta_flag)
+            #print("w         = {}", hex(word))
+            #sys.exit()
 
             # initiate reading of the data
             while True :
@@ -59,7 +62,7 @@ class EventTable :
                     else :
                         print("ERROR: expected metadata flag, word = {}".format(word))
                         #raise Exception("ERROR: Expected metadata flag")
-                        break
+                    break
 
                 GenMetaValue = BitFieldWordValue(DataFormat.GenMetadata, word)
                 flag = GenMetaValue.getField("FLAG")
@@ -81,6 +84,8 @@ class EventTable :
                         # advance forward within the header data words
                         meta_flag = bool(int.from_bytes(input_file.read(1), DataFormat.ENDIAN))
                         word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN)
+
+                    #print("Received event for L0ID {} BCID {}".format(hex(current_event.header_l0id), hex(current_event.header_bcid)))
 
                 ##
                 ## Module data
@@ -187,6 +192,8 @@ class EventTable :
                         ##
                         else :
                             raise Exception("ERROR Unhandled module type flag encountered: {}".format(module.header1.getField("TYPE")))
+
+                        first = False
 
                 elif flag == DataFormat.EVT_FTR1_FLAG.FLAG :
                     if verbose :
