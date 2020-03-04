@@ -1,11 +1,13 @@
 from __future__ import print_function
 import sys
 if sys.version_info[0] < 3 :
-    from BitField import BitFieldWordDesc, BitFieldWordValue
+    from DataFormat.BitField import BitFieldWordDesc, BitFieldWordValue
+    #from BitField import BitFieldWordDesc, BitFieldWordValue
 else :
-    from .BitField import BitFieldWordDesc, BitFieldWordValue
+    from DataFormat.BitField import BitFieldWordDesc, BitFieldWordValue
+    #from .BitField import BitFieldWordDesc, BitFieldWordValue
+from DataFormat.DataFormatIO import SubwordUnpacker
 from DataFormat import DataFormat
-from DataFormatIO import SubwordUnpacker
 
 from data_format import Event, Module
 
@@ -46,15 +48,18 @@ class EventTable :
             current_event = None
 
             meta_flag = bool(int.from_bytes(input_file.read(1), DataFormat.ENDIAN)) # meta flag is 1 bit stored in a byte
-            word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN)) # 64-bit word
+            word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN) # 64-bit word
 
             # initiate reading of the data
             while True :
                 if not meta_flag :
                     if len(input_file.read(1)) == 0 :
                         # we are at EOF
+                        print("End of stream")
                     else :
-                        raise Exception("ERROR: Expected metadata flag")
+                        print("ERROR: expected metadata flag, word = {}".format(word))
+                        #raise Exception("ERROR: Expected metadata flag")
+                        break
 
                 GenMetaValue = BitFieldWordValue(DataFormat.GenMetadata, word)
                 flag = GenMetaValue.getField("FLAG")
@@ -75,7 +80,7 @@ class EventTable :
 
                         # advance forward within the header data words
                         meta_flag = bool(int.from_bytes(input_file.read(1), DataFormat.ENDIAN))
-                        word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN))
+                        word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN)
 
                 ##
                 ## Module data
@@ -96,7 +101,7 @@ class EventTable :
                     # iterate over the module data
                     while True :
                         meta_flag = bool(int.from_bytes(input_file.read(1), DataFormat.ENDIAN))
-                        word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN))
+                        word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN)
 
                         if meta_flag :
                             # no longer reading data (either a header or a footer has been reached)
@@ -193,4 +198,6 @@ class EventTable :
                         word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN)
 
                 else :
-                    raise Exception("ERROR Unknown metadata flag encountered: {}".format(hex(meta_flag)))
+                    print("ERROR: Unknown metadata flag {}", hex(meta_flag))
+                    break
+                    #raise Exception("ERROR Unknown metadata flag encountered: {}".format(hex(meta_flag)))

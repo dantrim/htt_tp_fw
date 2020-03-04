@@ -1,11 +1,12 @@
 from __future__ import print_function
 import sys
 if sys.version_info[0] < 3 :
-    from BitField import BitFieldWordDesc, BitFieldWordValue
+    from DataFormat.BitField import BitFieldWordDesc, BitFieldWordValue
 else :
-    from .BitField import BitFieldWordDesc, BitFieldWordValue
-import DataFormat.headerwords as EVT_HEADER_WORDS
-import DataFormat.footerwords as EVT_FOOTER_WORDS
+    from DataFormat.BitField import BitFieldWordDesc, BitFieldWordValue
+from DataFormat import DataFormat
+EVT_HEADER_WORDS = DataFormat.headerwords
+EVT_FOOTER_WORDS = DataFormat.footerwords
 
 class Event :
 
