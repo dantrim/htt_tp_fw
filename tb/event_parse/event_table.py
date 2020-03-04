@@ -16,13 +16,19 @@ class EventTable :
 
     """
     Read in cluster (track?) data and form
-    and ordered table of events.
+    an ordered table of events.
     """
 
     def __init__(self) :
 
         self._l0ids = []
         self._events = []
+        self._l0id_idx_map = {}
+
+    def clear(self) :
+        self._l0ids = []
+        self._events = []
+        self._l0id_idx_map = {}
 
     @property
     def l0ids(self) :
@@ -33,12 +39,25 @@ class EventTable :
         return self._events
 
     def append(self, event) :
-        self._events.append(event)
-        # attach L0ID to _l0ids...
 
-    def clear(self) :
-        self._l0ids = []
-        self._events = []
+        if event.header_l0id in self._l0ids :
+            print("WARNING Already received event data for this L0ID = {}, skipping!".format(hex(event.header_l0id)))
+        else :
+            this_event_idx = len(self._events)
+            self._events.append(event)
+            self._l0ids.append(event.header_l0id)
+            self._l0id_idx_map[event.header_l0id] = this_event_idx
+
+    def sort_events(self) :
+        self._events.sort(key = lambda event : event.header_l0id, reverse = False)
+
+    def event_at_l0id(self, l0id = 0x0) :
+
+        if l0id in self._l0id_idx_map :
+            idx = self._l0id_idx_map[l0id]
+            return self._events[idx]
+        else :
+            return None
 
     # methods
     def load_from_file(self, filename, raw = None, verbose = False) :
@@ -49,9 +68,6 @@ class EventTable :
 
             meta_flag = bool(int.from_bytes(input_file.read(1), DataFormat.ENDIAN)) # meta flag is 1 bit stored in a byte
             word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN) # 64-bit word
-            #print("meta_flag = {}", meta_flag)
-            #print("w         = {}", hex(word))
-            #sys.exit()
 
             # initiate reading of the data
             while True :
@@ -75,7 +91,6 @@ class EventTable :
                     if verbose :
                         print("{} {} {}".format(20 * "-", "Event Header", 20 * "-"))
                     current_event = Event()
-                    self.append(current_event)
 
                     # iterate over the header words (each a 64-bit data word)
                     for header_word in current_event.headerwords :
@@ -85,7 +100,7 @@ class EventTable :
                         meta_flag = bool(int.from_bytes(input_file.read(1), DataFormat.ENDIAN))
                         word = int.from_bytes(input_file.read(8), DataFormat.ENDIAN)
 
-                    #print("Received event for L0ID {} BCID {}".format(hex(current_event.header_l0id), hex(current_event.header_bcid)))
+                    self.append(current_event)
 
                 ##
                 ## Module data
@@ -207,4 +222,13 @@ class EventTable :
                 else :
                     print("ERROR: Unknown metadata flag {}", hex(meta_flag))
                     break
-                    #raise Exception("ERROR Unknown metadata flag encountered: {}".format(hex(meta_flag)))
+
+        ##
+        ## finished iterating over the file
+        ##
+        self.sort_events()
+        print(65 * "=")
+        print("Loaded {} events".format(len(self.events)))
+        print("L0IDs:")
+        for iev, ev in enumerate(self.events) :
+            print(" -> [{}/{}] {}".format(iev+1, len(self.events), hex(ev.header_l0id)))
