@@ -10,7 +10,7 @@ B2BDIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/tp-fw/src/board2board_
 
 # All Verilog source files.
 VERILOG_SOURCES = \
-    $(PWD)/SkeletonWrapper.v \
+    $(PWD)/TopLevel.v \
     $(SBDIR)/SpyBuffer.v \
     $(SBDIR)/SpyController.v \
     $(SBDIR)/SpyMemory.v \
@@ -38,7 +38,7 @@ TOPLEVEL_LANG=verilog
 MODULE=B2BInitialTest
 
 # We need to set the include path appropriately!
-EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip -L $(COMPLIB_DIR)/unisims_ver -L $(COMPLIB_DIR)/unisim 
+EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip #-L $(COMPLIB_DIR)/unisims_ver -L $(COMPLIB_DIR)/unisim 
 VSIM_ARGS  += glbl
 
 # Boilerplate includes.

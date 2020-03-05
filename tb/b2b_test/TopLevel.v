@@ -8,7 +8,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-module SkeletonWrapper #(
+module TopLevel #(
     // inclusive of metadata flag (bit 64)
     parameter SIZE = 65,
     parameter DATA_WIDTH   = 65,
@@ -34,11 +34,11 @@ module SkeletonWrapper #(
     //wire output_afull;
 
     // These are inputs, and should get zero'd.
-    wire input_we [TOTAL_CLUSTERS];
     //wire input_re;
     //wire output_we;
-    wire output_re [TOTAL_BOARDS];
 
+    //wire input_we [TOTAL_CLUSTERS];
+    logic            cluster_wren [TOTAL_CLUSTERS];
     logic [SIZE-1:0] cluster_data [TOTAL_CLUSTERS];
     logic            cluster_rd_req [TOTAL_CLUSTERS];
     logic            cluster_almost_full [TOTAL_CLUSTERS];
@@ -48,6 +48,8 @@ module SkeletonWrapper #(
     logic                  board_wren [TOTAL_BOARDS];
     logic                  board_almost_full [TOTAL_BOARDS];
     logic                  board_empty [TOTAL_BOARDS];
+    logic                  board_ren [TOTAL_BOARDS];
+    //wire output_re [TOTAL_BOARDS];
    
   
    
@@ -65,7 +67,7 @@ module SkeletonWrapper #(
                         .rreset(reset),
                         .wreset(reset),
                         .write_data(input_data[z]),//ToUpdate
-                        .write_enable(input_we[z]),//ToUpdate
+                        .write_enable(cluster_wren[z]),//ToUpdate
                         .read_data(cluster_data[z]),
                         .read_enable(cluster_rd_req[z]),
                         .almost_full(cluster_almost_full[z]),
@@ -108,9 +110,6 @@ module SkeletonWrapper #(
         .output_board_wren(board_wren),
         .output_board_almost_full(board_almost_full)
     );
-    //logic [DATA_WIDTH-1:0] board_cluster_data [TOTAL_BOARDS];
-    //logic                  board_wren [TOTAL_BOARDS];
-    //logic                  board_almost_full [TOTAL_BOARDS];
 
     //
     // Output buffers
@@ -128,7 +127,7 @@ module SkeletonWrapper #(
                         .write_data(board_cluster_data[z]),
                         .write_enable(board_wren[z]),
                         .read_data(output_data[z]), //ToUpdate
-                        .read_enable(output_re[z]), //ToUpdate
+                        .read_enable(board_ren[z]), //ToUpdate
                         .almost_full(board_almost_full[z]), //ToUpdate
                         .empty(board_empty[z]),
                         // The following should not be needed until one actually wants
