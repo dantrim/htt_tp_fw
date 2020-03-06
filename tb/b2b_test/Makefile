@@ -1,6 +1,7 @@
 # Default simulator; prefer QUESTA if not overridden.
 SIM ?= questa
-COMPLIB_DIR = /home/psundara/xilinx/compiled_libraries/v2019.1
+#COMPLIB_DIR = /home/psundara/xilinx/compiled_libraries/v2019.1
+COMPLIB_DIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1
 
 # Location of sources (and spy buffer sources).
 SRCDIR = $(PWD)/../../src
@@ -38,7 +39,7 @@ TOPLEVEL_LANG=verilog
 MODULE=B2BInitialTest
 
 # We need to set the include path appropriately!
-EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip #-L $(COMPLIB_DIR)/unisims_ver -L $(COMPLIB_DIR)/unisim 
+EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip -L $(COMPLIB_DIR)/unisims_ver -L $(COMPLIB_DIR)/unisim 
 VSIM_ARGS  += glbl
 
 # Boilerplate includes.

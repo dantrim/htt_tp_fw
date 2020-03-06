@@ -11,9 +11,6 @@ from tptest import events, util
 CLOCK_SPEED = 200 # ns
 
 def initialize_wires(dut) :
-    wires = [dut.buffer_write_enable, dut.buffer_read_enable, dut.input_data, dut.output_data]
-    for wire in wires :
-        wire <= 0
 
     #inputs
     in_buffers = dut.input_cluster_SpyBuffer
@@ -47,3 +44,5 @@ def initial_b2b_test(dut) :
     cocotb.fork(sim_clock.start())
 
     initialize_wires(dut)
+    yield reset(dut)
+    dut._log.info("Resetting DUT")
