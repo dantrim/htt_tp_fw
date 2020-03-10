@@ -28,24 +28,24 @@ class B2BIO :
         SSTP_1 = 13
 
     @staticmethod
-    def allowed_tps(self) :
+    def allowed_tps() :
     
         tps = set()
-        for b2b in self.B2BOutputs :
+        for b2b in B2BIO.B2BOutputs :
             tps.append( str(b2b.name).split("_")[0] )
         return tps
 
     @staticmethod
-    def to_clean_name(self, io_enum_val) :
+    def to_clean_name(io_enum_val) :
 
         return str( io_enum_val.name ).replace("_","")
 
     @staticmethod
-    def clean_names(self, io_enum) :
+    def clean_names(io_enum) :
 
         names = []
         for io in io_enum :
-            names.append( self.to_clean_name(io) )
+            names.append( B2BIO.to_clean_name(io) )
         return names
 
 def get_testvector_files(base_tp, testvec_dir, input_or_output) :
@@ -64,6 +64,6 @@ def get_testvector_files(base_tp, testvec_dir, input_or_output) :
     }[input_or_output.lower()]
 
     file_fmt += B2BIO.to_clean_name(base_tp)
-    testvec_files = tdir.glob("{}_*".format(file_fmt)
+    testvec_files = tdir.glob("{}_*".format(file_fmt))
 
     return testvec_files
