@@ -5,6 +5,8 @@ from cocotb.decorators import coroutine
 from cocotb.result import TestFailure, TestSuccess
 from tptest import events, util
 
+from b2b_test.blocks import b2b_input_driver
+
 ##
 ## CONSTANTS
 ##
