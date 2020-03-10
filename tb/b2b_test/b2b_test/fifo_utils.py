@@ -1,3 +1,4 @@
+import cocotb
 
 def check_fifo_block(spy_buffer_block, name = "") :
 
@@ -20,7 +21,7 @@ def check_fifo_block(spy_buffer_block, name = "") :
             missing_signals.append(req_sig)
     if missing_signals :
         name_str = "" if not name else name
-        cocotb.error("Provided FIFO block{} is missing required signal(s): {}".
-            format(" {}".format(name) if name else ""))
+        cocotb.log.error("Provided FIFO block{} is missing required signal(s): {}".
+            format(" {}".format(name) if name else "", missing_signals))
         return False
     return True

@@ -48,6 +48,14 @@ class B2BIO :
             names.append( B2BIO.to_clean_name(io) )
         return names
 
+def testvec_dir_from_env() :
+
+    import os
+    testvecdir = os.environ.get("TESTVECDIR")
+    if not testvecdir :
+        raise Exception("ERROR Environment \"TESTVECDIR\" is not set")
+    return testvecdir
+
 def get_testvector_files(base_tp, testvec_dir, input_or_output) :
 
     if type(base_tp) != B2BIO.B2BOutputs :
@@ -66,4 +74,4 @@ def get_testvector_files(base_tp, testvec_dir, input_or_output) :
     file_fmt += B2BIO.to_clean_name(base_tp)
     testvec_files = tdir.glob("{}_*".format(file_fmt))
 
-    return testvec_files
+    return list(testvec_files)

@@ -109,7 +109,6 @@ def read_events_from_file(filename, endian='little'):
 
     # Make sure the file exists!
     filename = os.path.abspath(filename)
-    print(filename)
     if not os.path.exists(filename):
         return events
 

@@ -3,7 +3,8 @@ from cocotb.drivers import Driver
 from cocotb.triggers import RisingEdge, Event
 
 from tptest import util
-import fifo_utils
+from b2b_test import fifo_utils
+#import fifo_utils
 
 class BasicFifoDriver(Driver) :
 
@@ -17,8 +18,9 @@ class BasicFifoDriver(Driver) :
         self._fifo = fifo_block
         self._clock = clock
         self._name = name
+        self._sent_words = []
 
-        if not fifo_utils.check_fifo_block(block) :
+        if not fifo_utils.check_fifo_block(fifo_block) :
             raise Exception("Unable to set FIFO block for FIFO with name={}"
                 .format(self.name))
 
@@ -39,6 +41,13 @@ class BasicFifoDriver(Driver) :
     @property
     def clock(self) :
         return self._clock
+
+    ##
+    ## callbacks
+    ##
+
+    def input_word_monitor(self, transaction) :
+        self._sent_words.append(transaction)
 
     ##
     ## cocotb coroutines
