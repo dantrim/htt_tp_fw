@@ -1,6 +1,6 @@
 import cocotb
 from cocotb.drivers import Driver
-from cocotb.triggers import RisingEdge, Event
+from cocotb.triggers import RisingEdge, Event, Timer
 
 from tptest import util
 from b2b_test import fifo_utils

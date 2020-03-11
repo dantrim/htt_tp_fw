@@ -1,6 +1,9 @@
+
 import enum
 from pathlib import Path
 from glob import glob
+
+import cocotb
 
 
 class B2BIO :
@@ -72,6 +75,19 @@ def get_testvector_files(base_tp, testvec_dir, input_or_output) :
     }[input_or_output.lower()]
 
     file_fmt += B2BIO.to_clean_name(base_tp)
-    testvec_files = tdir.glob("{}_*".format(file_fmt))
+    testvec_files = list(tdir.glob("{}_*".format(file_fmt)))
 
-    return list(testvec_files)
+    ordered_files = []
+    io_enum = {
+        "input" : B2BIO.B2BInputs
+        ,"output" : B2BIO.B2BOutputs
+    }[input_or_output.lower()]
+
+    for i, io in enumerate(io_enum) :
+        cn = B2BIO.to_clean_name(io).lower()
+        for j, tf in enumerate(testvec_files) :
+            final_tag = str(tf).split("_")[-1].replace(".evt","").replace("dest","").lower()
+            if final_tag == cn :
+                ordered_files.append(tf)
+                break
+    return ordered_files

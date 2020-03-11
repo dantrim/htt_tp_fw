@@ -2,7 +2,7 @@
 from pathlib import Path
 
 import cocotb
-from cocotb.triggers import Event, Combine, with_timeout
+from cocotb.triggers import Event, Combine, with_timeout, Timer
 
 from tptest import events, util
 from .b2b_utils import B2BIO, get_testvector_files
@@ -33,8 +33,8 @@ class B2BInputDriver :
         self._drivers = []
         self._sent_words = []
 
-        self._monitors = []
-        self._observed_output_words = []
+        #MONself._monitors = []
+        #MONself._observed_output_words = []
 
     ##
     ## properties
@@ -71,9 +71,9 @@ class B2BInputDriver :
             exp_list.append( len(driver._sent_words))
 
         w5_out = []
-        for mon in self._monitors :
-            w5_out.append(hex(mon.observed_words[idx]))
-            obs_list.append( len(mon.observed_words) )
+        #MONfor mon in self._monitors :
+        #MON    w5_out.append(hex(mon.observed_words[idx]))
+        #MON    obs_list.append( len(mon.observed_words) )
         self._log.info("W5_in : {}".format(w5_in))
         self._log.info("W5_out: {}".format(w5_out))
         return exp_list, obs_list
@@ -81,16 +81,21 @@ class B2BInputDriver :
     def send_event(self, event, input_num) :
 
         current_driver = self._drivers[input_num]
-        current_monitor = self._monitors[input_num]
+        #MONcurrent_monitor = self._monitors[input_num]
         words = list(event)
+        #for iword, word in enumerate(words[:-1]) :
+        n_sent = 0
         for iword, word in enumerate(words[:-1]) :
             current_driver.append(word.get_binary(), callback = current_driver.input_word_monitor)
-            current_monitor.expect(word)
+            #MONcurrent_monitor.expect(word)
+            n_sent += 1
         else :
             hook = Event()
             current_driver.append(words[-1].get_binary(), callback = current_driver.input_word_monitor, event = hook)
-            current_monitor.expect(words[-1])
-        return hook
+            #MONcurrent_monitor.expect(words[-1])
+            n_sent += 1
+        cocotb.log.info("{} sent {} words".format(self.name, n_sent))
+        return hook, n_sent
 
     def send_events_from_testvecs(self, testvecdir = "", num_events_to_send = -1) :
 
@@ -98,9 +103,11 @@ class B2BInputDriver :
         self._log.info("Sending events from {} testvectors:".format(len(input_testvec_files)))
 
         hooks = []
+        total_words_sent = 0
         for fifo in B2BIO.B2BInputs :
 
             input_num = int(fifo.value)
+
             testvec = input_testvec_files[input_num]
             self._log.info(" -> Input {} ({}): {}".format(input_num, fifo.name, testvec))
 
@@ -108,10 +115,10 @@ class B2BInputDriver :
             driver = BasicFifoDriver(self.input_fifos[input_num], self.clock, "InputFIFODriver_{}".format(input_num))
             self._drivers.append(driver)
             
-            self._observed_output_words.append([])
-            monitor = WordMonitor(self.input_fifos[input_num], self.clock,
-                        "InputFIFOMonitor_{}".format(input_num))
-            self._monitors.append(monitor)
+            #MONself._observed_output_words.append([])
+            #MONmonitor = WordMonitor(self.input_fifos[input_num], self.clock,
+            #MON            "InputFIFOMonitor_{}".format(input_num))
+            #MONself._monitors.append(monitor)
 
             input_events = events.read_events_from_file(testvec)
             n_events_in_file = len(input_events)
@@ -128,42 +135,29 @@ class B2BInputDriver :
                 self.input_fifos[input_num]._log.info("Sending {} events to FIFO {}".format(num_events_to_send, self.name))
 
                 for ievent, event in enumerate(input_events) :
-                    hook = self.send_event(event, input_num)
+                    hook, n_words = self.send_event(event, input_num)
+                    total_words_sent += n_words
                 else :
-                    hooks.append(hook.wait())
+                    hook = Timer(1, "ns")
+                    hooks.append(hook)#.wait())
 
-        return hooks
+        return hooks, total_words_sent
 
-    ##
-    ## callbacks
-    ##
+    #MON@cocotb.coroutine 
+    #MONdef wait_for_events(self, timeout = -1, units = "ns") :
 
-    #def word_monitor(self, input_num) :
-    #    aplist = self._sent_words[input_num]
-    #    def input_word_monitor(self, transaction) :
-    #        aplist.append(transaction)
-    #        #self._sent_words[input_num].append(transaction)
-    #    return input_word_monitor
-
-    ##
-    ## cocotb coroutines
-    ##
-
-    @cocotb.coroutine 
-    def wait_for_events(self, timeout = -1, units = "ns") :
-
-        done = True
-        hooks = []
-        for mon in self._monitors :
-            if mon.has_remaining_events() :
-                mon.on_empty.clear()
-                hooks.append(mon.on_empty.wait())
-                mon.expect_empty = True
-                done = False
-        if not done :
-            tr = Combine(*hooks)
-            if timeout == -1 :
-                yield tr
-            else :
-                yield with_timeout(tr, timeout, units)
+    #MON    done = True
+    #MON    hooks = []
+    #MON    for mon in self._monitors :
+    #MON        if mon.has_remaining_events() :
+    #MON            mon.on_empty.clear()
+    #MON            hooks.append(mon.on_empty.wait())
+    #MON            mon.expect_empty = True
+    #MON            done = False
+    #MON    if not done :
+    #MON        tr = Combine(*hooks)
+    #MON        if timeout == -1 :
+    #MON            yield tr
+    #MON        else :
+    #MON            yield with_timeout(tr, timeout, units)
 

@@ -54,6 +54,8 @@ class WordMonitor(Monitor) :
     def has_remaining_events(self) :
         return len(self.expected_words) != 0
 
+    def n_words_received(self) :
+        return len(self.observed_words)
 
     ##
     ## cocotb coroutines
@@ -63,13 +65,18 @@ class WordMonitor(Monitor) :
     def _monitor_recv(self) :
 
         while True :
+            self.fifo.write_enable <= 1
             yield RisingEdge(self.clock)
             yield ReadOnly()
+
+            yield RisingEdge(self.clock)
+            #cocotb.log.info("OUTPUT FIFO WRITE ENABLE: {}".format(self.fifo.write_enable.value))
 
             if self.fifo.empty.value == 0 :
                 transaction = self.fifo.read_data.value
                 yield NextTimeStep()
                 self.fifo.read_enable <= 1 # not sure why we manually toggle read_eanble
+                #cocotb.log.info("MONITOR RECEIVED TRANSACTION")
                 self._recv(transaction)
             else :
                 yield NextTimeStep()
@@ -81,8 +88,11 @@ class WordMonitor(Monitor) :
     ##
 
     def simple_callback(self, transaction) :
-        self.expected_words.pop()
-        if self.expect_empty and len(self.expected_words) == 0 :
-            self.on_empty.set()
+        if "input" in self.name.lower() :
+            self.expected_words.pop()
+            if self.expect_empty and len(self.expected_words) == 0 :
+                self.on_empty.set()
+        #else :
+        #    #cocotb.log.info("{} MONITOR CALLBACK".format(self.name))
         self.observed_words.append(transaction)
         
