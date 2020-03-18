@@ -38,17 +38,17 @@ module TopLevel #(
     //wire output_we;
 
     //wire input_we [TOTAL_CLUSTERS];
-    logic            cluster_wren [TOTAL_CLUSTERS];
-    logic [SIZE-1:0] cluster_data [TOTAL_CLUSTERS];
-    logic            cluster_rd_req [TOTAL_CLUSTERS];
-    logic            cluster_almost_full [TOTAL_CLUSTERS];
-    logic            cluster_empty [TOTAL_CLUSTERS];
+    wire            cluster_wren [TOTAL_CLUSTERS];
+    wire [SIZE-1:0] cluster_data [TOTAL_CLUSTERS];
+    wire            cluster_rd_req [TOTAL_CLUSTERS];
+    wire            cluster_almost_full [TOTAL_CLUSTERS];
+    wire            cluster_empty [TOTAL_CLUSTERS];
 
-    logic [DATA_WIDTH-1:0] board_cluster_data [TOTAL_BOARDS];
-    logic                  board_wren [TOTAL_BOARDS];
-    logic                  board_almost_full [TOTAL_BOARDS];
-    logic                  board_empty [TOTAL_BOARDS];
-    logic                  board_ren [TOTAL_BOARDS];
+    wire [DATA_WIDTH-1:0] board_cluster_data [TOTAL_BOARDS];
+    wire                  board_wren [TOTAL_BOARDS];
+    wire                  board_almost_full [TOTAL_BOARDS];
+    wire                  board_empty [TOTAL_BOARDS];
+    wire                  board_ren [TOTAL_BOARDS];
     //wire output_re [TOTAL_BOARDS];
    
   
@@ -98,8 +98,8 @@ module TopLevel #(
     )
     board2board_switching_inst (
         .b2b_clk(clock),
-        .b2b_rst_n(~reset),
-        .b2b_srst_n(~reset),
+        .b2b_rst_n(reset),
+        .b2b_srst_n(reset),
         
         .cluster_data(cluster_data), 
         .cluster_req(cluster_rd_req),

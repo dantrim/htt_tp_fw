@@ -37,7 +37,7 @@ VHDL_SOURCES =
 # Toplevel (RTL) and module (Python) for tests.
 TOPLEVEL=TopLevel
 TOPLEVEL_LANG=verilog
-MODULE=B2BInitialTest
+MODULE=B2BInitialTest2
 
 # We need to set the include path appropriately!
 EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip -L $(COMPLIB_DIR)/unisims_ver -L $(COMPLIB_DIR)/unisim 

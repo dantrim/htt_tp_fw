@@ -12,8 +12,10 @@ class WordMonitor(Monitor) :
     being read out of a SpyBuffer FIFO queue
     """
 
-    def __init__(self, fifo_block, clock, name, callbacks = [], event = None) :
+    def __init__(self, fifo_block, clock, name, dut, io_num, callbacks = [], event = None, obs_list = []) :
 
+        self._io_num = io_num
+        self._dut = dut
         self._fifo = fifo_block
         self._clock = clock
         self._name = name
@@ -21,7 +23,7 @@ class WordMonitor(Monitor) :
         self.expect_empty = False
         self.on_empty = Event()
 
-        self.observed_words = []
+        self.observed_words = obs_list
 
         super().__init__(callback = self.simple_callback)
         if callbacks :
@@ -65,22 +67,34 @@ class WordMonitor(Monitor) :
     def _monitor_recv(self) :
 
         while True :
-            self.fifo.write_enable <= 1
+            #self.fifo.write_enable <= 1
+            #self.fifo.read_enable <= 1
             yield RisingEdge(self.clock)
+            #val = self._dut.output_cluster_SpyBuffer[1].output_buffer.write_data.value
+            val = self._dut.board2board_switching_inst.output_board_event[3].value
+            cocotb.log.info("BLAH {}".format(hex(val)))
             yield ReadOnly()
 
-            yield RisingEdge(self.clock)
+            #yield RisingEdge(self.clock)
             #cocotb.log.info("OUTPUT FIFO WRITE ENABLE: {}".format(self.fifo.write_enable.value))
 
-            if self.fifo.empty.value == 0 :
+
+
+            #if self.fifo.empty.value == 0 :
+            if self._dut.board_empty[self._io_num] == 0 :
                 transaction = self.fifo.read_data.value
                 yield NextTimeStep()
-                self.fifo.read_enable <= 1 # not sure why we manually toggle read_eanble
-                #cocotb.log.info("MONITOR RECEIVED TRANSACTION")
+                #self.fifo.read_enable <= 1 # not sure why we manually toggle read_eanble
+                self._dut.board_ren[self._io_num] <= 1
+                cocotb.log.info("MONITOR RECEIVED TRANSACTION {}".format(hex(transaction)))
                 self._recv(transaction)
             else :
                 yield NextTimeStep()
-                self.fifo.read_enable <= 0
+                #self.fifo.read_enable <= 0
+                self._dut.board_ren[self._io_num] <= 0
+                #val = self._dut.board_cluster_data[self._io_num].value
+                #cocotb.log.info("MONITOR EMPTY")
+
 
 
     ##
@@ -93,6 +107,6 @@ class WordMonitor(Monitor) :
             if self.expect_empty and len(self.expected_words) == 0 :
                 self.on_empty.set()
         #else :
-        #    #cocotb.log.info("{} MONITOR CALLBACK".format(self.name))
         self.observed_words.append(transaction)
+        #self._fifo._log.info("{} MONITOR CALLBACK {}".format(self.name, hex(transaction)))# {}".format(self.name), self.n_words_received())
         
