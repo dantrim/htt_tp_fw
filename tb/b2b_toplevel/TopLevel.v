@@ -51,6 +51,25 @@ module TopLevel #(
     wire                  board_ren [TOTAL_BOARDS];
     //wire output_re [TOTAL_BOARDS];
    
+    reg [SIZE-1:0] cluster_data_reg [TOTAL_CLUSTERS];
+
+    always @ (posedge clock)
+    begin
+        if (~reset)
+            begin
+                for(int i = 0; i < TOTAL_CLUSTERS; i++)
+                begin
+                    cluster_data_reg[i] <= 0;
+                end
+            end
+        else
+            begin
+                for(int i = 0; i < TOTAL_CLUSTERS; i++)
+                begin
+                    cluster_data_reg[i] <= cluster_data[i];
+                end
+            end
+    end
   
    
     //
@@ -101,7 +120,7 @@ module TopLevel #(
         .b2b_rst_n(reset),
         .b2b_srst_n(reset),
         
-        .cluster_data(cluster_data), 
+        .cluster_data(cluster_data_reg), 
         .cluster_req(cluster_rd_req),
         .cluster_almost_full(cluster_almost_full),
         .cluster_empty(cluster_empty),
@@ -110,6 +129,7 @@ module TopLevel #(
         .output_board_wren(board_wren),
         .output_board_almost_full(board_almost_full)
     );
+
 
     //
     // Output buffers

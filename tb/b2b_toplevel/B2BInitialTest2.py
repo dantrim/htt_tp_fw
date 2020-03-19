@@ -16,7 +16,7 @@ from b2b_test.blocks import b2b_utils
 ##
 ## CONSTANTS
 ##
-CLOCK_SPEED = 200 # ns
+CLOCK_SPEED = 20 # ns
 
 def initialize_wires(dut) :
 
@@ -55,11 +55,13 @@ def initialize_wires(dut) :
         
 @cocotb.coroutine
 def reset(dut) :
+
     dut.reset <= 1
-    yield ClockCycles(dut.clock, 1)
+    yield ClockCycles(dut.clock, 100)
     dut.reset <= 0
-    yield ClockCycles(dut.clock, 1)
+    yield ClockCycles(dut.clock, 100)
     dut.reset <= 1
+#    yield ClockCycles(dut.clock, 20)
 
 @cocotb.test()
 def initial_b2b_test(dut) :
@@ -71,6 +73,8 @@ def initial_b2b_test(dut) :
     cocotb.fork(sim_clock.start())
 
     initialize_wires(dut)
+    yield reset(dut)
+    yield reset(dut)
     yield reset(dut)
     dut._log.info("Resetting DUT")
 
@@ -85,7 +89,7 @@ def initial_b2b_test(dut) :
     dut._log.info("SIGNAL SENT")
 
     dut._log.info("Going to wait for events...")
-    yield wrapper.wait_for_events(timeout = 10000, units = "ns")
+    yield wrapper.wait_for_events(timeout = 100, units = "ns")
     dut._log.info("TIMEOUT")
 
     sep = 55 * "="

@@ -2,7 +2,7 @@
 SIM ?= questa
 #COMPLIB_DIR = /home/psundara/xilinx/compiled_libraries/v2019.1
 COMPLIB_DIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1
-export TESTVECDIR=/home/dantrim/work/tdaq-htt-firmware/testvecs/20191028
+export TESTVECDIR=/home/dantrim/work/tdaq-htt-firmware/testvecs/20190124
 
 # Location of sources (and spy buffer sources).
 SRCDIR = $(PWD)/../../src
@@ -29,8 +29,6 @@ VERILOG_SOURCES = \
     $(B2BDIR)/rtl/cluster_sync_engine.sv \
     $(B2BDIR)/rtl/board2board_switching.sv
 
-
-
 # Any VHDL sources.
 VHDL_SOURCES =
 
@@ -40,8 +38,9 @@ TOPLEVEL_LANG=verilog
 MODULE=B2BInitialTest2
 
 # We need to set the include path appropriately!
-EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip -L $(COMPLIB_DIR)/unisims_ver -L $(COMPLIB_DIR)/unisim 
-VSIM_ARGS  += glbl
+EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip -L $(COMPLIB_DIR)/unisims_ver -L $(COMPLIB_DIR)/unisim
+VSIM_ARGS  += glbl -debugDB -voptargs="+acc"
+HTT_TEST=1
 
 # Boilerplate includes.
 include $(shell cocotb-config --makefiles)/Makefile.inc

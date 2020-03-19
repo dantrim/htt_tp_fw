@@ -72,37 +72,37 @@ class WordMonitor(Monitor) :
             yield RisingEdge(self.clock)
             yield ReadOnly()
             #val = self._dut.output_cluster_SpyBuffer[1].output_buffer.write_data.value
-            sep = "BLAH " + 55 * "="
-            sep2 = "BLAH " + 55 * "-"
-            cocotb.log.info(sep)
-            din = self._dut.input_cluster_SpyBuffer[0].input_buffer.write_data.value
-            dout = self._dut.input_cluster_SpyBuffer[0].input_buffer.read_data.value
-            ren = self._dut.input_cluster_SpyBuffer[0].input_buffer.read_enable.value
-            clus_req = self._dut.board2board_switching_inst.cluster_req[0].value
-            clus_din = self._dut.board2board_switching_inst.cluster_data[0].value
-            cocotb.log.info("BLAH {} {} {} {} {}".format(
-                hex(din)
-                ,hex(dout)
-                ,hex(ren)
-                ,hex(clus_req)
-                ,hex(clus_din)
-            ))
+            #LOGsep = "BLAH " + 55 * "="
+            #LOGsep2 = "BLAH " + 55 * "-"
+            #LOGcocotb.log.info(sep)
+            #LOGdin = self._dut.input_cluster_SpyBuffer[0].input_buffer.write_data.value
+            #LOGdout = self._dut.input_cluster_SpyBuffer[0].input_buffer.read_data.value
+            #LOGren = self._dut.input_cluster_SpyBuffer[0].input_buffer.read_enable.value
+            #LOGclus_req = self._dut.board2board_switching_inst.cluster_req[0].value
+            #LOGclus_din = self._dut.board2board_switching_inst.cluster_data[0].value
+            #LOGcocotb.log.info("BLAH {} {} {} {} {}".format(
+            #LOG    hex(din)
+            #LOG    ,hex(dout)
+            #LOG    ,hex(ren)
+            #LOG    ,hex(clus_req)
+            #LOG    ,hex(clus_din)
+            #LOG))
 
-            cocotb.log.info(sep2)
+            #LOGcocotb.log.info(sep2)
 
-            din2 = self._dut.board2board_switching_inst.output_board_event[1].value
-            wren2 = self._dut.board2board_switching_inst.output_board_wren[1].value
-            fifo_write_data = self._dut.output_cluster_SpyBuffer[1].output_buffer.write_data.value
-            fifo_write_en = self._dut.output_cluster_SpyBuffer[1].output_buffer.write_enable.value
-            fifo_empty = self._dut.output_cluster_SpyBuffer[1].output_buffer.empty.value
-            cocotb.log.info("BLAH {} {} {} {} {}".format(
-                hex(din2)
-                ,hex(wren2)
-                ,hex(fifo_write_data)
-                ,hex(fifo_write_en)
-                ,hex(fifo_empty)
-            ))
-            cocotb.log.info(sep)
+            #LOGdin2 = self._dut.board2board_switching_inst.output_board_event[1].value
+            #LOGwren2 = self._dut.board2board_switching_inst.output_board_wren[1].value
+            #LOGfifo_write_data = self._dut.output_cluster_SpyBuffer[1].output_buffer.write_data.value
+            #LOGfifo_write_en = self._dut.output_cluster_SpyBuffer[1].output_buffer.write_enable.value
+            #LOGfifo_empty = self._dut.output_cluster_SpyBuffer[1].output_buffer.empty.value
+            #LOGcocotb.log.info("BLAH {} {} {} {} {}".format(
+            #LOG    hex(din2)
+            #LOG    ,hex(wren2)
+            #LOG    ,hex(fifo_write_data)
+            #LOG    ,hex(fifo_write_en)
+            #LOG    ,hex(fifo_empty)
+            #LOG))
+            #LOGcocotb.log.info(sep)
 
 
             #yield RisingEdge(self.clock)
