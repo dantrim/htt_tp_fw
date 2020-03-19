@@ -20,7 +20,7 @@ module TopLevel #(
     input wire clock,
     input wire reset,
     input wire [SIZE-1:0] input_data [TOTAL_CLUSTERS], //ToUpdate
-    output reg [SIZE-1:0] output_data [TOTAL_BOARDS] //ToUpdate
+    output wire [SIZE-1:0] output_data [TOTAL_BOARDS] //ToUpdate
 );
 
     // Random wires for the spy buffers.

@@ -77,7 +77,6 @@ class B2BWrapper :
         ##
 
         self._log.info("Setting up B2B output monitors")
-
         for fifo in B2BIO.B2BOutputs :
             output_words = []
             output_num = int(fifo.value)

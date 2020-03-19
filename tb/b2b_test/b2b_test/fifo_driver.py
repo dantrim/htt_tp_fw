@@ -76,24 +76,24 @@ class BasicFifoDriver(Driver) :
 #            self.fifo.write_enable <= 1
             #self.fifo.read_enable <= 1
             yield RisingEdge(self.clock)
-            self._dut.cluster_wren[self._io_num] <= 0
-            #self.fifo.write_enable <= 0 # dantrim: not sure why this is done
+            #self._dut.cluster_wren[self._io_num] <= 0
+            self.fifo.write_enable <= 0 # dantrim: not sure why this is done
 
         # wait until the FIFO has room for the next transaction
-        #while self.fifo.almost_full != 0 :
-        while self._dut.cluster_almost_full[self._io_num] != 0 :
+        while self.fifo.almost_full != 0 :
+        #while self._dut.cluster_almost_full[self._io_num] != 0 :
         #    self.fifo._log.info("IN DRIVER SEND ALMOST FULL LOOP: {}".format(self.fifo.read_enable.value))
             yield RisingEdge(self.clock)
 
         #self._dut.input_data[self._io_num] <= int(transaction)
-        self._dut.cluster_data[self._io_num] <= int(transaction)
-        #self.fifo.write_data <= int(transaction)
+        #self._dut.cluster_data[self._io_num] <= int(transaction)
+        self.fifo.write_data <= int(transaction)
         #self.fifo._log.info("{} DRIVER SENDING {} ({})".format(self.name, hex(transaction), self.fifo.read_enable.value))
-        #self.fifo.write_enable <= 1
-        self._dut.cluster_wren[self._io_num] <= 1
+        self.fifo.write_enable <= 1
+        #self._dut.cluster_wren[self._io_num] <= 1
         yield RisingEdge(self.clock)
 
-        #self.fifo.write_enable <= 0 # dantrim: not sure why we manually toggle the FIFO write_enable
-        self._dut.cluster_wren[self._io_num] <= 0
+        self.fifo.write_enable <= 0 # dantrim: not sure why we manually toggle the FIFO write_enable
+        #self._dut.cluster_wren[self._io_num] <= 0
         
 
