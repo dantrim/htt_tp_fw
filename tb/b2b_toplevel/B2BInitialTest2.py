@@ -16,7 +16,8 @@ from b2b_test.blocks import b2b_utils
 ##
 ## CONSTANTS
 ##
-CLOCK_SPEED = 20 # ns
+#CLOCK_SPEED = 5 # ns
+CLOCK_SPEED = 200
 
 def initialize_wires(dut) :
 
@@ -57,9 +58,9 @@ def initialize_wires(dut) :
 def reset(dut) :
 
     dut.reset <= 1
-    yield ClockCycles(dut.clock, 100)
+    yield ClockCycles(dut.clock, 20)
     dut.reset <= 0
-    yield ClockCycles(dut.clock, 100)
+    yield ClockCycles(dut.clock, 20)
     dut.reset <= 1
 #    yield ClockCycles(dut.clock, 20)
 
@@ -69,27 +70,27 @@ def initial_b2b_test(dut) :
     # assume TP we are on
     this_tp = b2b_utils.B2BIO.B2BOutputs.AMTP_0 # assume ATMP0 now, but can make it ~configurable in makefile?
 
-    sim_clock = Clock(dut.clock, CLOCK_SPEED)
+    sim_clock = Clock(dut.clock, CLOCK_SPEED, "ns")
     cocotb.fork(sim_clock.start())
 
     initialize_wires(dut)
-    yield reset(dut)
-    yield reset(dut)
-    yield reset(dut)
     dut._log.info("Resetting DUT")
+    yield reset(dut)
 
     testvecdir = b2b_utils.testvec_dir_from_env()
     dut._log.info("Using testvec directory: {}".format(testvecdir))
 
     wrapper = B2BWrapper(dut, this_tp)
-    signal, n_words_sent = wrapper.send_events_from_testvecs(testvecdir, num_events_to_send = 1)
+    signal, n_words_sent = wrapper.send_events_from_testvecs(testvecdir, num_events_to_send = 2)
     dut._log.info("Going to wait for signal")
-    yield Combine(*signal)
+    timer = Timer(1000, "ns")
+    yield Combine(signal[-1].wait(), timer)
+    #yield Combine(*signal)
     #yield signal.wait()
     dut._log.info("SIGNAL SENT")
 
     dut._log.info("Going to wait for events...")
-    yield wrapper.wait_for_events(timeout = 100, units = "ns")
+    yield wrapper.wait_for_events(timeout = 40000, units = "ns")
     dut._log.info("TIMEOUT")
 
     sep = 55 * "="

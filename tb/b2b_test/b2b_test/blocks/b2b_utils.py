@@ -5,7 +5,6 @@ from glob import glob
 
 import cocotb
 
-
 class B2BIO :
 
     class B2BInputs(enum.Enum) :
@@ -91,3 +90,35 @@ def get_testvector_files(base_tp, testvec_dir, input_or_output) :
                 ordered_files.append(tf)
                 break
     return ordered_files
+
+#def module_dest_outputs(module) :
+#
+#    """
+#    Parses a module's routing flags and determines to which B2B outputs
+#    this module should be routed.
+#    """
+#
+#    if type(module) != type(Module) :
+#        raise Exception("ERROR Provided input must be a module")
+#
+#    dest_list = set()
+#    routing_flags = module.header_routing
+#
+#    for output in B2BIO.B2BOutputs : 
+#        is_amtp = "amtp" in output.name.lower()
+#        idx = int(output.value)
+#
+#        routing_index = {
+#            True : 4
+#            ,False : 2
+#        } [is_amtp]
+#
+#        mask = {
+#            True : 0xf
+#            ,False : 0x3
+#        } [is_amtp]
+#
+#        test = (mask << idx * routing_index) & mask
+#        print("dest idx = {}, test = {}".format(idx, test))
+#        if (routing_flags << idx * routing_index) & mask != 0 :
+#            dest_list.add(idx)

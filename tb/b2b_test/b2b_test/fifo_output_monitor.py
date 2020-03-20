@@ -116,7 +116,7 @@ class WordMonitor(Monitor) :
                 yield NextTimeStep()
                 self.fifo.read_enable <= 1 # not sure why we manually toggle read_eanble
                 #self._dut.board_ren[self._io_num] <= 1
-                cocotb.log.info("MONITOR RECEIVED TRANSACTION {}".format(hex(transaction)))
+                #cocotb.log.info("MONITOR RECEIVED TRANSACTION {}".format(hex(transaction)))
                 self._recv(transaction)
             else :
                 yield NextTimeStep()

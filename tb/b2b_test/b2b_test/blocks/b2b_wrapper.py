@@ -115,7 +115,7 @@ class B2BWrapper :
                     hook, n_words = self.send_event(event, driver)#input_num)
                     total_words_sent += n_words
                 else :
-                    hook = Timer(1000, "ns")
+                    #hook = Timer(1000, "ns")
                     hooks.append(hook)#.wait())
 
         self._n_words_input = total_words_sent

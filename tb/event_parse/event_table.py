@@ -24,6 +24,7 @@ class EventTable :
         self._l0ids = []
         self._events = []
         self._l0id_idx_map = {}
+        self.mod_routing = set()
 
     def clear(self) :
         self._l0ids = []
@@ -114,6 +115,9 @@ class EventTable :
                     current_event.modules.append(module)
 
                     module.header1.value = word
+
+                    self.mod_routing.add(module.header_routing)
+                    module_routing_dest = module.routing_dest()
 
                     first = True
                     expectfooter = False

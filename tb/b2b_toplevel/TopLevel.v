@@ -12,6 +12,7 @@ module TopLevel #(
     // inclusive of metadata flag (bit 64)
     parameter SIZE = 65,
     parameter DATA_WIDTH   = 65,
+    parameter FIFO_DEPTH = 4,
     parameter TOTAL_BOARDS = 14,
     parameter TOTAL_CLUSTERS=4
 
@@ -19,8 +20,8 @@ module TopLevel #(
     // main TP clock, nominally 200 MHz
     input wire clock,
     input wire reset,
-    input wire [SIZE-1:0] input_data [TOTAL_CLUSTERS], //ToUpdate
-    output wire [SIZE-1:0] output_data [TOTAL_BOARDS] //ToUpdate
+    input wire [SIZE-1:0] input_data [TOTAL_CLUSTERS],
+    output wire [SIZE-1:0] output_data [TOTAL_BOARDS]
 );
 
     // Random wires for the spy buffers.
@@ -28,16 +29,6 @@ module TopLevel #(
     // the driver/monitor reaches into the spy buffer's toplevel
     // rather than look at these. But maybe that was a bad idea.
 
-    // These are outputs.
-    //wire input_afull;
-    //wire input_empty;
-    //wire output_afull;
-
-    // These are inputs, and should get zero'd.
-    //wire input_re;
-    //wire output_we;
-
-    //wire input_we [TOTAL_CLUSTERS];
     wire            cluster_wren [TOTAL_CLUSTERS];
     wire [SIZE-1:0] cluster_data [TOTAL_CLUSTERS];
     wire            cluster_rd_req [TOTAL_CLUSTERS];
@@ -49,10 +40,11 @@ module TopLevel #(
     wire                  board_almost_full [TOTAL_BOARDS];
     wire                  board_empty [TOTAL_BOARDS];
     wire                  board_ren [TOTAL_BOARDS];
-    //wire output_re [TOTAL_BOARDS];
    
+    //
+    // kludge to register the aFifo read_data line
+    //
     reg [SIZE-1:0] cluster_data_reg [TOTAL_CLUSTERS];
-
     always @ (posedge clock)
     begin
         if (~reset)
@@ -79,18 +71,19 @@ module TopLevel #(
         for(genvar z=0;z<TOTAL_CLUSTERS;z++)
             begin:input_cluster_SpyBuffer
                 SpyBuffer #(
-                    .DATA_WIDTH(SIZE-1)
+                    .DATA_WIDTH(SIZE-1),
+                    .FC_FIFO_WIDTH(FIFO_DEPTH)
                     ) input_buffer (
                         .rclock(clock),
                         .wclock(clock),
                         .rreset(reset),
                         .wreset(reset),
-                        .write_data(input_data[z]),//ToUpdate
-                        .write_enable(cluster_wren[z]),//ToUpdate
+                        .write_data(input_data[z]),
+                        .write_enable(cluster_wren[z]),
                         .read_data(cluster_data[z]),
                         .read_enable(cluster_rd_req[z]),
                         .almost_full(cluster_almost_full[z]),
-                        .empty(cluster_empty[z]), //ToUpdate
+                        .empty(cluster_empty[z]),
                         // The following should not be needed until one actually wants
                         // to use the spy-buffer functionality, whereas for now we just
                         // want to use the fifo functionality.
@@ -104,7 +97,7 @@ module TopLevel #(
                         .spy_data(),
                         .spy_meta_read_data()
                     );
-	        end // block: input_cluster_SpyBuffer
+	        end
     endgenerate
 
     //
@@ -138,7 +131,8 @@ module TopLevel #(
         for(genvar z=0;z<TOTAL_BOARDS;z++)
             begin:output_cluster_SpyBuffer
                 SpyBuffer #(
-                     .DATA_WIDTH(SIZE-1)
+                     .DATA_WIDTH(SIZE-1),
+                     .FC_FIFO_WIDTH(FIFO_DEPTH)
                     ) output_buffer (
                         .rclock(clock),
                         .wclock(clock),
@@ -146,9 +140,9 @@ module TopLevel #(
                         .wreset(reset),
                         .write_data(board_cluster_data[z]),
                         .write_enable(board_wren[z]),
-                        .read_data(output_data[z]), //ToUpdate
-                        .read_enable(board_ren[z]), //ToUpdate
-                        .almost_full(board_almost_full[z]), //ToUpdate
+                        .read_data(output_data[z]),
+                        .read_enable(board_ren[z]),
+                        .almost_full(board_almost_full[z]),
                         .empty(board_empty[z]),
                         // The following should not be needed until one actually wants
                         // to use the spy-buffer functionality, whereas for now we just
@@ -163,7 +157,7 @@ module TopLevel #(
                         .spy_data(),
                         .spy_meta_read_data()
                     );
-            end // block: board_fifos
+            end
     endgenerate
 
 endmodule

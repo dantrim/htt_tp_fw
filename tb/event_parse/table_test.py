@@ -19,5 +19,10 @@ def main() :
     et = EventTable()
     et.load_from_file(args.input_file, verbose = args.verbose)
 
+    #print("XXX " + 55 * '-')
+    #print("XXX module routing flags for {}:".format(args.input_file.split("/")[-1]))
+    #for i, m in enumerate(et.mod_routing) :
+    #    print("XXX {} : {} ({})".format(i, hex(m), m))
+
 if __name__ == "__main__" :
     main()

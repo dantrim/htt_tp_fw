@@ -8,6 +8,8 @@ from DataFormat import DataFormat
 EVT_HEADER_WORDS = DataFormat.headerwords
 EVT_FOOTER_WORDS = DataFormat.footerwords
 
+from b2b_test.blocks import b2b_utils
+
 class Event :
 
     """
@@ -149,5 +151,47 @@ class Module :
         if self.footer is None : return 0x0
         return self.footer.getField("ERROR")
 
+    ##
+    ## methods
+    ##
+
     def n_words(self) :
         return len(self.words)
+
+    def routing_dest(self) :
+    
+        """
+        Parses a module's routing flags and determines to which B2B outputs
+        this module should be routed.
+        """
+    
+        dest_list = set()
+        routing_flags = self.header_routing
+    
+        for output in b2b_utils.B2BIO.B2BOutputs :
+            is_amtp = "amtp" in output.name.lower()
+            tp_num = int(output.name.split("_")[-1])
+            idx = int(output.value)
+    
+            routing_index = {
+                True : 4
+                ,False : 2
+            } [is_amtp]
+
+            tp_offset = {
+                True : 0
+                ,False : 48
+            } [is_amtp]
+    
+            mask = {
+                True : 0xf
+                ,False : 0x3
+            } [is_amtp]
+
+            offset = tp_offset + (tp_num * routing_index)
+            mask = (mask << offset)
+            routed = (routing_flags & mask) != 0
+            if routed :
+                dest_list.add(idx)
+
+        return dest_list
