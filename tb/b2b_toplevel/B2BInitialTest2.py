@@ -81,25 +81,27 @@ def initial_b2b_test(dut) :
     dut._log.info("Using testvec directory: {}".format(testvecdir))
 
     wrapper = B2BWrapper(dut, this_tp)
-    signal, n_words_sent = wrapper.send_events_from_testvecs(testvecdir, num_events_to_send = 2)
-    dut._log.info("Going to wait for signal")
-    timer = Timer(1000, "ns")
-    yield Combine(signal[-1].wait(), timer)
-    #yield Combine(*signal)
-    #yield signal.wait()
-    dut._log.info("SIGNAL SENT")
+    output_table = wrapper.prepare_output_table(testvecdir)
+#    signal, n_words_sent = wrapper.send_events_from_testvecs(testvecdir, num_events_to_send = 2)
+#    dut._log.info("Going to wait for signal")
+#    timer = Timer(1000, "ns")
+#    yield Combine(signal[-1].wait(), timer)
+#    #yield Combine(*signal)
+#    #yield signal.wait()
+#    dut._log.info("SIGNAL SENT")
+#
+#    dut._log.info("Going to wait for events...")
+#    yield wrapper.wait_for_events(timeout = 40000, units = "ns")
+#    dut._log.info("TIMEOUT")
+#
+#    sep = 55 * "="
+#    dut._log.info(sep)
+#    dut._log.info("SENT: {} words".format(wrapper._n_words_input))
+#    dut._log.info("RECV: {} words".format(wrapper._n_words_output))
+#    dut._log.info(sep)
 
-    dut._log.info("Going to wait for events...")
-    yield wrapper.wait_for_events(timeout = 40000, units = "ns")
-    dut._log.info("TIMEOUT")
 
-    sep = 55 * "="
-    dut._log.info(sep)
-    dut._log.info("SENT: {} words".format(wrapper._n_words_input))
-    dut._log.info("RECV: {} words".format(wrapper._n_words_output))
-    dut._log.info(sep)
-
-
+#------------
 #    input_driver = B2BInputDriver(dut, this_tp)
 #    signal_events_sent, n_words_sent = input_driver.send_events_from_testvecs(testvecdir, num_events_to_send = 1)
 #    output_monitor = B2BOutputMonitor(dut, this_tp, 500)#n_words_sent)

@@ -68,6 +68,7 @@ function main {
         fi
         $pip_cmd install -e tptest
         $pip_cmd install -e b2b_test
+        $pip_cmd install -e event_parse
         $pip_cmd install -e ../../system-simulation/
     fi
 

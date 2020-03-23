@@ -9,6 +9,8 @@ from .b2b_utils import B2BIO, get_testvector_files
 from b2b_test.fifo_driver import BasicFifoDriver
 from b2b_test.fifo_output_monitor import WordMonitor
 
+from event_parse import event_table
+
 class B2BWrapper :
 
     def __init__(self, dut, base_tp) :
@@ -52,6 +54,18 @@ class B2BWrapper :
     @property
     def base_tp(self) :
         return self._base_tp
+
+    def prepare_output_table(self, testvecdir) :
+
+        self._log.info("Preparing output event table")
+
+        output_files = get_testvector_files(self.base_tp, testvecdir, "output")
+        event_tables = []
+        for i, ofile in enumerate(output_files) :
+            etable = event_table.EventTable()
+            etable.load_from_file(filename = ofile)
+            event_tables.append(etable)
+        return event_tables
 
     def send_event(self, event, driver) : #input_num) :
 

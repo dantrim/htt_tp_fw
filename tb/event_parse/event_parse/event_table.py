@@ -21,13 +21,13 @@ class EventTable :
 
     def __init__(self) :
 
-        self._l0ids = []
+        self._l0ids = set()
         self._events = []
         self._l0id_idx_map = {}
         self.mod_routing = set()
 
     def clear(self) :
-        self._l0ids = []
+        self._l0ids = set()
         self._events = []
         self._l0id_idx_map = {}
 
@@ -46,7 +46,7 @@ class EventTable :
         else :
             this_event_idx = len(self._events)
             self._events.append(event)
-            self._l0ids.append(event.header_l0id)
+            self._l0ids.add(event.header_l0id)
             self._l0id_idx_map[event.header_l0id] = this_event_idx
 
     def sort_events(self) :
