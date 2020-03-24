@@ -9,7 +9,8 @@ else :
 from DataFormat.DataFormatIO import SubwordUnpacker
 from DataFormat import DataFormat
 
-from data_format import Event, Module
+from .data_format import Event, Module
+import cocotb
 
 
 class EventTable :
@@ -49,6 +50,13 @@ class EventTable :
             self._l0ids.add(event.header_l0id)
             self._l0id_idx_map[event.header_l0id] = this_event_idx
 
+    def n_words(self) :
+
+        n = 0
+        for event in self._events :
+            n += event.n_words()
+        return n
+
     def sort_events(self) :
         self._events.sort(key = lambda event : event.header_l0id, reverse = False)
 
@@ -61,7 +69,10 @@ class EventTable :
             return None
 
     # methods
-    def load_from_file(self, filename, raw = None, verbose = False) :
+    def load_from_file(self, filename, raw = None, verbose = False, num_events_to_load = -1) :
+
+        num_events_processed = 0
+
 
         with open(filename, "rb") as input_file :
 
@@ -89,9 +100,20 @@ class EventTable :
                 ##
 
                 if flag == DataFormat.EVT_HDR1_FLAG.FLAG :
+
+                    cocotb.log.info("XXX {} {}".format(num_events_to_load, len(self.l0ids)))
+                    if num_events_to_load > 0 :
+                        #if len(self.l0ids) >= num_events_to_load :
+                        if num_events_processed >= num_events_to_load :
+                            cocotb.log.info("LOADED SET NUMBER OF EVENTS ({})".format(len(self.l0ids)))
+                            break
+                        #if num_evens_processed >= num_events_to_load :
+                        #    break
+
                     if verbose :
                         print("{} {} {}".format(20 * "-", "Event Header", 20 * "-"))
                     current_event = Event()
+                    num_events_processed += 1
 
                     # iterate over the header words (each a 64-bit data word)
                     for header_word in current_event.headerwords :
@@ -151,7 +173,7 @@ class EventTable :
                                 module.header2.value = val
                             while not empty :
                                 val, empty = unpacker.get(DataFormat.PIXEL_RAW_BITS)
-                                module.words.append(val)
+                                module.data_words.append(val)
 
                         ##
                         ## RAW DATA -- STRIPS
@@ -164,7 +186,7 @@ class EventTable :
                                 module.header2.value = val
                             while not empty :
                                 val, empty = unpacker.get(DataFormat.HCC_CLUSTER.nbits)
-                                module.words.append(val)
+                                module.data_words.append(val)
 
                         ##
                         ## CLUSTER DATA -- PIXEL
@@ -179,7 +201,7 @@ class EventTable :
                                 if not expectfooter :
                                     val, empty = unpacker.get(DataFormat.PIXEL_CLUSTER.nbits)
                                     cluster_val = BitFieldWordValue(DataFormat.PIXEL_CLUSTER, val)
-                                    module.words.append(cluster_val)
+                                    module.data_words.append(cluster_val)
                                     expectfooter = cluster_val.getField("LAST") == 1
                                 else :
                                     val, empty = unpacker.get(DataFormat.PIXEL_CL_FTR.nbits)
@@ -199,7 +221,7 @@ class EventTable :
                                 if not expectfooter :
                                     val, empty = unpacker.get(DataFormat.STRIP_CLUSTER.nbits)
                                     cluster_val = BitFieldWordValue(DataFormat.STRIP_CLUSTER, val)
-                                    module.words.append(cluster_val)
+                                    module.data_words.append(cluster_val)
                                     expectfooter = cluster_val.getField("LAST") == 1
                                 else :
                                     val, empty = unpacker.get(DataFormat.STRIP_CL_FTR.nbits)
@@ -231,8 +253,8 @@ class EventTable :
         ## finished iterating over the file
         ##
         self.sort_events()
-        print(65 * "=")
-        print("Loaded {} events".format(len(self.events)))
-        print("L0IDs:")
-        for iev, ev in enumerate(self.events) :
-            print(" -> [{}/{}] {}".format(iev+1, len(self.events), hex(ev.header_l0id)))
+        #print(65 * "=")
+        #print("Loaded {} events".format(len(self.events)))
+        #print("L0IDs:")
+        #for iev, ev in enumerate(self.events) :
+        #    print(" -> [{}/{}] {}".format(iev+1, len(self.events), hex(ev.header_l0id)))

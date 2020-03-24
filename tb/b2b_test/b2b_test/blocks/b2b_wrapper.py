@@ -55,16 +55,19 @@ class B2BWrapper :
     def base_tp(self) :
         return self._base_tp
 
-    def prepare_output_table(self, testvecdir) :
+    def prepare_output_table(self, testvecdir, num_events_to_load = -1) :
 
         self._log.info("Preparing output event table")
 
         output_files = get_testvector_files(self.base_tp, testvecdir, "output")
         event_tables = []
-        for i, ofile in enumerate(output_files) :
+        for i, ofile in enumerate(output_files[::-1]) :
+            self._log.info("XXX PREPARE OUTPUT TABLE {} : {}".format(i, str(ofile).split("/")[-1]))
             etable = event_table.EventTable()
-            etable.load_from_file(filename = ofile)
+            etable.load_from_file(filename = ofile, num_events_to_load = num_events_to_load)
             event_tables.append(etable)
+
+        self._log.info("Loaded {} event tables for B2B outputs".format(len(event_tables)))
         return event_tables
 
     def send_event(self, event, driver) : #input_num) :
@@ -82,7 +85,7 @@ class B2BWrapper :
         cocotb.log.info("{} sent {} words".format(self.name, n_sent))
         return hook, n_sent
 
-    def send_events_from_testvecs(self, testvecdir = "", num_events_to_send = -1) :
+    def send_events_from_testvecs(self, testvecdir = "", num_events_to_send = -1, output_tables = []) :
 
         self._log.info("Sending events from testvectors...")
 
@@ -95,7 +98,21 @@ class B2BWrapper :
             output_words = []
             output_num = int(fifo.value)
             self._log.info(" -> Preparing monitor {} ({})".format(output_num, fifo.name))
-            monitor = WordMonitor(self.output_fifos[output_num], self.clock, "OutputFIFOMonitor_{}".format(output_num), obs_list = output_words, dut = self._dut, io_num = output_num)
+
+            expected_output_table = output_tables[output_num]
+
+            n_words_expected = expected_output_table.n_words()
+            # we do not expect any output words for the base_tp
+            #if int(fifo.value) == 13 : #int(self.base_tp.value) :
+            #    n_words_expected = 0
+
+            monitor = WordMonitor(self.output_fifos[output_num], self.clock,
+                    "OutputFIFOMonitor_{}".format(fifo.name), obs_list = output_words,
+                    #"OutputFIFOMonitor_{}".format(output_num), obs_list = output_words,
+                    dut = self._dut, io_num = output_num,
+                    n_words_expected = n_words_expected#expected_output_table.n_words()
+            )
+
             self._monitors.append(monitor)
             self._output_lists.append(output_words)
 
@@ -130,7 +147,7 @@ class B2BWrapper :
                     total_words_sent += n_words
                 else :
                     #hook = Timer(1000, "ns")
-                    hooks.append(hook)#.wait())
+                    hooks.append(hook.wait())#.wait())
 
         self._n_words_input = total_words_sent
 
@@ -142,10 +159,33 @@ class B2BWrapper :
         done = True
         hooks = []
         for i, mon in enumerate(self._monitors) :
-            #cocotb.log.info(" -> OUTPUT FIFO {} RECVD {} WORDS".format(mon.name, len(self._output_lists[i])))#mon.n_words_received()))
-            self._n_words_output += mon.n_words_received()
-        #cocotb.log.info(" ==> OUTPUT N WORDS RECVD: {}".format(self._n_words_output))
-        all_recvd = self._n_words_output == self._n_words_input
+            if mon.has_remaining_events() :
+                mon.on_empty.clear() # re-arm the trigger
+                hooks.append(mon.on_empty.wait())
+                mon.expect_empty = True
+                done = False
+        if not done :
+            tr = Combine(*hooks)
+            if timeout == -1 :
+                yield tr
+            else :
+                yield with_timeout(tr, timeout, units)
 
-        if not all_recvd :
-            yield Timer(timeout, units)
+    def n_words_output(self) :
+
+        for i, mon in enumerate(self._monitors) :
+            cocotb.log.info(" -> OUTPUTFIFO {} RECVD {} WORDS".format(mon.name, mon.n_words_received()))
+            self._n_words_output += mon.n_words_received()
+        return self._n_words_output
+        
+
+        #done = True
+        #hooks = []
+        #for i, mon in enumerate(self._monitors) :
+        #    #cocotb.log.info(" -> OUTPUT FIFO {} RECVD {} WORDS".format(mon.name, len(self._output_lists[i])))#mon.n_words_received()))
+        #    self._n_words_output += mon.n_words_received()
+        ##cocotb.log.info(" ==> OUTPUT N WORDS RECVD: {}".format(self._n_words_output))
+        #all_recvd = self._n_words_output == self._n_words_input
+
+        #if not all_recvd :
+        #    yield Timer(timeout, units)

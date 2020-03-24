@@ -12,7 +12,7 @@ module TopLevel #(
     // inclusive of metadata flag (bit 64)
     parameter SIZE = 65,
     parameter DATA_WIDTH   = 65,
-    parameter FIFO_DEPTH = 4,
+    parameter FIFO_DEPTH = 6,
     parameter TOTAL_BOARDS = 14,
     parameter TOTAL_CLUSTERS=4
 

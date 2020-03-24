@@ -36,6 +36,15 @@ class Event :
         # meta
         self._l0id = 0x0
 
+    def n_words(self) :
+
+        n = 0
+        n += len(self.headerwords)
+        n += len(self.footerwords)
+        for module in self.modules :
+            n += module.n_words()
+        return n
+
     @property
     def header_l0id(self) :
         return self.headerwords[0].getField("L0ID")
@@ -103,7 +112,7 @@ class Module :
 
         # module data
         # somewhere these should be absorbed into separate classes (e.g. Cluster or Raw?)
-        self.words = [] # 16-bit (32-bit) wide words for strip (pixel)
+        self.data_words = [] # 16-bit (32-bit) wide words for strip (pixel)
 
         # footer information
         self.footer = None # footer only appears in clustered data, not raw
@@ -155,8 +164,16 @@ class Module :
     ## methods
     ##
 
+    def n_data_words(self) :
+        return len(self.data_words)
+
     def n_words(self) :
-        return len(self.words)
+        
+        n = len(self.data_words)
+        n += 2 # header is always 2 words 
+        if self.footer :
+            n += 1
+        return n
 
     def routing_dest(self) :
     
