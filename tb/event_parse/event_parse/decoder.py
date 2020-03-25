@@ -56,7 +56,7 @@ def next_word(input_file) :
 
     return meta_flag, data
 
-def decode_events_from_file(input_file, verbose = False, n_events = -1) :
+def load_events_from_file(input_file, verbose = False, n_events = -1) :
 
     meta_flag, data_word = next_word(input_file)
 

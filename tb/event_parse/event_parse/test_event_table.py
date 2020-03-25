@@ -19,7 +19,7 @@ def main() :
 
     events = []
     with open(args.in_file, "rb") as input_file :
-        events = decoder.decode_events_from_file(input_file, args.verbose, int(args.n_events))
+        events = decoder.load_events_from_file(input_file, args.verbose, int(args.n_events))
     print("Loaded {} events from file {}".format(len(events), args.in_file))
 
     table = event_table.EventTable()
