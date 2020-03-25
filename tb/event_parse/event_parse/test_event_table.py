@@ -31,9 +31,11 @@ def main() :
         print("{} : {}".format(i, hex(l0id)))
     print("===")
     ee = table.event_at_l0id(0x16)
-    print("Retrieved event with L0ID={}, N_WORDS_TOTAL={}, EMPTY={}".format(hex(ee.header_l0id), ee.n_words_total, ee.empty))
-    ee.word_dump()
-
+    if ee :
+        print("Retrieved event with L0ID={}, N_WORDS_TOTAL={}, EMPTY={}".format(hex(ee.header_l0id), ee.n_words_total, ee.empty))
+        ee.word_dump()
+    else :
+        print("No event at requested L0ID")
 
     #print("XXX " + 55 * '-')
     #print("XXX module routing flags for {}:".format(args.input_file.split("/")[-1]))
