@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import sys
+from pathlib import Path
 if sys.version_info[0] < 3 :
     from DataFormat.BitField import BitFieldWordDesc, BitFieldWordValue
 else :
@@ -10,7 +11,6 @@ from DataFormat.DataFormatIO import SubwordUnpacker
 from DataFormat import DataFormat
 EVT_HEADER_WORDS = DataFormat.headerwords
 EVT_FOOTER_WORDS = DataFormat.footerwords
-
 from b2b_test.blocks import b2b_utils
 
 def padded_hex(i, l):
@@ -56,69 +56,76 @@ def next_word(input_file) :
 
     return meta_flag, data
 
-def load_events_from_file(input_file, verbose = False, n_events = -1) :
+def load_events_from_file(filename, verbose = False, n_events = -1) :
 
-    meta_flag, data_word = next_word(input_file)
-
+    p = Path(filename)
+    ok = p.exists() and p.is_file()
+    if not ok :
+        raise Exception("ERROR Provided file (={}) not found".format(filename))
+    
     events = []
-    event = EventData()
-    footer_count = 0
-    in_footer = False
+    with open(filename, "rb") as input_file :
 
-    while True :
+        meta_flag, data_word = next_word(input_file)
 
-        if not meta_flag :
-            if len(input_file.read(1)) == 0 :
-                if verbose :
-                    print("End of Stream")
-                pass
-            else :
-                print("ERROR: expected meta_flag, word = {}".format(data_word))
-            break
+        event = EventData()
+        footer_count = 0
+        in_footer = False
 
-        flag = get_flag(data_word)
+        while True :
 
-        if is_start_of_event(flag) :
-            if verbose :
-                print("---- HEADER ----")
-            for i in range(6) :
-                if verbose :
-                    print(hex(data_word))
-                event.words.append(data_word)
-                meta_flag, data_word = next_word(input_file)
-
-        elif is_start_of_module(flag) :
-            if verbose :
-                print("---- MODULE ---- (meta = {})".format(meta_flag))
-                print(hex(data_word))
-            start_idx = len(event.words)
-            event.words.append(data_word)
-            event.n_modules += 1
-            while True :
-                meta_flag, data_word = next_word(input_file)
-                if meta_flag :
-                    break
-                if verbose :
-                    print("{} (meta = {})".format(hex(data_word), meta_flag))
-                event.words.append(data_word)
-            end_idx = len(event.words)
-            event.module_bounds.append( (start_idx, end_idx) )
-
-        elif is_start_of_event_footer(flag) :
-            if verbose :
-                print("---- FOOTER ----")
-            for i in range(3) :
-                if verbose :
-                    print(hex(data_word))
-                event.words.append(data_word)
-                meta_flag, data_word = next_word(input_file)
-
-            events.append(Event(event))
-            if n_events > 0 and len(events) >= n_events :
+            if not meta_flag :
+                if len(input_file.read(1)) == 0 :
+                    if verbose :
+                        print("End of Stream")
+                    pass
+                else :
+                    print("ERROR: expected meta_flag, word = {}".format(data_word))
                 break
-            event.clear()
-        else :
-            print("WHOOPS")
+
+            flag = get_flag(data_word)
+
+            if is_start_of_event(flag) :
+                if verbose :
+                    print("---- HEADER ----")
+                for i in range(6) :
+                    if verbose :
+                        print(hex(data_word))
+                    event.words.append(data_word)
+                    meta_flag, data_word = next_word(input_file)
+
+            elif is_start_of_module(flag) :
+                if verbose :
+                    print("---- MODULE ---- (meta = {})".format(meta_flag))
+                    print(hex(data_word))
+                start_idx = len(event.words)
+                event.words.append(data_word)
+                event.n_modules += 1
+                while True :
+                    meta_flag, data_word = next_word(input_file)
+                    if meta_flag :
+                        break
+                    if verbose :
+                        print("{} (meta = {})".format(hex(data_word), meta_flag))
+                    event.words.append(data_word)
+                end_idx = len(event.words)
+                event.module_bounds.append( (start_idx, end_idx) )
+
+            elif is_start_of_event_footer(flag) :
+                if verbose :
+                    print("---- FOOTER ----")
+                for i in range(3) :
+                    if verbose :
+                        print(hex(data_word))
+                    event.words.append(data_word)
+                    meta_flag, data_word = next_word(input_file)
+
+                events.append(Event(event))
+                if n_events > 0 and len(events) >= n_events :
+                    break
+                event.clear()
+            else :
+                print("WHOOPS")
 
     return events
 

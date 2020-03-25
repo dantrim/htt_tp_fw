@@ -9,7 +9,7 @@ else :
 from DataFormat.DataFormatIO import SubwordUnpacker
 from DataFormat import DataFormat
 
-import decoder
+from event_parse import decoder
 
 class EventTable :
 
@@ -38,6 +38,12 @@ class EventTable :
             return self._events[idx]
         return None
 
+    def add_events(self, event_list) :
+
+        for event in event_list :
+            self.add_event(event)
+        self.sort_events_by_l0id()
+
     def add_event(self, event) :
 
         if event.header_l0id in self.l0ids :
@@ -57,3 +63,8 @@ class EventTable :
         self._l0id_idx_map = {}
         for ievent, event in enumerate(self._events) :
             self._l0id_idx_map[event.header_l0id] = ievent
+
+    def events_gen(self) :
+
+        for event in self._events :
+            yield event

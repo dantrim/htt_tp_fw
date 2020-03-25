@@ -2,6 +2,9 @@ import cocotb
 from cocotb.monitors import Monitor
 from cocotb.triggers import RisingEdge, ReadOnly, NextTimeStep, Event
 
+from DataFormat import DataFormat
+from DataFormat import BitField
+
 from collections import deque
 from tptest import util
 
@@ -23,7 +26,10 @@ class WordMonitor(Monitor) :
         self.expect_empty = False
         self.n_words_expected = n_words_expected
         self.on_empty = Event()
-        self.continue_loading = True
+
+        self.expected_l0ids = set()
+        self.received_l0ids = set()
+        self.current_l0id = -1
 
         self.observed_words = obs_list
 
@@ -61,7 +67,8 @@ class WordMonitor(Monitor) :
         self.expected_words.append(data_word)
 
     def has_remaining_events(self) :
-        return self.n_words_expected > 0
+        return len(self.expected_l0ids) != 0
+        #return self.n_words_expected > 0
         #return len(self.expected_words) != 0
 
     def n_words_received(self) :
@@ -74,52 +81,68 @@ class WordMonitor(Monitor) :
     @cocotb.coroutine
     def _monitor_recv(self) :
 
-        #while True :
-        n_empties = 0
-        while self.continue_loading :
+        while True :
 
 
             yield RisingEdge(self.clock)
             yield ReadOnly()
 
             if self.fifo.empty.value == 0 :
-                n_empties = 0
                 transaction = self.fifo.read_data.value
                 yield NextTimeStep()
-                self.fifo.read_enable <= 1 # not sure why we manually toggle read_eanble
+                self.fifo.read_enable <= 1
                 self._recv(transaction)
 
             else :
                 yield NextTimeStep()
                 self.fifo.read_enable <= 0
-                n_empties += 1
-        self.fifo._log.info("{} MONITOR CONTINUE LOADING HAS BROKEN LOOP".format(self.name))
 
     ##
     ## callbacks
     ##
 
     def simple_callback(self, transaction) :
-        #if "input" in self.name.lower() :
-        #    self.expected_words.pop()
-        #    if self.expect_empty and len(self.expected_words) == 0 :
-        #        self.on_empty.set()
-        #else :
-        #if self.n_words_expected > 0 :
-        self.n_words_expected = self.n_words_expected - 1 # decrement
-        #self.n_words_expected = self.n_words_expected - 1
 
-        form_str = "{0:#0{1}x}"
-        x = form_str.format(int(transaction), 19)
-        self._fifo._log.info("{} MONITOR CALLBACK  {} -> {} ({})".format(self.name, x, self.n_words_received(), self.n_words_expected))# {}".format(self.name), self.n_words_received())
 
-        #if self.expect_empty and self.n_words_expected == 0 :
-        if self.expect_empty and self.n_words_expected < 0 :
-            self._fifo.log.info("{} MONITOR CALLBACK SETS EMPTY FLAG".format(self.name))
-            #self.continue_loading = False
+        data = int(transaction)
+        meta = bool((data >> 64) & 0xff)
+        word = (data & 0xffffffffffffffff)
+        header = BitField.BitFieldWordValue(DataFormat.EVT_HDR1, word)
+        if meta and header.getField("FLAG") == DataFormat.EVT_HDR1_FLAG.FLAG :
+            l0id = header.getField("L0ID")
+            if l0id > self.current_l0id :
+                last = self.current_l0id
+                self.current_l0id = l0id
+                self.received_l0ids.add(self.current_l0id)
+                if last > 0 :
+                    self.expected_l0ids.remove(last)
+
+        if self.expect_empty and len(self.expected_l0ids) == 0 :
             self.on_empty.set()
-            self.expect_empty = False
-        #else :
         self.observed_words.append(transaction)
-        #self._fifo._log.info("{} MONITOR CALLBACK {} -> {} ({})".format(self.name, hex(transaction), self.n_words_received(), self.n_words_expected))# {}".format(self.name), self.n_words_received())
-        
+
+
+
+#        #if "input" in self.name.lower() :
+#        #    self.expected_words.pop()
+#        #    if self.expect_empty and len(self.expected_words) == 0 :
+#        #        self.on_empty.set()
+#        #else :
+#        #if self.n_words_expected > 0 :
+#        self.n_words_expected = self.n_words_expected - 1 # decrement
+#        #self.n_words_expected = self.n_words_expected - 1
+#        #self._fifo._log.info("{} MONITOR CALLBACK TRANSACTION = {}".format(self.name, hex(int(transaction))))
+#
+#        form_str = "{0:#0{1}x}"
+#        x = form_str.format(int(transaction), 19)
+#        #self._fifo._log.info("{} MONITOR CALLBACK  {} -> {} ({})".format(self.name, x, self.n_words_received(), self.n_words_expected))# {}".format(self.name), self.n_words_received())
+#
+#        #if self.expect_empty and self.n_words_expected == 0 :
+#        if self.expect_empty and self.n_words_expected < 0 :
+#            self._fifo.log.info("{} MONITOR CALLBACK SETS EMPTY FLAG".format(self.name))
+#            self.on_empty.set()
+#            self.expect_empty = False
+#        #else :
+#        self.observed_words.append(transaction)
+#        #self._fifo._log.info("{} MONITOR CALLBACK {} -> {} ({})".format(self.name, hex(transaction), self.n_words_received(), self.n_words_expected))# {}".format(self.name), self.n_words_received())
+#        

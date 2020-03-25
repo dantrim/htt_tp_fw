@@ -85,12 +85,12 @@ def initial_b2b_test(dut) :
     wrapper = B2BWrapper(dut, this_tp)
     num_events = 1
     output_tables = wrapper.prepare_output_table(testvecdir, num_events_to_load = num_events)
-    n_words_expected_output = sum([ot.n_words() for ot in output_tables])
-    signal, n_words_sent = wrapper.send_events_from_testvecs(testvecdir, num_events_to_send = num_events, output_tables = output_tables)
+    n_words_expected_output = sum([ot.n_words_total() for ot in output_tables])
+    signal, n_words_sent, expected_l0ids = wrapper.send_events_from_testvecs(testvecdir, num_events_to_send = num_events, output_tables = output_tables)
+    dut._log.info("Expected L0Ids:")
+    for i, l in enumerate(expected_l0ids) :
+        dut._log.info(" -> [{}] : {}".format(i, hex(l)))
     dut._log.info("Going to wait for signal")
-    #timer = Timer(1000, "ns")
-    #yield Combine(signal.wait(), timer)
-    #yield signal.wait()
     yield Combine(*signal)
     dut._log.info("SIGNAL SENT")
 
