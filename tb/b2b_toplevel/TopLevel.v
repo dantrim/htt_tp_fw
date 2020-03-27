@@ -123,7 +123,6 @@ module TopLevel #(
         .output_board_almost_full(board_almost_full)
     );
 
-
     //
     // Output buffers
     //

@@ -125,7 +125,7 @@ class B2BWrapper :
             #    n_words_expected = 0
 
 
-            ofilename = "fifo_dump_{}.evt".format(fifo.name)
+            ofilename = "fifo_dump_{:02}.evt".format(fifo.value)
             cb = OutputFileCallback(name = "OutputFIFOMonitor_{}".format(fifo.name),
                     filename = ofilename)
 
