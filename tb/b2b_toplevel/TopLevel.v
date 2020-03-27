@@ -106,14 +106,16 @@ module TopLevel #(
     board2board_switching #(
         .DATA_WIDTH(SIZE),
         .TOTAL_CLUSTERS(TOTAL_CLUSTERS),
-        .TOTAL_OUTPUT_BOARDS(TOTAL_BOARDS)
+        .TOTAL_OUTPUT_BOARDS(TOTAL_BOARDS),
+			    .FIFO_DEPTH_BITS(6),
+			    .BOARD_ID(0)
     )
     board2board_switching_inst (
         .b2b_clk(clock),
         .b2b_rst_n(reset),
         .b2b_srst_n(reset),
         
-        .cluster_data(cluster_data_reg), 
+        .cluster_data(cluster_data), 
         .cluster_req(cluster_rd_req),
         .cluster_almost_full(cluster_almost_full),
         .cluster_empty(cluster_empty),
