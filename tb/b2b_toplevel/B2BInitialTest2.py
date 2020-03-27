@@ -76,8 +76,6 @@ def initial_b2b_test(dut) :
     initialize_wires(dut)
     dut._log.info("Resetting DUT")
     yield reset(dut)
-    yield reset(dut)
-    yield reset(dut)
 
     testvecdir = b2b_utils.testvec_dir_from_env()
     dut._log.info("Using testvec directory: {}".format(testvecdir))
@@ -99,7 +97,7 @@ def initial_b2b_test(dut) :
     dut._log.info("Going to wait for events...")
     try :
         #yield wrapper.wait_for_events(timeout = 500000, units = "ns")
-        yield wrapper.wait_for_events(timeout = 20, units = "us")
+        yield wrapper.wait_for_events(timeout = 100, units = "us")
     except cocotb.result.SimTimeoutError :
         dut._log.info("TIMED OUT WAITING FOR EVENTS!")
 

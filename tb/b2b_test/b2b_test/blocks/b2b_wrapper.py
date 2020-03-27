@@ -8,6 +8,7 @@ from tptest import events, util
 from .b2b_utils import B2BIO, get_testvector_files
 from b2b_test.fifo_driver import BasicFifoDriver
 from b2b_test.fifo_output_monitor import WordMonitor
+from b2b_test.fifo_monitor import IOMonitor
 from b2b_test.fifo_callbacks import OutputFileCallback
 
 from event_parse import event_table
@@ -36,6 +37,9 @@ class B2BWrapper :
         self._output_lists = []
         self._testvecs_expected = []
         self._n_words_output = 0
+
+        self._input_io_monitors = [] # these record the data requested from the input FIFOs
+        self._output_io_monitors = [] # these record the data written into the output FIFOs
 
     @property
     def input_fifos(self) :
@@ -140,6 +144,11 @@ class B2BWrapper :
             self._monitors.append(monitor)
             self._output_lists.append(output_words)
 
+            # add spies
+            #for io in ["Input", "Output"] :
+            #    input_output_mon = IOMonitor(self.output_fifos[output_num], self.clock, "IOMon_OutputFIFO_{:02}".format(output_num), io)
+            #    self._output_io_monitors.append(input_output_mon)
+
         input_testvec_files = get_testvector_files(self.base_tp, testvecdir, "input")
 
         self._log.info("Setting up B2B input drivers")
@@ -155,6 +164,11 @@ class B2BWrapper :
 
             driver = BasicFifoDriver(self.input_fifos[input_num], self.clock, "InputFIFODriver_{}".format(input_num), dut = self._dut, io_num = input_num)
             self._drivers.append(driver)
+
+            ## add spies
+            #for io in ["Input", "Output"] :
+            #    input_output_mon = IOMonitor(self.input_fifos[input_num], self.clock, "IOMon_InputFIFO_{:02}".format(input_num), io)
+            #    self._input_io_monitors.append(input_output_mon)
 
             input_events = events.read_events_from_file(testvec)
             n_events_in_file = len(input_events)

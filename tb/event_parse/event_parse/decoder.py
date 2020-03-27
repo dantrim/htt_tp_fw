@@ -56,6 +56,42 @@ def next_word(input_file) :
 
     return meta_flag, data
 
+def dump_words(filename) :
+
+    import os, struct
+
+    p = Path(filename)
+    ok = p.exists() and p.is_file()
+    if not ok :
+        raise Exception("ERROR Provided file (={}) not found".format(filename))
+
+    n_words_read = 0
+    with open(filename, "rb") as input_file :
+
+        size = os.stat(filename).st_size
+        for _ in range(0, size, 9) :
+
+            data = input_file.read(9)
+            #print(data)
+            #continue
+            if len(data) != 9 :
+                raise Exception("ERROR: Malformed event data file {}".format(filename))
+            format_string = "<?Q"
+            endian = "little"
+            if endian != 'little':
+                format_string = ">" + format_string
+            is_metadata, contents = struct.unpack(format_string, data)
+            print("meta = {}, word = {}".format(hex(is_metadata), hex(contents)))
+            
+            #meta_flag, data_word = next_word(input_file)
+
+            #print("meta = {}, word = {}".format(hex(meta_flag), hex(data_word)))
+#        word = (meta_flag << 64)
+#        word |= (data_word & 0xffffffffffffffff)
+#        print(hex(word)) 
+        
+        
+
 def load_events_from_file(filename, verbose = False, n_events = -1) :
 
     p = Path(filename)
@@ -125,7 +161,7 @@ def load_events_from_file(filename, verbose = False, n_events = -1) :
                     break
                 event.clear()
             else :
-                print("WHOOPS")
+                raise Exception("WHOOPS")
 
     return events
 
