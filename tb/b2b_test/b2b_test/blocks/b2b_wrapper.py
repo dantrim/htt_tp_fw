@@ -67,7 +67,7 @@ class B2BWrapper :
 
         output_files = get_testvector_files(self.base_tp, testvecdir, "output")
         event_tables = []
-        for i, ofile in enumerate(output_files[::-1]) :
+        for i, ofile in enumerate(output_files) :
             self._log.info("XXX PREPARE OUTPUT TABLE {} : {}".format(i, str(ofile).split("/")[-1]))
             etable = event_table.EventTable()
             events = decoder.load_events_from_file(filename = ofile, n_events = num_events_to_load)
@@ -115,7 +115,9 @@ class B2BWrapper :
         for fifo in B2BIO.B2BOutputs :
             output_words = []
             output_num = int(fifo.value)
-            self._log.info(" -> Preparing monitor {} ({})".format(output_num, fifo.name))
+            io_name_stripped = "".join(fifo.name.strip().split("_"))
+            
+            self._log.info(" -> Preparing monitor {} (B2B output {})".format(fifo.name, output_num))
 
             expected_output_table = output_tables[output_num]
 
@@ -144,7 +146,7 @@ class B2BWrapper :
             self._monitors.append(monitor)
             self._output_lists.append(output_words)
 
-            # add spies
+            ## add spies
             #for io in ["Input", "Output"] :
             #    input_output_mon = IOMonitor(self.output_fifos[output_num], self.clock, "IOMon_OutputFIFO_{:02}".format(output_num), io)
             #    self._output_io_monitors.append(input_output_mon)
@@ -166,9 +168,9 @@ class B2BWrapper :
             self._drivers.append(driver)
 
             ## add spies
-            #for io in ["Input", "Output"] :
-            #    input_output_mon = IOMonitor(self.input_fifos[input_num], self.clock, "IOMon_InputFIFO_{:02}".format(input_num), io)
-            #    self._input_io_monitors.append(input_output_mon)
+            for io in ["Input", "Output"] :
+                input_output_mon = IOMonitor(self.input_fifos[input_num], self.clock, "IOMon_InputFIFO_{:02}".format(input_num), io)
+                self._input_io_monitors.append(input_output_mon)
 
             input_events = events.read_events_from_file(testvec)
             n_events_in_file = len(input_events)

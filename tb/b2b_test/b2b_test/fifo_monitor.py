@@ -104,7 +104,7 @@ class IOMonitor(Monitor) :
                 ,"output" : (self.fifo.read_enable, self.fifo.read_data, self.fifo.rreset)
             } [ self.io_type ]
 
-            if strobe.value == 1 and reset.value == 1 : # reset active LOW 
+            if strobe.value == 1 : #and reset.value == 1 : # reset active LOW 
                 try :
                     transaction = int(bus.value)
                 except ValueError :

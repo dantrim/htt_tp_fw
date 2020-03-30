@@ -40,7 +40,8 @@ def initialize_wires(dut) :
     # initialize the input spybuffer fifos
     for ibuff, buff in enumerate(in_buffers) :
 
-        dut.cluster_data_reg[ibuff] <= 0
+        #kludgedut.cluster_data_reg[ibuff] <= 0
+        #dut.cluster_data[ibuff] <= 0
         dut.cluster_wren[ibuff] <= 0
         dut.cluster_rd_req[ibuff] <= 0
         dut.cluster_empty[ibuff] <= 1
@@ -104,7 +105,7 @@ def initial_b2b_test(dut) :
     dut._log.info("Going to wait for events...")
     try :
         #yield wrapper.wait_for_events(timeout = 500000, units = "ns")
-        yield wrapper.wait_for_events(timeout = 100, units = "us")
+        yield wrapper.wait_for_events(timeout = 10, units = "us")
     except cocotb.result.SimTimeoutError :
         dut._log.info("TIMED OUT WAITING FOR EVENTS!")
 

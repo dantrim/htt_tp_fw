@@ -41,27 +41,27 @@ module TopLevel #(
     wire                  board_empty [TOTAL_BOARDS];
     wire                  board_ren [TOTAL_BOARDS];
    
-    //
-    // kludge to register the aFifo read_data line
-    //
-    reg [SIZE-1:0] cluster_data_reg [TOTAL_CLUSTERS];
-    always @ (posedge clock)
-    begin
-        if (~reset)
-            begin
-                for(int i = 0; i < TOTAL_CLUSTERS; i++)
-                begin
-                    cluster_data_reg[i] <= 0;
-                end
-            end
-        else
-            begin
-                for(int i = 0; i < TOTAL_CLUSTERS; i++)
-                begin
-                    cluster_data_reg[i] <= cluster_data[i];
-                end
-            end
-    end
+//kludge    //
+//kludge    // kludge to register the aFifo read_data line
+//kludge    //
+//kludge    reg [SIZE-1:0] cluster_data_reg [TOTAL_CLUSTERS];
+//kludge    always @ (posedge clock)
+//kludge    begin
+//kludge        if (~reset)
+//kludge            begin
+//kludge                for(int i = 0; i < TOTAL_CLUSTERS; i++)
+//kludge                begin
+//kludge                    cluster_data_reg[i] <= 0;
+//kludge                end
+//kludge            end
+//kludge        else
+//kludge            begin
+//kludge                for(int i = 0; i < TOTAL_CLUSTERS; i++)
+//kludge                begin
+//kludge                    cluster_data_reg[i] <= cluster_data[i];
+//kludge                end
+//kludge            end
+//kludge    end
   
    
     //
@@ -106,14 +106,17 @@ module TopLevel #(
     board2board_switching #(
         .DATA_WIDTH(SIZE),
         .TOTAL_CLUSTERS(TOTAL_CLUSTERS),
-        .TOTAL_OUTPUT_BOARDS(TOTAL_BOARDS)
+        .TOTAL_OUTPUT_BOARDS(TOTAL_BOARDS),
+        .FIFO_DEPTH_BITS(6),
+        .BOARD_ID(0)
     )
     board2board_switching_inst (
         .b2b_clk(clock),
         .b2b_rst_n(reset),
         .b2b_srst_n(reset),
         
-        .cluster_data(cluster_data_reg), 
+        //kludge.cluster_data(cluster_data_reg), 
+        .cluster_data(cluster_data), 
         .cluster_req(cluster_rd_req),
         .cluster_almost_full(cluster_almost_full),
         .cluster_empty(cluster_empty),
