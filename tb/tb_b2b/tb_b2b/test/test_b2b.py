@@ -7,6 +7,9 @@ from cocotb.result import TestFailure, TestSuccess
 
 
 from tb_b2b import b2b_utils
+import tb_b2b.b2b_wrapper as wrapper
+from tb_b2b import fifo_wrapper
+from tb_b2b.fifo_wrapper import B2BFifoDriver, B2BFifoMonitor
 
 
 ##
@@ -130,8 +133,19 @@ def b2b_test_0(dut) :
     ##
     testvector_dir = b2b_utils.testvec_dir_from_env()
 
-    
+    b2b = wrapper.B2BWrapper(clock = dut.clock, name = "B2BWrapper")
+    for input_num in range(len(b2b_utils.B2BIO.Inputs)) :
+        driver = B2BFifoDriver(dut.input_spybuffers[input_num].spybuffer, dut.clock, "B2BFifoDriver_{:02}".format(input_num), input_num, dump = True)
+        b2b.add_input_driver(driver)
 
+    for output_num in range(len(b2b_utils.B2BIO.Outputs)) :
+        active = (this_tp.value != output_num)
+        monitor = B2BFifoMonitor(dut.output_spybuffers[output_num].spybuffer, dut.clock, "B2BFifoMonitor_{:02}".format(output_num), output_num, active, [])
+        b2b.add_output_monitor(monitor)
 
-
-
+    ##
+    ## close wrapper
+    ##
+    print(b2b)
+    b2b.close()
+    print(b2b)
