@@ -40,6 +40,9 @@ module rptr_empty #(parameter ADDRSIZE = 4)
    // Memory read-address pointer (okay to use binary to address memory)
    assign raddr     = rbin[ADDRSIZE-1:0];
    assign rbinnext  = rbin + (rinc & ~rempty_int);
+    // dantrim [START]
+   //dantrimassign rbinnext  = rbin + ((rinc & ~rempty) & (rrst_n == 1));
+    // dantrim [END]
    assign rgraynext = (rbinnext>>1) ^ rbinnext;
 
    /*

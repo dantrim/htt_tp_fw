@@ -83,7 +83,6 @@ class WordMonitor(Monitor) :
 
         while True :
 
-
             yield RisingEdge(self.clock)
             yield ReadOnly()
 
@@ -120,8 +119,6 @@ class WordMonitor(Monitor) :
         if self.expect_empty and len(self.expected_l0ids) == 0 :
             self.on_empty.set()
         self.observed_words.append(transaction)
-
-
 
 #        #if "input" in self.name.lower() :
 #        #    self.expected_words.pop()
