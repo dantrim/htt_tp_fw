@@ -64,7 +64,7 @@ class EventTable :
         for ievent, event in enumerate(self._events) :
             self._l0id_idx_map[event.header_l0id] = ievent
 
-    def events_gen(self) :
+    def event_gen(self) :
 
         for event in self._events :
             yield event

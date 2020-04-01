@@ -226,6 +226,7 @@ class Event :
 
         # this isn't the safest rn, I assume everything is filled
 
+        #self._event_data = event_data # just do this for now
         self._headerwords = []
         self._footerwords = []
         self._modules = []
@@ -246,6 +247,16 @@ class Event :
             self._modules.append(m)
 
         self._n_words_total = n_words_total
+
+    def word_gen(self) :
+
+        for hw in self._headerwords :
+            yield hw.value
+        for module in self._modules :
+            for mw in module.raw_data :
+                yield mw
+        for fw in self._footerwords :
+            yield fw.value
 
     @property
     def n_words_total(self) :

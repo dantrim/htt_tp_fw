@@ -39,9 +39,7 @@ class B2BIO :
     @staticmethod
     def simplename(io_enum) :
 
-        if type(io_enum) == type(B2BIO.Outputs) or type(io_enum) == type(B2BIO.Inputs) :
-            io_enum = io_enum.name
-        return str(io_enum).replace("_","")
+        return str(io_enum.name).replace("_","")
 
 def testvec_dir_from_env() :
 

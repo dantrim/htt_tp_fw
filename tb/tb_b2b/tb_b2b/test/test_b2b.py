@@ -11,6 +11,9 @@ import tb_b2b.b2b_wrapper as wrapper
 from tb_b2b import fifo_wrapper
 from tb_b2b.fifo_wrapper import B2BFifoDriver, B2BFifoMonitor
 
+from event_parse import event_table
+from event_parse import decoder
+
 
 ##
 ## TEST CONSTANTS
@@ -110,6 +113,7 @@ def reset(dut) :
 def b2b_test_0(dut) :
 
     this_tp = b2b_utils.B2BIO.Outputs.AMTP_0 # hardcode for now, later take BOARD_ID from env and set the B2B inst to this value
+    num_events_to_process = 1
 
     ##
     ## clock
@@ -132,16 +136,66 @@ def b2b_test_0(dut) :
     ## get testvectors
     ##
     testvector_dir = b2b_utils.testvec_dir_from_env()
+    input_testvector_files = b2b_utils.get_testvector_files(this_tp, testvector_dir, "input")
+    output_testvector_files = b2b_utils.get_testvector_files(this_tp, testvector_dir, "output")
 
+    ##
+    ## event tables
+    ##
+
+    input_event_tables = []
+
+    for i, io in enumerate(b2b_utils.B2BIO.Inputs) :
+        port_num = io.value
+        testvec_file = str(input_testvector_files[port_num])
+        etable = event_table.EventTable()
+        events = decoder.load_events_from_file(testvec_file, n_events = num_events_to_process)
+        etable.add_events(events)
+        input_event_tables.append(etable)
+        dut._log.info("Prepared event table for input port {} from {}".format(port_num, testvec_file.split("/")[-1]))
+    expected_l0ids = [hex(x) for x in input_event_tables[0].l0ids]
+    dut._log.info("Expect data from L0ID = {}".format(expected_l0ids))
+
+    output_event_tables = []
+    for i, io in enumerate(b2b_utils.B2BIO.Outputs) :
+        port_num = io.value
+        testvec_file = str(output_testvector_files[port_num])
+        etable = event_table.EventTable()
+        events = decoder.load_events_from_file(testvec_file, n_events = num_events_to_process)
+        etable.add_events(events)
+        output_event_tables.append(etable)
+        dut._log.info("Prepared event table for output port {} from {}".format(port_num, testvec_file.split("/")[-1]))
+
+    ##
+    ## initialize B2B block wrapper
+    ##
     b2b = wrapper.B2BWrapper(clock = dut.clock, name = "B2BWrapper")
-    for input_num in range(len(b2b_utils.B2BIO.Inputs)) :
-        driver = B2BFifoDriver(dut.input_spybuffers[input_num].spybuffer, dut.clock, "B2BFifoDriver_{:02}".format(input_num), input_num, dump = True)
-        b2b.add_input_driver(driver)
+    for i, io in enumerate(b2b_utils.B2BIO.Inputs) :
+        port_num = io.value
+        port_name = b2b_utils.B2BIO.simplename(io)
+        driver = B2BFifoDriver(dut.input_spybuffers[port_num].spybuffer, dut.clock, "B2BFifoDriver_{}_{:02}".format(port_name, port_num), io, dump = True)
+        b2b.add_input_driver(driver, io)
 
-    for output_num in range(len(b2b_utils.B2BIO.Outputs)) :
-        active = (this_tp.value != output_num)
-        monitor = B2BFifoMonitor(dut.output_spybuffers[output_num].spybuffer, dut.clock, "B2BFifoMonitor_{:02}".format(output_num), output_num, active, [])
-        b2b.add_output_monitor(monitor)
+    for i, io in enumerate(b2b_utils.B2BIO.Outputs) :
+        port_num = io.value
+        port_name = b2b_utils.B2BIO.simplename(io)
+        active = (this_tp.value != io.value)
+        monitor = B2BFifoMonitor(dut.output_spybuffers[port_num].spybuffer, dut.clock, "B2BFifoMonitor_{}_{:02}".format(port_name, port_num), io, active, [])
+        b2b.add_output_monitor(monitor, io)
+    b2b.sort_ports()
+
+    ##
+    ## send events
+    ##
+    dut._log.info("Sending input events")
+    send_finished_signal = b2b.send_input_events(input_event_tables, input_testvector_files)
+    yield Combine(*send_finished_signal)
+    dut._log.info("Sending finished!")
+
+    timer = Timer(10, "us")
+    dut._log.info("Going to wait 10 microseconds")
+    yield timer
+    dut._log.info("Done")
 
     ##
     ## close wrapper

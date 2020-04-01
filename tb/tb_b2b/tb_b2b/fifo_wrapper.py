@@ -6,18 +6,18 @@ from bitstring import BitArray, BitStream
 
 class FifoWrapper :
 
-    def __init__(self, block, clock, name, io_num) :
+    def __init__(self, block, clock, name, io_enum) :
 
         self._fifo = block
         self._clock = clock
         self._name = name
-        self._io_num = io_num
+        self._io_enum = io_enum
         self._io_type = None
         self._active = False
 
     @property
     def fifo(self) :
-        return self._block
+        return self._fifo
 
     @property
     def clock(self) :
@@ -29,7 +29,7 @@ class FifoWrapper :
 
     @property
     def io_num(self) :
-        return self._io_num
+        return self._io_enum.value
 
 
     @property
@@ -38,20 +38,20 @@ class FifoWrapper :
 
 class B2BFifoDriver(FifoWrapper, Driver) :
 
-    def __init__(self, block, clock, name, io_num, dump = False) :
+    def __init__(self, block, clock, name, io_enum, dump = False) :
 
 
-        FifoWrapper.__init__(self, block, clock, name, io_num)
+        FifoWrapper.__init__(self, block, clock, name, io_enum)
         Driver.__init__(self)
         self._active = True
         self._dump = dump
 
         self._ofilename = None
-        self._ofile = None
+        self._first = True
 
         if dump :
             self._ofilename = "b2bfifo_driver_{}.evt".format(self.name.lower())
-            self._ofile = open(self._ofilename, "wb")
+            #self._ofile = open(self._ofilename, "wb")
 
     @property
     def dump(self) :
@@ -68,14 +68,16 @@ class B2BFifoDriver(FifoWrapper, Driver) :
 
     def close(self) :
 
-        if self.dump :
-            if self._ofile :
-                if not self._ofile.closed :
-                    self._ofile.close()
+        pass
+
+#        if self.dump :
+#            if self._ofile :
+#                if not self._ofile.closed :
+#                    self._ofile.close()
 
     def is_closed(self) :
-        if self._ofile :
-            return self._ofile.closed
+#        if self._ofile :
+#            return self._ofile.closed
         return True
 
     ##
@@ -87,12 +89,14 @@ class B2BFifoDriver(FifoWrapper, Driver) :
 
         data_length = 9 * 8 # 9-bytes: 1-byte for meta-flag, 8-bytes for data
         ba = BitArray(uintle = transaction, length = data_length)
-        meta_flag = ba.to_bytes()[0]
-        data = ba[1:]
+        meta_flag = ba[:8] #.to_bytes()[0]
+        data = ba[8:]
 
-        bw = self._ofile.write(meta_flag)
-        bw += self._ofile.write(data)
-        self._ofile.flush()
+        fmt = { True : "wb", False : "ab" } [self._first]
+        with open(self._ofilename, fmt) as ofile :
+            bw = ofile.write(meta_flag.bytes)
+            bw += ofile.write(data.bytes)
+            self._first = False
 
     ##
     ## cocotb coroutines
@@ -114,14 +118,14 @@ class B2BFifoDriver(FifoWrapper, Driver) :
         self.fifo.write_enable <= 0
 
         if self.dump :
-            self.write_word(self, int(transaction))
+            self.write_word(int(transaction))
 
 
 class B2BFifoMonitor(FifoWrapper, Monitor) :
 
-    def __init__(self, block, clock, name, io_num, expects_output, callbacks = []) :
+    def __init__(self, block, clock, name, io_enum, expects_output, callbacks = []) :
 
-        FifoWrapper.__init__(self, block, clock, name, io_num)
+        FifoWrapper.__init__(self, block, clock, name, io_enum)
         self._active = expects_output
 
         Monitor.__init__(self)
@@ -137,7 +141,6 @@ class B2BFifoMonitor(FifoWrapper, Monitor) :
     def simple_callback(self, transaction) :
 
         transaction = int(transaction)
-        cocotb.log.info("B2BFifoMonitor \"{}\" receives: {}".format(self.name, hex(transaction)))
 
     ##
     ## cocotb coroutines
