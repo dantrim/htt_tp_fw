@@ -1,9 +1,10 @@
 import cocotb
 from cocotb.triggers import Event, Combine, with_timeout, Timer
 
-from tptest import events, util
+#from tptest import events
 
 from tb_b2b import b2b_utils
+from tb_utils import events, utils
 from bitstring import BitArray, BitStream
 import event_parse
 
@@ -130,16 +131,26 @@ class B2BWrapper(Wrapper) :
 
             driver, io, active = self.input_ports[port_num]
 
-            input_events = events.read_events_from_file(testvector_file)
+            input_events = events.load_events_from_file(filename = testvector_file, n_to_load = n_send)
             for ievent, event in enumerate(input_events) :
-                if ievent >= n_send :
-                    break
-
                 words = list(event)
                 for iword, word in enumerate(words) :
                     hook = Event()
                     driver.append(word.get_binary(), event = hook)
+            if hook :
                 hooks.append(hook.wait())
+
+
+           # #input_events = events.read_events_from_file(testvector_file)
+           # for ievent, event in enumerate(input_events) :
+           #     if ievent >= n_send :
+           #         break
+
+           #     words = list(event)
+           #     for iword, word in enumerate(words) :
+           #         hook = Event()
+           #         driver.append(word.get_binary(), event = hook)
+           #     hooks.append(hook.wait())
 
             #hook = None
             #for ievent, event in enumerate( event_table.event_gen() ) :

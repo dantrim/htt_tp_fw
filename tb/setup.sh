@@ -69,6 +69,7 @@ function main {
         $pip_cmd install -e tptest
         $pip_cmd install -e b2b_test
         $pip_cmd install -e tb_b2b
+        $pip_cmd install -e tb_utils
         $pip_cmd install -e event_parse
         $pip_cmd install -e ../../system-simulation/
     fi
