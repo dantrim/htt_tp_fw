@@ -3,6 +3,9 @@ from cocotb.drivers import Driver
 from cocotb.monitors import Monitor
 from cocotb.triggers import RisingEdge, Event, ReadOnly, NextTimeStep, Timer
 from bitstring import BitArray, BitStream
+import struct
+from tb_utils import events, utils
+
 
 class FifoWrapper :
 
@@ -127,6 +130,7 @@ class B2BFifoMonitor(FifoWrapper, Monitor) :
 
         FifoWrapper.__init__(self, block, clock, name, io_enum)
         self._active = expects_output
+        self._first = True
 
         Monitor.__init__(self)
 
@@ -141,6 +145,29 @@ class B2BFifoMonitor(FifoWrapper, Monitor) :
     def simple_callback(self, transaction) :
 
         transaction = int(transaction)
+
+
+        endian = "little"
+        fmt = { "little" : "<?Q", "big" : ">?Q" }[endian]
+
+
+        n_bytes = 9 * 8
+        data = transaction.to_bytes(9, "little")
+        is_metadata, contents = struct.unpack(fmt, data)
+        #is_metadata, contents = struct.unpack(fmt, transaction.to_bytes(9, endian))
+        data_length = 9 * 8 # 9-bytes: 1-byte for meta-flag, 8-bytes for data
+     #   word = events.DataWord(contents, is_metadata)
+        print("FUCK {} -> {} {}".format(hex(transaction), hex(contents), hex(is_metadata)))
+
+     #   ba = BitArray(uintle = transaction, length = data_length)
+     #   meta_flag = ba[:8] #.to_bytes()[0]
+     #   data = ba[8:]
+     #   cocotb.log.info("FOO {} -> {} {} // {} {}".format(hex(transaction), is_metadata, hex(word.contents), meta_flag, data))
+
+     #   wfmt = { True : "wb" , False : "ab" }[self._first]
+     #   with open("b2bfifo_output_{:02}_{}.evt".format(self.io_num, self.name), wfmt) as ofile :
+     #       word.write(ofile, endian = endian)
+     #       self._first = False
 
     ##
     ## cocotb coroutines

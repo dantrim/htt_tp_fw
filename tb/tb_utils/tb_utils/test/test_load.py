@@ -2,6 +2,7 @@ import sys
 from tb_utils import events, utils
 from argparse import ArgumentParser
 
+
 def main() :
 
     parser = ArgumentParser()

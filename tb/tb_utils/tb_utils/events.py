@@ -93,7 +93,7 @@ class DataWord :
 
         fmt = { "little" : "<", "big" : ">" }[endian]
         fmt += "?Q"
-        return ofd.write(struct.pack(fmt, self.is_metadata, self.conents))
+        return ofd.write(struct.pack(fmt, self.is_metadata, self.contents))
 
 class ModuleData :
 
