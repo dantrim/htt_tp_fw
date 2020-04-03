@@ -17,6 +17,7 @@ class FifoWrapper :
         self._io_enum = io_enum
         self._io_type = None
         self._active = False
+        self._observed_words = []
 
     @property
     def fifo(self) :
@@ -38,6 +39,10 @@ class FifoWrapper :
     @property
     def active(self) :
         return self._active
+
+    @property
+    def observed_data_words(self) :
+        return self._observed_words
 
 class B2BFifoDriver(FifoWrapper, Driver) :
 
@@ -73,14 +78,7 @@ class B2BFifoDriver(FifoWrapper, Driver) :
 
         pass
 
-#        if self.dump :
-#            if self._ofile :
-#                if not self._ofile.closed :
-#                    self._ofile.close()
-
     def is_closed(self) :
-#        if self._ofile :
-#            return self._ofile.closed
         return True
 
     ##
@@ -146,28 +144,24 @@ class B2BFifoMonitor(FifoWrapper, Monitor) :
 
         transaction = int(transaction)
 
+        # at this point "transaction" is a 65-bit word with the MSB the meta-flag,
+        # and we want to store it in the same format as our testvector files which
+        # have 9-bytes (72 bits) per data word and with the LSB the byte holding
+        # the meta-data flag
 
         endian = "little"
-        fmt = { "little" : "<?Q", "big" : ">?Q" }[endian]
+        fmt = { "little" : "<Q?", "big" : ">Q?" }[endian]
 
-
-        n_bytes = 9 * 8
         data = transaction.to_bytes(9, "little")
-        is_metadata, contents = struct.unpack(fmt, data)
-        #is_metadata, contents = struct.unpack(fmt, transaction.to_bytes(9, endian))
-        data_length = 9 * 8 # 9-bytes: 1-byte for meta-flag, 8-bytes for data
-     #   word = events.DataWord(contents, is_metadata)
-        print("FUCK {} -> {} {}".format(hex(transaction), hex(contents), hex(is_metadata)))
+        contents, is_metadata = struct.unpack(fmt, data)
+        word = events.DataWord(contents, is_metadata)
 
-     #   ba = BitArray(uintle = transaction, length = data_length)
-     #   meta_flag = ba[:8] #.to_bytes()[0]
-     #   data = ba[8:]
-     #   cocotb.log.info("FOO {} -> {} {} // {} {}".format(hex(transaction), is_metadata, hex(word.contents), meta_flag, data))
+        self._observed_words.append(word)
 
-     #   wfmt = { True : "wb" , False : "ab" }[self._first]
-     #   with open("b2bfifo_output_{:02}_{}.evt".format(self.io_num, self.name), wfmt) as ofile :
-     #       word.write(ofile, endian = endian)
-     #       self._first = False
+        wfmt = { True : "wb" , False : "ab" }[self._first]
+        with open("b2bfifo_output_{:02}_{}.evt".format(self.io_num, self.name), wfmt) as ofile :
+            word.write_testvec_fmt(ofile, endian)
+            self._first = False
 
     ##
     ## cocotb coroutines

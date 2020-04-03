@@ -13,20 +13,20 @@ class B2BIO :
         STRIP_1 = 3
 
     class Outputs(enum.Enum) :
-        AMTP_0 = 13
-        AMTP_1 = 12
-        AMTP_2 = 11
-        AMTP_3 = 10
-        AMTP_4 = 9
-        AMTP_5 = 8
-        AMTP_6 = 7
-        AMTP_7 = 6
-        AMTP_8 = 5
-        AMTP_9 = 4
-        AMTP_10 = 3
-        AMTP_11 = 2
-        SSTP_0 = 1
-        SSTP_1 = 0
+        AMTP_0 = 0
+        AMTP_1 = 1
+        AMTP_2 = 2
+        AMTP_3 = 3
+        AMTP_4 = 4
+        AMTP_5 = 5
+        AMTP_6 = 6
+        AMTP_7 = 7
+        AMTP_8 = 8
+        AMTP_9 = 9
+        AMTP_10 = 10
+        AMTP_11 = 11
+        SSTP_0 = 12
+        SSTP_1 = 13
 
     @staticmethod
     def allowed_outputs() :
@@ -85,4 +85,10 @@ def get_testvector_files(base_tp, testvec_dir, which) :
                     if final_tag == name :
                         ordered_files.append(tfile)
                         break
+    if which.lower() == "output" :
+        print("BLAH {}".format(55 * '='))
+        for i,f in enumerate(ordered_files) :
+            print("BLAH {} : {}".format(i, f))
+        
+    
     return ordered_files

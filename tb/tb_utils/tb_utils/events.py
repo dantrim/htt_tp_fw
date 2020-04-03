@@ -32,16 +32,24 @@ class DataWord :
         return self._flag
 
     def __str__(self) :
-        return str(self.get_binary())
+        return self.hex()
 
     def __repr__(self) :
-        return str(self.get_binary())
+        return self.hex()
+
+    def __eq__(self, other) :
+        return self.get_binary() == other.get_binary()
 
     def _up_to_8(self, n) :
 
         return ((int(n)+7) & (-8))
 
     def _padded_hex(self, i, l):
+
+        """
+        Make equal-spaced hex strings to make visual inspection simpler.
+        """
+        # from https://stackoverflow.com/questions/12638408/decorating-hex-function-to-pad-zeros
 
         given_int = i
         given_len = l
@@ -94,6 +102,13 @@ class DataWord :
         fmt = { "little" : "<", "big" : ">" }[endian]
         fmt += "?Q"
         return ofd.write(struct.pack(fmt, self.is_metadata, self.contents))
+
+    def write_testvec_fmt(self, ofd, endian = "little") :
+
+        fmt = { "little" : "<", "big" : ">" } [endian]
+        fmt += "?Q"
+        return ofd.write(struct.pack(fmt, self.is_metadata, self.contents))
+        
 
 class ModuleData :
 
@@ -218,15 +233,15 @@ class ModuleData :
 
     def _parse(self, words) :
 
-        h0 = DataFormat.BitFieldWordValue(DataFormat.M_HDR, value = words[0])
+        h0 = DataFormat.BitFieldWordValue(DataFormat.M_HDR, value = words[0].contents)
         h1 = DataFormat.BitFieldWordValue(DataFormat.M_HDR2)
         self._header = [h0, h1]
 
-        data_type = self.header1.getField("TYPE")
+        data_type = self._header[0].getField("TYPE")
         data_type_raw = DataFormat.M_HDR_TYPE.RAW
         data_type_clus = DataFormat.M_HDR_TYPE.CLUSTERED
 
-        det_type = self.header1.getField("DET")
+        det_type = self._header[0].getField("DET")
         det_type_pix = DataFormat.M_HDR_DET.PIXEL
         det_type_strip = DataFormat.M_HDR_DET.STRIP
 
@@ -237,7 +252,7 @@ class ModuleData :
 
         for iword, word in enumerate(words) :
 
-            unpacker = SubwordUnpacker(word, DataFormat.WORD_LENGTH)
+            unpacker = SubwordUnpacker(word.contents, DataFormat.WORD_LENGTH)
             empty = False
 
             ##
@@ -351,7 +366,7 @@ class DataEvent :
     def n_modules(self) :
         return len(self._module_idx)
 
-    def modules(self) :
+    def get_modules(self) :
         out_mods = []
         for module_data in self.module_words :
             module = ModuleData(module_data)
@@ -421,14 +436,18 @@ def load_events(data_words = [], endian = "little", n_to_load = -1) :
             events.append(current_event)
     return events
 
-def load_events_from_file(filename, endian = "little", n_to_load = -1) :
+def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_request = -1) :
 
     path = Path(filename)
     ok = path.exists() and path.is_file()
     if not ok :
         raise Exception("Cannot find provided file {}".format(filename))
 
+    if n_to_load > 0 and l0id_request > 0 :
+        raise Exception("ERROR Cannot request specific number of events AND a specific L0ID at the same time")
+
     events = []
+    l0ids_loaded = set()
     with open(filename, "rb") as ifile :
         current_event = None
         filesize = os.stat(filename).st_size
@@ -444,12 +463,23 @@ def load_events_from_file(filename, endian = "little", n_to_load = -1) :
             if word.is_event_header_start() :
                 if n_to_load > 0 and len(events) >= n_to_load :
                     break
+                if l0id_request > 0 and int(l0id_request) in l0ids_loaded :
+                    break
                 header = DataFormat.BitFieldWordValue(DataFormat.EVT_HDR1, contents)
                 current_event = DataEvent(header.getField("L0ID"))
+                l0ids_loaded.add(int(current_event.l0id))
 
             if current_event is not None :
                 current_event.add_word(word)
 
             if word.is_event_footer_start() :
                 events.append(current_event)
+
+    if int(l0id_request) > 0 and len(events) > 0 :
+        tmp = []
+        for event in events :
+            if int(event.l0id) == int(l0id_request) :
+                tmp.append(event)
+                break
+        events = tmp
     return events

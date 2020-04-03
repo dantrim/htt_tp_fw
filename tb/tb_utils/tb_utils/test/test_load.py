@@ -42,7 +42,7 @@ def main() :
         for i, l in enumerate(loaded_events) :
             print("Event {:02}: {}".format(i, l))
 
-    if args.dump :
+    if args.dump and loaded_events:
         event = loaded_events[0]
         for iword, word in enumerate(event) :
             print(word.hex())
