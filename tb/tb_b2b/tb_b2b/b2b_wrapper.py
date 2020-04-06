@@ -170,8 +170,10 @@ class B2BWrapper(Wrapper) :
                 n_modules = event.n_modules
                 n_words = len(event.words)
                 print(" Event num {:03} : L0ID={}, N_words={}, N_modules={}".format(ievent, hex(l0id), n_words, n_modules))
+                print(" ==== HEADER ====")
                 for i, h in enumerate(event.header_words) :
                     print("    Header[{:02}] = {}".format(i, h.hex()))
+                print(" ==== FOOTER ====")
                 for i, f in enumerate(event.footer_words) :
                     print("    Footer[{:02}] = {}".format(i, f.hex()))
 
