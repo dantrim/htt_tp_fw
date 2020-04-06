@@ -4,7 +4,7 @@ from tb_utils import utils
 from tb_b2b import b2b_utils
 from pathlib import Path
 
-from DataFormat import DataFormat, BitField
+from DataFormat import DataFormat, BitField #, BitFieldWordValue
 from DataFormat.DataFormatIO import SubwordUnpacker
 
 class DataWord :
@@ -117,11 +117,25 @@ class ModuleData :
         if not data_words[0].is_module_header_start() :
             raise ValueError("ModuleData first word (={}) is not a module header!".format(data_words[0]))
 
+        self._data_words = data_words
         self._header = []
         self._cluster_data = []
         self._footer = None
+        self._header_field_map = {}
 
         self._parse(data_words)
+
+    def header_field(self, field_name = "") :
+        idx = self._header_field_map[field_name]
+        return self._header[idx].getField(field_name)
+
+    def footer_field(self, field_name = "") :
+        if self._footer is None : return 0x0
+        return self._footer.getField(field_name)
+
+    @property
+    def data_words(self) :
+        return self._data_words
 
     @property
     def header_words(self) :
@@ -135,52 +149,37 @@ class ModuleData :
     def cluster_data(self) :
         return self._cluster_data
 
-    @property
-    def header_flag(self) :
-        return self._header[0].getField("FLAG")
+    def header_description_strings(self) :
 
-    @property
-    def header_type(self) :
-        return self._header[0].getField("TYPE")
+        out = []
+        header_words = [
+            ["FLAG","TYPE","DET","ROUTING","SPARE"]
+            ,["MODID","MODTYPE","ORIENTATION","SPARE"]
+        ]
 
-    @property
-    def header_det(self) :
-        return self._header[0].getField("DET")
+        for hw in header_words :
+            fieldvals = [hex(self.header_field(x)) for x in hw]
+            fieldvals = zip(hw, fieldvals)
+            out.append( ", ".join(["{}:{}".format(x,y) for x,y in list(fieldvals)] ))
+        return out
 
-    @property
-    def header_routing(self) :
-        return self._header[0].getField("ROUTING")
+    def footer_description_strings(self) :
 
-    @property
-    def header_modid(self) :
-        return self._header[1].getField("MODID")
+        out = []
+        if self._footer is None :
+            return out
 
-    @property
-    def header_modtype(self) :
-        return self._header[1].getField("MODTYPE")
+        footer_words = [
+            ["FLAG", "COUNT", "ERROR"]
+        ]
 
-    @property
-    def header_orientation(self) :
-        return self._header[1].getField("ORIENTATION")
+        for fw in footer_words :
+            fieldvals = [hex(self.footer_field(x)) for x in fw]
+            fieldvals = zip(fw, fieldvals)
+            out.append( ", ".join(["{}:{}".format(x,y) for x,y in list(fieldvals)] ))
+        return out
 
-    @property
-    def footer_flag(self) :
-        if self._footer is None : return 0x0
-        return self._footer.getField("FLAG")
-
-    @property
-    def footer_count(self) :
-        if self._footer is None : return 0x0
-        return self._footer.getField("COUNT")
-
-    @property
-    def n_clusters(self) :
-        return self.footer_count
-
-    @property
-    def footer_error(self) :
-        if self._footer is None : return 0x0
-        return self._footer.getField("ERROR")
+        
 
     def routing_dest(self) :
 
@@ -220,7 +219,7 @@ class ModuleData :
 
     def module_type_str(self) :
 
-        det_type = self.header_det
+        det_type = self.header_field("DET")
         out_type = None
         if det_type == DataFormat.M_HDR_DET.PIXEL :
             out_type = "PIXEL"
@@ -323,6 +322,26 @@ class ModuleData :
         if data_type == data_type_clus and (self._footer == None or self._footer == 0x0) :
             raise Exception("ERROR Faield to find FOOTER for clustered data")
 
+        self._parse_header()
+
+    def _parse_header(self) :
+
+        header_descriptors = [
+            DataFormat.M_HDR
+            ,DataFormat.M_HDR2
+        ]
+
+        if len(self._header) != len(header_descriptors) :
+            raise ValueError("ERROR Cannot parse module header if module data has not been loaded!")
+        for i, descriptor in enumerate(header_descriptors) :
+            bitfield = self._header[i]
+            #bitfield = DataFormat.BitFieldWordValue(descriptor, data_word.contents)
+            #self._header_fields.append(bitfield)
+
+            field_names = bitfield.classobj.fields
+            for fn in field_names :
+                self._header_field_map[fn.name] = i
+
 class DataEvent :
 
     def __init__(self, l0id) :
@@ -333,6 +352,71 @@ class DataEvent :
         self._header_idx = []
         self._footer_idx = []
         self._module_idx = []
+
+        ##
+        ## parsed fields
+        ##
+
+        self._header_field_map = {}
+        self._footer_field_map = {}
+
+        self._header_fields = []
+        self._footer_fields = []
+
+    def parse(self) :
+        self._parse_header()
+        self._parse_footer()
+
+    def header_field(self, field_name = "") :
+        idx = self._header_field_map[field_name]
+        return self._header_fields[idx].getField(field_name)
+
+    def footer_field(self, field_name = "") :
+        idx = self._footer_field_map[field_name]
+        return self._footer_fields[idx].getField(field_name)
+
+    def _parse_header(self) :
+
+        header_descriptors = [
+            DataFormat.EVT_HDR1
+            ,DataFormat.EVT_HDR2
+            ,DataFormat.EVT_HDR3
+            ,DataFormat.EVT_HDR4
+            ,DataFormat.EVT_HDR5
+            ,DataFormat.EVT_HDR6
+        ]
+
+        if len(self.header_words) != len(header_descriptors) :
+            raise ValueError("ERROR Cannot parse header if event data has not been loaded!")
+
+        for i, descriptor in enumerate(header_descriptors) :
+            data_word = self.header_words[i]
+            bitfield = DataFormat.BitFieldWordValue(descriptor, data_word.contents)
+            self._header_fields.append(bitfield)
+
+            field_names = bitfield.classobj.fields
+            for fn in field_names :
+                self._header_field_map[fn.name] = i
+
+    def _parse_footer(self) :
+
+        footer_descriptors = [
+            DataFormat.EVT_FTR1
+            ,DataFormat.EVT_FTR2
+            ,DataFormat.EVT_FTR3
+        ]
+
+        if len(self.footer_words) != len(footer_descriptors) :
+            raise ValueError("ERROR Cannot parse footer if event data has not been loaded!")
+
+        for i, descriptor in enumerate(footer_descriptors) :
+            data_word = self.footer_words[i]
+            bitfield = DataFormat.BitFieldWordValue(descriptor, data_word.contents)
+            self._footer_fields.append(bitfield)
+
+            field_names = bitfield.classobj.fields
+            for fn in field_names :
+                self._footer_field_map[fn.name] = i
 
     @property
     def words(self) :
@@ -348,7 +432,6 @@ class DataEvent :
 
     @property
     def footer_words(self) :
-
         return self.words[ self._footer_idx[0] : self._footer_idx[1] ]
 
     @property
@@ -412,6 +495,38 @@ class DataEvent :
     def __iter__(self) :
         return iter(self.words)
 
+    def header_description_strings(self) :
+
+        out = []
+        header_words = [
+            ["FLAG", "TRK_TYPE", "SPARE", "L0ID"]
+            ,["BCID", "SPARE", "RUNNUMBER"]
+            ,["ROI"]
+            ,["EFPU_ID", "EFPU_PID", "TIME"]
+            ,["Connection_ID", "Transaction_ID"]
+            ,["STATUS", "CRC"]
+        ]
+        for hw in header_words :
+            fieldvals = [hex(self.header_field(x)) for x in hw]
+            fieldvals = zip(hw, fieldvals)
+            out.append( ", ".join(["{}:{}".format(x,y) for x,y in list(fieldvals)]) )
+        return out
+
+    def footer_description_strings(self) :
+
+        out = []
+        footer_words = [
+            ["FLAG", "SPARE", "META_COUNT", "HDR_CRC"]
+            ,["ERROR_FLAGS"]
+            ,["WORD_COUNT", "CRC"]
+        ]
+
+        for fw in footer_words :
+            fieldvals = [hex(self.footer_field(x)) for x in fw]
+            fieldvals = zip(fw, fieldvals)
+            out.append( ", ".join(["{}:{}".format(x,y) for x,y in list(fieldvals)]) )
+        return out
+
 def load_events(data_words = [], endian = "little", n_to_load = -1) :
 
     """
@@ -434,6 +549,10 @@ def load_events(data_words = [], endian = "little", n_to_load = -1) :
         
         if word.is_event_footer_start() :
             events.append(current_event)
+
+    for event in events :
+        event.parse()
+
     return events
 
 def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_request = -1) :
@@ -475,6 +594,7 @@ def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_requ
             if word.is_event_footer_start() :
                 events.append(current_event)
 
+
     if int(l0id_request) > 0 and len(events) > 0 :
         tmp = []
         for event in events :
@@ -482,4 +602,8 @@ def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_requ
                 tmp.append(event)
                 break
         events = tmp
+
+    for event in events :
+        event.parse()
+
     return events
