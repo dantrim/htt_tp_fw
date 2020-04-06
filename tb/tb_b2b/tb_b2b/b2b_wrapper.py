@@ -1,12 +1,11 @@
+from bitstring import BitArray
+
 import cocotb
 from cocotb.triggers import Event, Combine, with_timeout, Timer
 
-#from tptest import events
-
 from tb_b2b import b2b_utils
 from tb_utils import events, utils
-from bitstring import BitArray, BitStream
-import event_parse
+#import event_parse
 
 class Wrapper :
 

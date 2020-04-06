@@ -75,7 +75,6 @@ def main() :
     
             waves_cmd_line_no = -1
             for iline, line in enumerate(ifile) :
-                #line = line.strip()
     
                 if "ifeq" in line and "WAVES" in line :
                     waves_cmd_line_no = iline
@@ -84,7 +83,7 @@ def main() :
                         new_line = "@echo \"{}\" >> $@".format(new_line)
                         ofile.write("\t{}\n".format(new_line))
                 ofile.write("{}".format(line))
-    print(questa_makefile)
+    print("Updated QuestSim Makefile: {}".format(questa_makefile))
 
 if __name__ == "__main__" :
     main()
