@@ -143,110 +143,209 @@ class B2BWrapper(Wrapper) :
 
         return hooks
 
-    def compare_outputs(self, expected_output_events) :
+    def compare_port_with_expected(self, port_num, expected_events) :
 
-        print(80 * "=")
+        fifo, io, is_active = self.output_ports[port_num]
+        #port_str = "(port_num, port_name) = ({}, {})".format(io.value, io.name)
+        port_str = "({}, {})".format(io.value, io.name)
+
+        test_n_events = True
+        test_l0ids = True
+        test_l0ids_order = True
+        test_n_modules = True
+        test_event_headers = True
+        test_event_footers = True
+        test_module_headers = True
+        test_module_footers = True
+
+        ##
+        ## for ports marked as not active, we do not expect to have any data
+        ## but there may still be testvectors defined for them, so we avoid
+        ## this case by returning here
+        ##
+        if not is_active :
+            return True
+
+        log = cocotb.log
+
+        observed_data_words = fifo.observed_data_words
+        observed_events = events.load_events(observed_data_words, "little")
+
+        ##
+        ## number of events as expected
+        ##
+        n_expected = len(expected_events)
+        n_observed = len(observed_events)
+        if n_expected != n_observed :
+            test_n_events = False
+            log.error("TEST {} Numbers of observed events and expected events are different for {}".format(port_str, port_str))
+
+        ##
+        ## received L0IDs the same
+        ##
+        l0ids_expected = [x.l0id for x in expected_events]
+        l0ids_observed = [x.l0id for x in observed_events]
+        test_l0ids = set(l0ids_expected) == set(l0ids_observed)
+
+        if not test_l0ids :
+            log.error("TEST {} Observed and expected L0IDs are different for {}".format(port_str, port_str))
+
+            exp_set = set(l0ids_expected)
+            obs_set = set(l0ids_observed)
+
+            common_l0ids = sorted(list(exp_set.intersection(obs_set)))
+            in_exp_not_obs = sorted(list(exp_set - obs_set))
+            in_obs_not_exp = sorted(list(obs_set - exp_set))
+
+            n_common, n_exp_not_obs, n_obs_not_exp = len(common_l0ids), len(in_exp_not_obs), len(in_obs_not_exp)
+            n_rows = max([n_common, n_exp_not_obs, n_obs_not_exp])
+            for l in [ common_l0ids, in_exp_not_obs, in_obs_not_exp ] :
+                while len(l) != n_rows :
+                    l.append(-1)
+
+            header = "TEST {} Common L0IDs\tExpected_Not_Observed\tObserved_Not_Expected".format(port_str)
+            log.info(header)
+            for i in range(n_rows) :
+                cl = hex(common_l0ids[i]) if common_l0ids[i] >= 0 else "X"
+                eo = hex(in_exp_not_obs[i]) if in_exp_not_obs[i] >= 0 else "X"
+                oe = hex(in_obs_not_exp[i]) if in_obs_not_exp[i] >= 0 else "X"
+                line = "TEST {} {}\t{}\t{}".format(port_str, cl, eo, oe)
+                log.info(line)
+
+        ##
+        ## observed L0IDs are in the same order
+        ##
+
+        l0id_event_fails = []
+        if not test_l0ids :
+            test_l0ids_order = False # just set this false if set of L0IDs differ 
+        else : 
+            for iexpected, expected_l0id in enumerate(l0ids_expected) :
+                observed_l0id = l0ids_observed[iexpected]
+                if observed_l0id != expected_l0id :
+                    l0id_event_fails.append(iexpected)
+        test_l0ids_order = not len(l0id_event_fails)
+        if not test_l0ids_order :
+            log.info("TEST {} Observed L0IDs appear in different order than expected!".format(port_str))
+            first_expected_l0id_fail_idx = l0id_event_fails[0]
+            first_expected_l0id_fail = l0ids_expected[first_expected_l0id_fail_idx]
+            first_observed_l0id_fail = l0ids_observed[first_expected_l0id_fail_idx]
+            log.info("TEST {} First out of order L0ID appears at expected event number {}, with Expected L0ID={} and Observed L0ID={}"
+                        .format(port_str, first_expected_l0id_fail_idx, hex(first_expected_l0id_fail), hex(first_observed_l0id_fail)))
+
+        ##
+        ## event-by-event checks
+        ##
+        test_n_events = True
+        test_l0ids = True
+        test_l0ids_order = True
+        test_continue = test_n_events and test_l0ids
+        if not test_continue :
+            return False
+
+        # here we sort the events by l0id
+        expected_events_sorted = sorted(expected_events, key = lambda x : x.l0id)
+        observed_events_sorted = sorted(observed_events, key = lambda x : x.l0id)
+
+        l0id_header_fails = []
+        l0id_footer_fails = []
+        l0id_n_module_fails = []
+        for ievent in range(len(expected_events_sorted)) :
+            expected_event = expected_events_sorted[ievent]
+            observed_event = observed_events_sorted[ievent]
+            l0id = expected_event.l0id
+
+            ##
+            ## event header
+            ##
+            event_header_words_expected = expected_event.header_words
+            event_header_words_observed = observed_event.header_words
+            headers_equal = event_header_words_expected == event_header_words_observed # this does word-by-word comparison
+            if not headers_equal :
+                l0id_header_fails.append(l0id)
+
+            ##
+            ## event footer
+            ##
+            event_footer_words_expected = expected_event.footer_words
+            event_footer_words_observed = observed_event.footer_words
+            footers_equal = event_footer_words_expected == event_footer_words_observed # this does word-by-word comparison
+            if not footers_equal :
+                l0id_footer_fails.append(l0id)
+
+            ##
+            ## modules
+            ##
+            n_modules_expected = expected_event.n_modules
+            n_modules_observed = observed_event.n_modules
+            n_modules_equal = n_modules_expected == n_modules_observed
+            if not n_modules_equal :
+                l0id_n_module_fails.append(l0id)
+
+        n_h, n_f, n_m = len(l0id_header_fails), len(l0id_footer_fails), len(l0id_n_module_fails)
+        if n_h or n_f or n_m :
+            log.info("TEST {} Unexpected event headers (failed in {} events), event footers (failed in {} events), number of modules (failed in {} events)"
+                .format(port_str, n_h, n_f, n_m))
+            n_rows = max([n_h, n_f, n_m])
+            for l in [l0id_header_fails, l0id_footer_fails, l0id_n_module_fails] :
+                while len(l) != n_rows :
+                    l.append(-1)
+            header = "TEST {} Event_Header_Failures\tEvent_Footer_Failers\tN_Module_Failures".format(port_str)
+            log.info(header)
+            for i in range(n_rows) :
+                hf = hex(l0id_header_fails[i]) if l0id_header_fails[i] >= 0 else "X"
+                ff = hex(l0id_footer_fails[i]) if l0id_footer_fails[i] >= 0 else "X"
+                mf = hex(l0id_n_module_fails[i]) if l0id_n_module_fails[i] >= 0 else "X"
+                line = "TEST {} {}\t{}\t{}".format(port_str, hf, ff, mf)
+                log.info(line)
+
+        test_event_headers = n_h == 0
+        test_event_footers = n_f == 0
+        test_n_modules = n_m == 0 
+
+        result_str = { True : "PASS", False : "FAIL" }
+        log.info(60 * "-")
+        log.info("TEST {}           *** SUMMARY ***".format(port_str))
+        log.info("TEST {} > Correct # events               : {}".format(port_str, result_str[test_n_events]))
+        log.info("TEST {} > Correct L0IDs                  : {}".format(port_str, result_str[test_l0ids]))
+        log.info("TEST {} > Correct L0ID order             : {}".format(port_str, result_str[test_l0ids_order]))
+        log.info("TEST {} > Event headers correct          : {}".format(port_str, result_str[test_event_headers]))
+        log.info("TEST {} > Event footers coorect          : {}".format(port_str, result_str[test_event_footers]))
+        log.info("TEST {} > Correct # of modules per event : {}".format(port_str, result_str[test_n_modules]))
+        log.info("TEST {} > Correct module headers         : NOT TESTED (YET)".format(port_str))
+        log.info("TEST {} > Correct module footers         : NOT TESTED (YET)".format(port_str))
+
+        return (test_n_events
+                and test_l0ids
+                and test_l0ids_order
+                and test_n_modules
+                and test_event_headers
+                and test_event_footers
+                and test_module_headers
+                and test_module_footers
+            )
+
+    def compare_outputs_with_expected(self, expected_output_events) :
+
+        log = cocotb.log
+
+        log.info("TEST {}".format(60 * "="))
+        test_passed = True
+        result_str = { True : "PASS", False : "FAIL" }
         for port_num, exp_events in enumerate(expected_output_events) :
-            print(40 * "- ")
-            monitor, io, active = self.output_ports[port_num]
-            if not active :
-                exp_events = []
 
-            received_words = monitor.observed_data_words
-            obs_events = events.load_events(received_words, "little")
+            log.info("TEST {}".format(60 * "="))
+            fifo, io, is_active = self.output_ports[port_num]
+            #port_str = "(port_num, port_name) = ({}, {})".format(io.value, io.name)
+            port_str = "({}, {})".format(io.value, io.name)
+            port_passed = self.compare_port_with_expected(port_num, exp_events)
+            log.info(60 * "-")
+            log.info("TEST {} => B2B Port passed? {}".format(port_str, result_str[port_passed]))
+            if not port_passed :
+                test_passed = False
 
-            port_str = "(port_num, port_name) = ({}, {})".format(io.value, io.name)
+        log.info("TEST {}".format(60 * "="))
+        log.info("TEST *** ==> B2B TEST passed? {} ***".format( result_str[test_passed]))
+        log.info("TEST {}".format(60 * "="))
 
-            n_events_expected = len(exp_events)
-            n_events_observed = len(obs_events)
-            print("Output {} : N_expected = {}, N_observed = {}".format(port_str, n_events_expected, n_events_observed))
-            if n_events_expected != n_events_observed and active:
-                print("\tNumber of observed and expected events differ for {}!".format(port_str))
-                return
-
-            print("Observed events:")
-            for ievent, event in enumerate(obs_events) :
-                l0id = event.l0id
-                n_modules = event.n_modules
-                n_words = len(event.words)
-                print(" Event num {:03} : L0ID={}, N_words={}, N_modules={}".format(ievent, hex(l0id), n_words, n_modules))
-                print(" ==== HEADER ====")
-                for i, h in enumerate(event.header_words) :
-                    print("    Header[{:02}] = {}".format(i, h.hex()))
-                print(" ==== FOOTER ====")
-                for i, f in enumerate(event.footer_words) :
-                    print("    Footer[{:02}] = {}".format(i, f.hex()))
-
-            print("Expected events:")
-            for ievent, event in enumerate(exp_events) :
-                l0id = event.l0id
-                n_modules = event.n_modules
-                n_words = len(event.words)
-                print(" Event num {:03} : L0ID={}, N_words={}, N_modules={}".format(ievent, hex(l0id), n_words, n_modules))
-                print(" ==== HEADER ====")
-                for i, h in enumerate(event.header_words) :
-                    print("    Header[{:02}] = {}".format(i, h.hex()))
-                print(" ==== FOOTER ====")
-                for i, f in enumerate(event.footer_words) :
-                    print("    Footer[{:02}] = {}".format(i, f.hex()))
-
-            print("")
-            for ievent in range(len(obs_events)) :
-                obs_event = obs_events[ievent]
-                exp_event = exp_events[ievent]
-
-                ##
-                ## header
-                ##
-                obs_header = obs_event.header_words
-                exp_header = exp_event.header_words
-                headers_ok = { True : "Y", False : "N" }[obs_header == exp_header]
-                print("\t-> Event {:02} header ok? {}".format(ievent, headers_ok))
-
-                ##
-                ## modules
-                ##
-                obs_n_modules = obs_event.n_modules
-                exp_n_modules = exp_event.n_modules
-                n_modules_ok = { True : "Y", False : "N" }[obs_n_modules == exp_n_modules]
-                print("\t-> Event {:02} N modules ok? {}".format(ievent, n_modules_ok))
-                if n_modules_ok :
-                    obs_module_data = obs_event.get_modules()
-                    exp_module_data = exp_event.get_modules()
-                    module_data_ok = True
-                    for i in range(len(obs_module_data)) :
-                        obs_data = obs_module_data[i]
-                        exp_data = exp_module_data[i]
-
-                        obs_module_header = [hex(x.value) for x in obs_data.header_words]
-                        exp_module_header = [hex(x.value) for x in exp_data.header_words ]
-                        mod_header_ok = obs_module_header == exp_module_header
-
-                        obs_module_footer = [hex(x.value) for x in [obs_data.footer]]
-                        exp_module_footer = [hex(x.value) for x in [exp_data.footer]]
-                        mod_footer_ok = obs_module_footer == exp_module_footer
-
-                        if not mod_header_ok :
-                            module_data_ok = False
-                        if not mod_footer_ok :
-                            module_data_ok = False
-
-                        mod_header_ok = { True : "Y", False : "N" }[mod_header_ok]
-                        mod_footer_ok = { True : "Y", False : "N" }[mod_footer_ok]
-                        print("\t\t\tModule {:02}: header ok? {}, footer ok? {}".format(i, mod_header_ok , mod_footer_ok))
-
-                    module_data_ok = { True : "Y", False : "N" }[module_data_ok]
-                    print("\t-> Event {:02} Module data ok? {}".format(ievent, module_data_ok))
-                    
-
-                ##
-                ## footer
-                ##
-                obs_footer = obs_event.footer_words
-                exp_footer = exp_event.footer_words
-                footers_ok = { True : "Y", False : "N" }[obs_footer == exp_footer]
-                print("\t-> Event {:02} footer ok? {}".format(ievent, footers_ok))
-
-
-
-        print(80 * "=")
+        return test_passed

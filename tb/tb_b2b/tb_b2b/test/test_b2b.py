@@ -126,7 +126,7 @@ def b2b_test_0(dut) :
         raise ValueError("Unable to find associated IO for B2B BOARD_ID={}".format(board_id))
     dut._log.info("Setting test IO with base (port_name, port_num) = ({}, {})".format(this_tp.name, this_tp.value))
 
-    num_events_to_process = 1
+    num_events_to_process = -1
     l0id_request = -1
 
     ##
@@ -231,11 +231,7 @@ def b2b_test_0(dut) :
         recvd_events = events.load_events(words, "little") 
         cocotb.log.info("Output for {} (output port num {}) received {} events ({})".format(io.name, io.value, len(recvd_events), monitor.name))
         
-    b2b.compare_outputs(expected_output_events = expected_output_events)
-
-    ##
-    ## close wrapper
-    ##
-    print(b2b)
-    b2b.close()
-    print(b2b)
+    test_passed = b2b.compare_outputs_with_expected(expected_output_events = expected_output_events)
+    cocotb_result = { True : cocotb.result.TestSuccess, False : cocotb.result.TestFailure }[test_passed]
+    raise cocotb_result
+#    return cocotb_result

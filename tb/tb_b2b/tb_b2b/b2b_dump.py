@@ -1,7 +1,18 @@
+##
+## Some utility to load event files and dump their contents in a useful
+## way. Can be executed with file inputs, or used in an external module by
+## passing in lists of events.
+##
+## NB For the most part this script is not B2B-specific, but is here for
+## sand-boxing.
+##
+## author: Daniel Joseph Antrim // daniel.joseph.antrim@CERN.CH
+## date: April 2020
+##
+
 from argparse import ArgumentParser
 from pathlib import Path
 
-from tb_b2b import b2b_utils
 from tb_utils import events, utils
 
 def check_input(args) :
@@ -139,7 +150,6 @@ def dump_events(filename, event_list, detailed_modules = False, write_out = Fals
         else :
             print("  {:04}  {}".format(data_word_cnt, line))
             data_word_cnt += 1
-        #print("  {:04}  {}".format(i,line))
 
 def main() :
 
