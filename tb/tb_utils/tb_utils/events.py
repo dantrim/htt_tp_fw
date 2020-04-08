@@ -125,6 +125,21 @@ class ModuleData :
 
         self._parse(data_words)
 
+    @property
+    def header_field_names(self) :
+        header_words = [
+            ["FLAG","TYPE","DET","ROUTING","SPARE"]
+            ,["MODID","MODTYPE","ORIENTATION","SPARE"]
+        ]
+        return header_words
+
+    @property
+    def footer_field_names(self) :
+        footer_words = [
+            ["FLAG", "COUNT", "ERROR"]
+        ]
+        return footer_words
+
     def header_field(self, field_name = "") :
         idx = self._header_field_map[field_name]
         return self._header[idx].getField(field_name)
@@ -152,11 +167,7 @@ class ModuleData :
     def header_description_strings(self) :
 
         out = []
-        header_words = [
-            ["FLAG","TYPE","DET","ROUTING","SPARE"]
-            ,["MODID","MODTYPE","ORIENTATION","SPARE"]
-        ]
-
+        header_words = self.header_field_names
         for hw in header_words :
             fieldvals = [hex(self.header_field(x)) for x in hw]
             fieldvals = zip(hw, fieldvals)
@@ -169,10 +180,7 @@ class ModuleData :
         if self._footer is None :
             return out
 
-        footer_words = [
-            ["FLAG", "COUNT", "ERROR"]
-        ]
-
+        footer_words = self.footer_field_names
         for fw in footer_words :
             fieldvals = [hex(self.footer_field(x)) for x in fw]
             fieldvals = zip(fw, fieldvals)
@@ -495,9 +503,8 @@ class DataEvent :
     def __iter__(self) :
         return iter(self.words)
 
-    def header_description_strings(self) :
-
-        out = []
+    # should be static/external
+    def header_field_names(self) :
         header_words = [
             ["FLAG", "TRK_TYPE", "SPARE", "L0ID"]
             ,["BCID", "SPARE", "RUNNUMBER"]
@@ -506,6 +513,21 @@ class DataEvent :
             ,["Connection_ID", "Transaction_ID"]
             ,["STATUS", "CRC"]
         ]
+        return header_words
+
+    # should be static/external
+    def footer_field_names(self) :
+        footer_words = [
+            ["FLAG", "SPARE", "META_COUNT", "HDR_CRC"]
+            ,["ERROR_FLAGS"]
+            ,["WORD_COUNT", "CRC"]
+        ]
+        return footer_words
+
+    def header_description_strings(self) :
+
+        out = []
+        header_words = self._header_field_names()
         for hw in header_words :
             fieldvals = [hex(self.header_field(x)) for x in hw]
             fieldvals = zip(hw, fieldvals)
@@ -515,12 +537,7 @@ class DataEvent :
     def footer_description_strings(self) :
 
         out = []
-        footer_words = [
-            ["FLAG", "SPARE", "META_COUNT", "HDR_CRC"]
-            ,["ERROR_FLAGS"]
-            ,["WORD_COUNT", "CRC"]
-        ]
-
+        footer_words = self._footer_field_names
         for fw in footer_words :
             fieldvals = [hex(self.footer_field(x)) for x in fw]
             fieldvals = zip(fw, fieldvals)

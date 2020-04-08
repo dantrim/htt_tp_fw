@@ -1,4 +1,5 @@
 from bitstring import BitArray
+from columnar import columnar
 
 import cocotb
 from cocotb.triggers import Event, Combine, with_timeout, Timer
@@ -81,10 +82,29 @@ class Wrapper :
 
         pass
 
+class bcolors:
+    #HEADER = '\033[95m'
+    #OKBLUE = '\033[94m'
+    #OKGREEN = '\033[92m'
+    #WARNING = '\033[93m'
+    #FAIL = '\033[91m'
+    #ENDC = '\033[0m'
+    #BOLD = '\033[1m'
+    #UNDERLINE = '\033[4m'
+    HEADER = ''
+    OKBLUE = ''
+    OKGREEN = ''
+    WARNING = ''
+    FAIL = ''
+    ENDC = ''
+    BOLD = ''
+    UNDERLINE = ''
+
 class B2BWrapper(Wrapper) :
 
     def __init__(self, clock, name) :
         super().__init__(clock, name, len(b2b_utils.B2BIO.Inputs), len(b2b_utils.B2BIO.Outputs))
+
 
     def add_input_driver(self, driver, IO) :
 
@@ -178,7 +198,6 @@ class B2BWrapper(Wrapper) :
         n_observed = len(observed_events)
         if n_expected != n_observed :
             test_n_events = False
-            log.error("TEST {} Numbers of observed events and expected events are different for {}".format(port_str, port_str))
 
         ##
         ## received L0IDs the same
@@ -188,8 +207,7 @@ class B2BWrapper(Wrapper) :
         test_l0ids = set(l0ids_expected) == set(l0ids_observed)
 
         if not test_l0ids :
-            log.error("TEST {} Observed and expected L0IDs are different for {}".format(port_str, port_str))
-
+            #log.error("TEST {} Observed and expected L0IDs are different for {}".format(port_str, port_str))
             exp_set = set(l0ids_expected)
             obs_set = set(l0ids_observed)
 
@@ -203,14 +221,18 @@ class B2BWrapper(Wrapper) :
                 while len(l) != n_rows :
                     l.append(-1)
 
-            header = "TEST {} Common L0IDs\tExpected_Not_Observed\tObserved_Not_Expected".format(port_str)
-            log.info(header)
+            header = ["{}TEST ERROR {}{}".format(bcolors.FAIL,port_str,bcolors.ENDC), "Expected L0IDs not observed", "Observed L0IDs not expected"]
+            data = []
+            eo = []
+            oe = []
             for i in range(n_rows) :
-                cl = hex(common_l0ids[i]) if common_l0ids[i] >= 0 else "X"
-                eo = hex(in_exp_not_obs[i]) if in_exp_not_obs[i] >= 0 else "X"
-                oe = hex(in_obs_not_exp[i]) if in_obs_not_exp[i] >= 0 else "X"
-                line = "TEST {} {}\t{}\t{}".format(port_str, cl, eo, oe)
-                log.info(line)
+                if in_exp_not_obs[i] >= 0 :
+                    eo.append(hex(in_exp_not_obs[i]))
+                if in_obs_not_exp[i] >= 0 :
+                    oe.append(hex(in_obs_not_exp[i]))
+            data.append(["", "\n".join(eo), "\n".join(oe)])
+            table = columnar(data, header, no_borders = False)
+            log.info(table)
 
         ##
         ## observed L0IDs are in the same order
@@ -225,13 +247,15 @@ class B2BWrapper(Wrapper) :
                 if observed_l0id != expected_l0id :
                     l0id_event_fails.append(iexpected)
         test_l0ids_order = not len(l0id_event_fails)
+        first_expected_l0id_fail = None 
+        first_observed_l0id_fail = None 
         if not test_l0ids_order :
-            log.info("TEST {} Observed L0IDs appear in different order than expected!".format(port_str))
+            #log.info("TEST {} Observed L0IDs appear in different order than expected!".format(port_str))
             first_expected_l0id_fail_idx = l0id_event_fails[0]
             first_expected_l0id_fail = l0ids_expected[first_expected_l0id_fail_idx]
             first_observed_l0id_fail = l0ids_observed[first_expected_l0id_fail_idx]
-            log.info("TEST {} First out of order L0ID appears at expected event number {}, with Expected L0ID={} and Observed L0ID={}"
-                        .format(port_str, first_expected_l0id_fail_idx, hex(first_expected_l0id_fail), hex(first_observed_l0id_fail)))
+            #log.info("TEST {} First out of order L0ID appears at expected event number {}, with Expected L0ID={} and Observed L0ID={}"
+            #            .format(port_str, first_expected_l0id_fail_idx, hex(first_expected_l0id_fail), hex(first_observed_l0id_fail)))
 
         ##
         ## event-by-event checks
@@ -250,6 +274,11 @@ class B2BWrapper(Wrapper) :
         l0id_header_fails = []
         l0id_footer_fails = []
         l0id_n_module_fails = []
+
+        failed_footer_fields = set()
+        failed_header_fields = set()
+
+
         for ievent in range(len(expected_events_sorted)) :
             expected_event = expected_events_sorted[ievent]
             observed_event = observed_events_sorted[ievent]
@@ -261,8 +290,26 @@ class B2BWrapper(Wrapper) :
             event_header_words_expected = expected_event.header_words
             event_header_words_observed = observed_event.header_words
             headers_equal = event_header_words_expected == event_header_words_observed # this does word-by-word comparison
+
             if not headers_equal :
                 l0id_header_fails.append(l0id)
+
+                # only print detailed information if there is a failure
+                header_field_names = observed_event.header_field_names()
+                table_header = ["{}TEST ERROR {}\nL0ID={}{}".format(bcolors.FAIL,port_str, hex(l0id),bcolors.ENDC), "HEADER FIELD", "OBSERVED", "EXPECTED", "ERROR"]
+                err_str = { True : "PASS", False : "{}FAIL{}".format(bcolors.FAIL, bcolors.ENDC) }
+                data = []
+                for header_row in header_field_names :
+                    for field in header_row :
+                        obs = observed_event.header_field(field)
+                        exp = expected_event.header_field(field)
+                        data.append( ["", field, hex(obs), hex(exp), err_str[obs==exp]] )
+                        if not obs==exp :
+                            failed_header_fields.add(field)
+                table = columnar(data, table_header, no_borders = False)
+                log.info(table)
+                
+
 
             ##
             ## event footer
@@ -270,8 +317,24 @@ class B2BWrapper(Wrapper) :
             event_footer_words_expected = expected_event.footer_words
             event_footer_words_observed = observed_event.footer_words
             footers_equal = event_footer_words_expected == event_footer_words_observed # this does word-by-word comparison
+
             if not footers_equal :
                 l0id_footer_fails.append(l0id)
+
+                # only print detailed information if there is a failure
+                footer_field_names = observed_event.footer_field_names()
+                table_header = ["{}TEST ERROR {}\nL0ID={}{}".format(bcolors.FAIL,port_str,hex(l0id),bcolors.ENDC), "FOOTER FIELD", "OBSERVED", "EXPECTED", "ERROR"]
+                err_str = { True : "PASS", False : "{}FAIL{}".format(bcolors.FAIL, bcolors.ENDC) }
+                data = []
+                for footer_row in footer_field_names :
+                    for field in footer_row :
+                        obs = observed_event.footer_field(field)
+                        exp = expected_event.footer_field(field)
+                        data.append( ["", field, hex(obs), hex(exp), err_str[obs==exp]] )
+                        if not obs==exp :
+                            failed_footer_fields.add(field)
+                table = columnar(data, table_header, no_borders = False)
+                log.info(table)
 
             ##
             ## modules
@@ -284,36 +347,73 @@ class B2BWrapper(Wrapper) :
 
         n_h, n_f, n_m = len(l0id_header_fails), len(l0id_footer_fails), len(l0id_n_module_fails)
         if n_h or n_f or n_m :
-            log.info("TEST {} Unexpected event headers (failed in {} events), event footers (failed in {} events), number of modules (failed in {} events)"
-                .format(port_str, n_h, n_f, n_m))
+            #log.info("{}TEST ERROR{} {} Unexected event header/footer/number of modules:".format(port_str))
+            #log.info("TEST {} Unexpected event headers (failed in {} events), event footers (failed in {} events), number of modules (failed in {} events)"
+            #    .format(port_str, n_h, n_f, n_m))
             n_rows = max([n_h, n_f, n_m])
             for l in [l0id_header_fails, l0id_footer_fails, l0id_n_module_fails] :
                 while len(l) != n_rows :
                     l.append(-1)
-            header = "TEST {} Event_Header_Failures\tEvent_Footer_Failers\tN_Module_Failures".format(port_str)
-            log.info(header)
+            r0 = "TEST {}".format(port_str)
+            #headers = [r0, "Event Header Failures", "Event Footer Failures", "Module Count Failures"]
+            headers = ["{}TEST ERROR {} {}".format(bcolors.FAIL, port_str, bcolors.ENDC), "L0ID w/ Occurrences"]
+            data = []
+            hf_fails = []
+            ff_fails = []
+            mf_fails = []
+            #log.info(header)
             for i in range(n_rows) :
-                hf = hex(l0id_header_fails[i]) if l0id_header_fails[i] >= 0 else "X"
-                ff = hex(l0id_footer_fails[i]) if l0id_footer_fails[i] >= 0 else "X"
-                mf = hex(l0id_n_module_fails[i]) if l0id_n_module_fails[i] >= 0 else "X"
-                line = "TEST {} {}\t{}\t{}".format(port_str, hf, ff, mf)
-                log.info(line)
+                if l0id_header_fails[i] >= 0 :
+                    hf_fails.append(hex(l0id_header_fails[i]))
+                if l0id_footer_fails[i] >= 0 :
+                    ff_fails.append(hex(l0id_footer_fails[i]))           
+                if l0id_n_module_fails[i] >= 0 :
+                    mf_fails.append(hex(l0id_n_module_fails[i]))
+#                hf = hex(l0id_header_fails[i]) if l0id_header_fails[i] >= 0 else ""
+#                ff = hex(l0id_footer_fails[i]) if l0id_footer_fails[i] >= 0 else ""
+#                mf = hex(l0id_n_module_fails[i]) if l0id_n_module_fails[i] >= 0 else ""
+#                data.append( ["", hf, ff, mf] )
+                #line = "TEST {} {}\t{}\t{}".format(port_str, hf, ff, mf)
+                #log.info(line)
+            data = [
+                ["Event Header Errors", ", ".join(hf_fails)]
+                ,["Event Footer Errors", ", ".join(ff_fails)]
+                ,["Module Count Errors", ", ".join(mf_fails)]
+            ]
+            table = columnar(data, headers, no_borders = False)
+            log.info(table)
 
         test_event_headers = n_h == 0
         test_event_footers = n_f == 0
         test_n_modules = n_m == 0 
 
-        result_str = { True : "PASS", False : "FAIL" }
-        log.info(60 * "-")
-        log.info("TEST {}           *** SUMMARY ***".format(port_str))
-        log.info("TEST {} > Correct # events               : {}".format(port_str, result_str[test_n_events]))
-        log.info("TEST {} > Correct L0IDs                  : {}".format(port_str, result_str[test_l0ids]))
-        log.info("TEST {} > Correct L0ID order             : {}".format(port_str, result_str[test_l0ids_order]))
-        log.info("TEST {} > Event headers correct          : {}".format(port_str, result_str[test_event_headers]))
-        log.info("TEST {} > Event footers coorect          : {}".format(port_str, result_str[test_event_footers]))
-        log.info("TEST {} > Correct # of modules per event : {}".format(port_str, result_str[test_n_modules]))
-        log.info("TEST {} > Correct module headers         : NOT TESTED (YET)".format(port_str))
-        log.info("TEST {} > Correct module footers         : NOT TESTED (YET)".format(port_str))
+        result_str = { True : "PASS", False : "{}FAIL{}".format(bcolors.FAIL,bcolors.ENDC) }
+        n_x = 80
+        log.info(n_x * "*")
+        table_header = ["TEST SUMMARY {}\nSub-test".format(port_str), "Result", "Notes"]
+        data = [
+            ["Correct Number of Events", result_str[test_n_events], "# events\n(exp., obs.) = ({},{})".format(n_expected, n_observed)]
+            ,["Correct L0IDs received", result_str[test_l0ids], ""]
+            ,["L0IDs received in correct order", result_str[test_l0ids_order], "First bad L0ID event:\n(exp., obs.)=({},{})".format(first_expected_l0id_fail, first_observed_l0id_fail)]
+            ,["Event headers correct", result_str[test_event_headers], "Bad event header fields:\n{}".format(", ".join(failed_header_fields))]
+            ,["Event footers correct", result_str[test_event_footers], "Bad event footer fields:\n{}".format(", ".join(failed_footer_fields))]
+            ,["Correct # of modules/event", result_str[test_n_modules], ""]
+            ,["Correct module headers/event", "NOT TESTED (YET)", ""]
+            ,["Correct module footers/evetn", "NOT TESTED (YET)", ""]
+        ]
+        table = columnar(data, table_header, no_borders = False)
+        log.info(table)
+        log.info(n_x * "*")
+
+     #   log.info("TEST {}           *** SUMMARY ***".format(port_str))
+     #   log.info("TEST {} > Correct # events               : {}".format(port_str, result_str[test_n_events]))
+     #   log.info("TEST {} > Correct L0IDs                  : {}".format(port_str, result_str[test_l0ids]))
+     #   log.info("TEST {} > Correct L0ID order             : {}".format(port_str, result_str[test_l0ids_order]))
+     #   log.info("TEST {} > Event headers correct          : {}".format(port_str, result_str[test_event_headers]))
+     #   log.info("TEST {} > Event footers coorect          : {}".format(port_str, result_str[test_event_footers]))
+     #   log.info("TEST {} > Correct # of modules per event : {}".format(port_str, result_str[test_n_modules]))
+     #   log.info("TEST {} > Correct module headers         : NOT TESTED (YET)".format(port_str))
+     #   log.info("TEST {} > Correct module footers         : NOT TESTED (YET)".format(port_str))
 
         return (test_n_events
                 and test_l0ids
@@ -329,23 +429,33 @@ class B2BWrapper(Wrapper) :
 
         log = cocotb.log
 
-        log.info("TEST {}".format(60 * "="))
         test_passed = True
         result_str = { True : "PASS", False : "FAIL" }
+        results = []
         for port_num, exp_events in enumerate(expected_output_events) :
 
-            log.info("TEST {}".format(60 * "="))
             fifo, io, is_active = self.output_ports[port_num]
             #port_str = "(port_num, port_name) = ({}, {})".format(io.value, io.name)
             port_str = "({}, {})".format(io.value, io.name)
             port_passed = self.compare_port_with_expected(port_num, exp_events)
             log.info(60 * "-")
-            log.info("TEST {} => B2B Port passed? {}".format(port_str, result_str[port_passed]))
+#            log.info("TEST {} => B2B Port passed? {}".format(port_str, result_str[port_passed]))
             if not port_passed :
                 test_passed = False
 
-        log.info("TEST {}".format(60 * "="))
-        log.info("TEST *** ==> B2B TEST passed? {} ***".format( result_str[test_passed]))
-        log.info("TEST {}".format(60 * "="))
+            results.append( (port_str, test_passed) )
+
+        header = ["B2B TEST RESULTS SUMMARY\nOUTPUT PORT", "RESULT"]
+        data = []
+        for r in results :
+            port_str, res = r
+            data.append( [port_str, result_str[res]] )
+        data.append([10 * "*" for _ in header])
+        data.append(["{}FINAL B2B RESULT{}".format(bcolors.OKBLUE,bcolors.ENDC), result_str[test_passed]])
+        table = columnar(data, header, no_borders = False)
+        log.info(table)
+#        log.info("TEST {}".format(60 * "="))
+#        log.info("TEST *** ==> B2B TEST passed? {} ***".format( result_str[test_passed]))
+#        log.info("TEST {}".format(60 * "="))
 
         return test_passed
