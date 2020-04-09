@@ -5,7 +5,7 @@ import struct
 import cocotb
 from cocotb.drivers import Driver
 from cocotb.monitors import Monitor
-from cocotb.triggers import RisingEdge, Event, ReadOnly, NextTimeStep
+from cocotb.triggers import RisingEdge, Event, ReadOnly, NextTimeStep, Timer
 
 import tb_utils
 
@@ -138,6 +138,15 @@ class FifoDriver(FifoWrapper, Driver) :
             yield RisingEdge(self.clock)
             self.fifo.write_enable <= 0
 
+        time = cocotb.utils.get_sim_time(units = "ns") # keep track of the simulation time (this time should coincide with what appears in the waveforms)
+        cocotb.log.info("FOO {} DRIVER WAIT START {}".format(self.io_port_num, time))
+
+        #yield RisingEdge(self.clock)
+        timer = Timer(10, units = "ns")
+        yield timer
+        time = cocotb.utils.get_sim_time(units = "ns") # keep track of the simulation time (this time should coincide with what appears in the waveforms)
+        cocotb.log.info("FOO {} DRIVER WAIT STOP {}".format(self.io_port_num, time))
+
         # wait until there is space in the fifo
         while self.fifo.almost_full != 0 :
             yield RisingEdge(self.clock)
@@ -151,6 +160,7 @@ class FifoDriver(FifoWrapper, Driver) :
 
         if self.write_out :
             self.write_word((int(transaction), time))
+        
 
 class FifoMonitor(FifoWrapper, Monitor) :
 

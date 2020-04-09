@@ -215,7 +215,7 @@ def b2b_test_0(dut) :
     yield Combine(*send_finished_signal)
     dut._log.info("Sending finished!")
 
-    timer = Timer(10, "us")
+    timer = Timer(50, "us")
     dut._log.info("Going to wait 10 microseconds")
     yield timer
 

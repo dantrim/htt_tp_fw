@@ -137,6 +137,16 @@ class B2BWrapper(Wrapper) :
         for i in range(self.n_output_ports) :
             self.set_output_state(i, False)
 
+    #@cocotb.coroutine
+    #def wait_between_send(self, transaction) :
+
+    #    time = cocotb.utils.get_sim_time(units = "ns")
+    #    cocotb.log.info("FOO WAIT BETWEEN SEND START {}".format(time))
+    #    timer = Timer(10, units = "ns")
+    #    yield timer
+    #    time = cocotb.utils.get_sim_time(units = "ns")
+    #    cocotb.log.info("FOO WAIT BETWEEN SEND START {}".format(time))
+
     def send_input_events(self, input_testvectors, n_to_send = -1, l0id_request = -1 ) :
 
         n_input_files = len(input_testvectors)
