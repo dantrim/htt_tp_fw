@@ -105,6 +105,12 @@ def dump_events(filename, event_list, detailed_modules = False, write_out = Fals
             for i, dw in enumerate(module.data_words) :
                 if i == 0 :
                     module_desc = "  {}".format(", ".join(module.header_description_strings()[0].split(",")[:4]))
+                    #mod_str = "{}  {}{}".format(dw, desc, module_desc)
+                    #output.append(mod_str)
+                elif i == 1 :
+                    module_desc = "  {}".format(", ".join(module.footer_description_strings()[0].split(",")))
+                    #mod_str = "{}  {}{}".format(dw, desc, module_desc)
+                    #output.append(mod_str)
                 # right now the footer (and cluster data besides the header) is meangingless
                 #elif i == 1 :
                 #    module_desc = "  {}".format(module.footer_description_strings()[0])

@@ -5,8 +5,7 @@ import cocotb
 from cocotb.triggers import Event, Combine, with_timeout, Timer
 
 from tb_b2b import b2b_utils
-from tb_utils import events, utils
-#import event_parse
+from tb_utils import events
 
 class Wrapper :
 
@@ -106,7 +105,7 @@ class B2BWrapper(Wrapper) :
         super().__init__(clock, name, len(b2b_utils.B2BIO.Inputs), len(b2b_utils.B2BIO.Outputs))
 
 
-    def add_input_driver(self, driver, IO) :
+    def add_input_driver(self, driver, IO, active = True) :
 
         io_num = IO.value
         if io_num > self.n_input_ports :
@@ -114,9 +113,9 @@ class B2BWrapper(Wrapper) :
 
         self._input_ports[io_num][0] = driver
         self._input_ports[io_num][1] = IO
-        self._input_ports[io_num][2] = driver.active
+        self._input_ports[io_num][2] = active
 
-    def add_output_monitor(self, monitor, IO) :
+    def add_output_monitor(self, monitor, IO, active = True) :
 
         io_num = IO.value
         if io_num > self.n_output_ports :
@@ -124,7 +123,7 @@ class B2BWrapper(Wrapper) :
 
         self._output_ports[io_num][0] = monitor
         self._output_ports[io_num][1] = IO
-        self._output_ports[io_num][2] = monitor.active
+        self._output_ports[io_num][2] = active
 
     def close(self) :
 
@@ -188,7 +187,7 @@ class B2BWrapper(Wrapper) :
 
         log = cocotb.log
 
-        observed_data_words = fifo.observed_data_words
+        observed_data_words = fifo.observed_words
         observed_events = events.load_events(observed_data_words, "little")
 
         ##
@@ -438,7 +437,6 @@ class B2BWrapper(Wrapper) :
             #port_str = "(port_num, port_name) = ({}, {})".format(io.value, io.name)
             port_str = "({}, {})".format(io.value, io.name)
             port_passed = self.compare_port_with_expected(port_num, exp_events)
-            log.info(60 * "-")
 #            log.info("TEST {} => B2B Port passed? {}".format(port_str, result_str[port_passed]))
             if not port_passed :
                 test_passed = False

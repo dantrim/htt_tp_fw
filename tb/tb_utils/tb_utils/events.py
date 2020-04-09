@@ -125,7 +125,6 @@ class ModuleData :
 
         self._parse(data_words)
 
-    @property
     def header_field_names(self) :
         header_words = [
             ["FLAG","TYPE","DET","ROUTING","SPARE"]
@@ -133,7 +132,6 @@ class ModuleData :
         ]
         return header_words
 
-    @property
     def footer_field_names(self) :
         footer_words = [
             ["FLAG", "COUNT", "ERROR"]
@@ -167,7 +165,7 @@ class ModuleData :
     def header_description_strings(self) :
 
         out = []
-        header_words = self.header_field_names
+        header_words = self.header_field_names()
         for hw in header_words :
             fieldvals = [hex(self.header_field(x)) for x in hw]
             fieldvals = zip(hw, fieldvals)
@@ -180,7 +178,7 @@ class ModuleData :
         if self._footer is None :
             return out
 
-        footer_words = self.footer_field_names
+        footer_words = self.footer_field_names()
         for fw in footer_words :
             fieldvals = [hex(self.footer_field(x)) for x in fw]
             fieldvals = zip(fw, fieldvals)
@@ -527,7 +525,7 @@ class DataEvent :
     def header_description_strings(self) :
 
         out = []
-        header_words = self._header_field_names()
+        header_words = self.header_field_names()
         for hw in header_words :
             fieldvals = [hex(self.header_field(x)) for x in hw]
             fieldvals = zip(hw, fieldvals)
@@ -537,7 +535,7 @@ class DataEvent :
     def footer_description_strings(self) :
 
         out = []
-        footer_words = self._footer_field_names
+        footer_words = self.footer_field_names()
         for fw in footer_words :
             fieldvals = [hex(self.footer_field(x)) for x in fw]
             fieldvals = zip(fw, fieldvals)

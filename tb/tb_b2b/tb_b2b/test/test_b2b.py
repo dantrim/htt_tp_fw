@@ -8,8 +8,10 @@ from cocotb.result import TestFailure, TestSuccess
 
 from tb_b2b import b2b_utils
 import tb_b2b.b2b_wrapper as wrapper
-from tb_b2b import fifo_wrapper
-from tb_b2b.fifo_wrapper import B2BFifoDriver, B2BFifoMonitor
+#from tb_b2b import fifo_wrapper
+#from tb_utils import fifo_wrapper
+from tb_utils.fifo_wrapper import FifoDriver, FifoMonitor
+#from tb_b2b.fifo_wrapper import B2BFifoDriver, B2BFifoMonitor
 
 from event_parse import event_table
 from event_parse import decoder
@@ -126,7 +128,7 @@ def b2b_test_0(dut) :
         raise ValueError("Unable to find associated IO for B2B BOARD_ID={}".format(board_id))
     dut._log.info("Setting test IO with base (port_name, port_num) = ({}, {})".format(this_tp.name, this_tp.value))
 
-    num_events_to_process = 1
+    num_events_to_process = 2
     l0id_request = -1
 
     ##
@@ -192,15 +194,15 @@ def b2b_test_0(dut) :
     for i, io in enumerate(b2b_utils.B2BIO.Inputs) :
         port_num = io.value
         port_name = b2b_utils.B2BIO.simplename(io)
-        driver = B2BFifoDriver(dut.input_spybuffers[port_num].spybuffer, dut.clock, "B2BFifoDriver_{}_{:02}".format(port_name, port_num), io, dump = True)
+        driver = FifoDriver(dut.input_spybuffers[port_num].spybuffer, dut.clock, "B2B", io, write_out = True)
         b2b.add_input_driver(driver, io)
 
     for i, io in enumerate(b2b_utils.B2BIO.Outputs) :
         port_num = io.value
         port_name = b2b_utils.B2BIO.simplename(io)
         active = (this_tp.value != io.value)
-        monitor = B2BFifoMonitor(dut.output_spybuffers[i].spybuffer, dut.clock, "B2BFifoMonitor_{}_{:02}".format(port_name, port_num), io, active, [])
-        b2b.add_output_monitor(monitor, io)
+        monitor = FifoMonitor(dut.output_spybuffers[i].spybuffer, dut.clock, "B2B", io, callbacks = [], write_out = True)
+        b2b.add_output_monitor(monitor, io, active = active)
     b2b.sort_ports()
 
     ##
@@ -227,11 +229,12 @@ def b2b_test_0(dut) :
         
     for oport in b2b.output_ports :
         monitor, io, _ = oport
-        words = monitor.observed_data_words
+        words = monitor.observed_words
         recvd_events = events.load_events(words, "little") 
-        cocotb.log.info("Output for {} (output port num {}) received {} events ({})".format(io.name, io.value, len(recvd_events), monitor.name))
+        cocotb.log.info("Output for {} (output port num {}) received {} events".format(io.name, io.value, len(recvd_events)))
         
     test_passed = b2b.compare_outputs_with_expected(expected_output_events = expected_output_events)
     cocotb_result = { True : cocotb.result.TestSuccess, False : cocotb.result.TestFailure }[test_passed]
+
+    print(b2b)
     raise cocotb_result
-#    return cocotb_result
