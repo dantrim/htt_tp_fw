@@ -20,6 +20,9 @@ class FifoWrapper :
         self._io_type = None
         self._is_active = False
         self._observed_words = []
+        self._delay = Event()
+        self._in_delay = False
+        
 
         self._write_out = write_out
         self._output_directory = out_dir
@@ -134,18 +137,25 @@ class FifoDriver(FifoWrapper, Driver) :
     @cocotb.coroutine
     def _driver_send(self, transaction, sync = True, **kwargs) :
 
+        if self._in_delay :
+            yield self._delay.wait() # don't let any words be written until delays are registered as completed
+            self._in_delay = False
+            
+        if "delay" in kwargs :
+            unit = "ns"
+            if "delay_unit" in kwargs :
+                unit = kwargs["delay_unit"]
+            time_delay = Timer(kwargs["delay"], units = unit)
+            self._delay.clear()
+            self._in_delay = True
+            yield time_delay
+            self._delay.set()
+            # re-sync
+            yield RisingEdge(self.clock)
+
         if sync :
             yield RisingEdge(self.clock)
             self.fifo.write_enable <= 0
-
-        time = cocotb.utils.get_sim_time(units = "ns") # keep track of the simulation time (this time should coincide with what appears in the waveforms)
-        cocotb.log.info("FOO {} DRIVER WAIT START {}".format(self.io_port_num, time))
-
-        #yield RisingEdge(self.clock)
-        timer = Timer(10, units = "ns")
-        yield timer
-        time = cocotb.utils.get_sim_time(units = "ns") # keep track of the simulation time (this time should coincide with what appears in the waveforms)
-        cocotb.log.info("FOO {} DRIVER WAIT STOP {}".format(self.io_port_num, time))
 
         # wait until there is space in the fifo
         while self.fifo.almost_full != 0 :
@@ -160,7 +170,7 @@ class FifoDriver(FifoWrapper, Driver) :
 
         if self.write_out :
             self.write_word((int(transaction), time))
-        
+
 
 class FifoMonitor(FifoWrapper, Monitor) :
 

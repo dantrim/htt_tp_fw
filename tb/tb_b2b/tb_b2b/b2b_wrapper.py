@@ -137,16 +137,6 @@ class B2BWrapper(Wrapper) :
         for i in range(self.n_output_ports) :
             self.set_output_state(i, False)
 
-    #@cocotb.coroutine
-    #def wait_between_send(self, transaction) :
-
-    #    time = cocotb.utils.get_sim_time(units = "ns")
-    #    cocotb.log.info("FOO WAIT BETWEEN SEND START {}".format(time))
-    #    timer = Timer(10, units = "ns")
-    #    yield timer
-    #    time = cocotb.utils.get_sim_time(units = "ns")
-    #    cocotb.log.info("FOO WAIT BETWEEN SEND START {}".format(time))
-
     def send_input_events(self, input_testvectors, n_to_send = -1, l0id_request = -1 ) :
 
         n_input_files = len(input_testvectors)
@@ -162,11 +152,18 @@ class B2BWrapper(Wrapper) :
             cocotb.log.info("Sending {} events to input (port_num, port_name) = ({}, {}) from testvector {}".format(len(input_events), io.value, io.name, testvector_file))
 
             hook = None
+            delay_time = 10 * (port_num+1)
             for ievent, event in enumerate(input_events) :
                 words = list(event)
                 for iword, word in enumerate(words) :
-                    hook = Event()
-                    driver.append(word.get_binary(), event = hook)
+
+                    delay = {}
+                    # delays are entered at event boundaries
+                    if word.is_start_of_event() :
+                        delay = { "delay" : delay_time, "delay_unit" : "ns" }
+
+                    hook = Event() # used to tell outside world that all events have been queued to be sent into the fifos
+                    driver.append(word.get_binary(), event = hook, **delay)
             if hook :
                 hooks.append(hook.wait())
 

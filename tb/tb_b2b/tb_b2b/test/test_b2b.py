@@ -105,9 +105,9 @@ def reset(dut) :
     """
 
     dut.reset_n <= 1
-    yield ClockCycles(dut.clock, 20)
+    yield ClockCycles(dut.clock, 10)
     dut.reset_n <= 0
-    yield ClockCycles(dut.clock, 20)
+    yield ClockCycles(dut.clock, 10)
     dut.reset_n <= 1
 
 ##
@@ -155,38 +155,6 @@ def b2b_test_0(dut) :
     input_testvector_files = b2b_utils.get_testvector_files(this_tp, testvector_dir, "input")
     output_testvector_files = b2b_utils.get_testvector_files(this_tp, testvector_dir, "output")
 
-#    ##
-#    ## event tables
-#    ##
-#
-#    input_events = []
-#
-#    for i, io in enumerate(b2b_utils.B2BIO.Inputs) :
-#        port_num = io.value
-#        testvec_file = str(input_testvector_files[port_num])
-#        input_events = events.load_events_from_file(testvec_file, n_to_load = num_events_to_process, l0id_request = l0id_request)
-##        etable = event_table.EventTable()
-##        input_events = decoder.load_events_from_file(testvec_file, n_events = num_events_to_process, l0id_request = l0id_request)
-##        etable.add_events(input_events)
-##        input_event_tables.append(etable)
-#    expected_l0ids = [hex(x.l0id) for x in input_events]
-#    if not input_events :
-#        raise ValueError("ERROR No loaded events to provide as input! (n events requested = {}, l0id request = {}, expected_l0ids = {})".format(num_events_to_process, hex(l0id_request), expected_l0ids))
-#    dut._log.info("Expect data from L0ID = {}".format(expected_l0ids))
-#
-#    output_events = []
-#    for i, io in enumerate(b2b_utils.B2BIO.Outputs) :
-#        port_num = io.value
-#        testvec_file = str(output_testvector_files[port_num])
-#        output_events = events.load_events_from_file(testvec_file, n_to_load = num_events_to_process, l0id_request = l0id_request)
-##        etable = event_table.EventTable()
-##        output_events = decoder.load_events_from_file(testvec_file, n_events = num_events_to_process, l0id_request = l0id_request)
-##        etable.add_events(output_events)
-##        output_event_tables.append(etable)
-#    if not output_events :
-#        raise ValueError("ERROR No loaded events for expected output!")
-
-
     ##
     ## initialize B2B block wrapper
     ##
@@ -215,8 +183,8 @@ def b2b_test_0(dut) :
     yield Combine(*send_finished_signal)
     dut._log.info("Sending finished!")
 
-    timer = Timer(50, "us")
-    dut._log.info("Going to wait 10 microseconds")
+    timer = Timer(20, "us")
+    dut._log.info("Going to wait 20 microseconds")
     yield timer
 
     ##

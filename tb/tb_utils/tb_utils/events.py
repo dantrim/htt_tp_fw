@@ -81,6 +81,9 @@ class DataWord :
         n_bytes = int(length_8 / 8 * 2 - 1)
         return self._padded_hex(int(word),  n_bytes)
 
+    def is_start_of_event(self) :
+        return self.is_event_header_start()
+
     def is_event_header_start(self) :
 
         return self.flag == DataFormat.EVT_HDR1_FLAG.FLAG
