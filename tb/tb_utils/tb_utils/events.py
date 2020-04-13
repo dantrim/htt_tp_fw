@@ -226,6 +226,12 @@ class ModuleData :
 
         return dest_list
 
+    def is_pixel(self) :
+        return self.module_type_str().lower() == "pixel"
+
+    def is_strip(self) :
+        return self.module_type_str().lower() == "strip"
+
     def module_type_str(self) :
 
         det_type = self.header_field("DET")

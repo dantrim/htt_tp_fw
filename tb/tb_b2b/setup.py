@@ -8,5 +8,5 @@ setup(name = "tb_b2b"
         ,author_email = "daniel.joseph.antrim@cern.ch"
         ,packages = ["tb_b2b"]
         ,zip_safe = False
-        ,install_requires=["bitstring", "bitarray", "Columnar"]
+        ,install_requires=["bitstring", "bitarray", "Columnar", "scipy"]
 )

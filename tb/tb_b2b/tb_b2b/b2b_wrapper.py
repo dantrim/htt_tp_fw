@@ -5,6 +5,7 @@ import cocotb
 from cocotb.triggers import Event, Combine, with_timeout, Timer
 
 from tb_b2b import b2b_utils
+from tb_b2b import b2b_flow
 from tb_utils import events
 
 class Wrapper :
@@ -137,7 +138,7 @@ class B2BWrapper(Wrapper) :
         for i in range(self.n_output_ports) :
             self.set_output_state(i, False)
 
-    def send_input_events(self, input_testvectors, n_to_send = -1, l0id_request = -1 ) :
+    def send_input_events(self, input_testvectors, n_to_send = -1, l0id_request = -1, event_delays = False) :
 
         n_input_files = len(input_testvectors)
         if n_input_files != self.n_input_ports :
@@ -152,18 +153,16 @@ class B2BWrapper(Wrapper) :
             cocotb.log.info("Sending {} events to input (port_num, port_name) = ({}, {}) from testvector {}".format(len(input_events), io.value, io.name, testvector_file))
 
             hook = None
-            delay_time = 10 * (port_num+1)
             for ievent, event in enumerate(input_events) :
                 words = list(event)
                 for iword, word in enumerate(words) :
+                    flow_kwargs = {}
 
-                    delay = {}
                     # delays are entered at event boundaries
                     if word.is_start_of_event() :
-                        delay = { "delay" : delay_time, "delay_unit" : "ns" }
-
+                        flow_kwargs.update( b2b_flow.event_rate_delay(io, event, pass_through = not event_delays) )
                     hook = Event() # used to tell outside world that all events have been queued to be sent into the fifos
-                    driver.append(word.get_binary(), event = hook, **delay)
+                    driver.append(word.get_binary(), event = hook, **flow_kwargs)
             if hook :
                 hooks.append(hook.wait())
 

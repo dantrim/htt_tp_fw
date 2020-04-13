@@ -130,6 +130,7 @@ def b2b_test_0(dut) :
 
     num_events_to_process = 2
     l0id_request = -1
+    event_delays = True
 
     ##
     ## clock
@@ -177,7 +178,7 @@ def b2b_test_0(dut) :
     ## send events
     ##
     dut._log.info("Sending input events")
-    send_finished_signal = b2b.send_input_events(input_testvector_files, num_events_to_process, l0id_request)
+    send_finished_signal = b2b.send_input_events(input_testvector_files, num_events_to_process, l0id_request, event_delays)
     if not send_finished_signal :
         raise cocotb.result.TestFailure("ERROR Event sending timed out! Number of expected inputs with events = {}".format(len(send_finished_signal)))
     yield Combine(*send_finished_signal)
