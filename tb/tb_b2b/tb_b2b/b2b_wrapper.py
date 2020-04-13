@@ -404,7 +404,7 @@ class B2BWrapper(Wrapper) :
             ,["Event footers correct", result_str[test_event_footers], "Bad event footer fields:\n{}".format(", ".join(failed_footer_fields))]
             ,["Correct # of modules/event", result_str[test_n_modules], ""]
             ,["Correct module headers/event", "NOT TESTED (YET)", ""]
-            ,["Correct module footers/evetn", "NOT TESTED (YET)", ""]
+            ,["Correct module footers/event", "NOT TESTED (YET)", ""]
         ]
         table = columnar(data, table_header, no_borders = False)
         log.info(table)

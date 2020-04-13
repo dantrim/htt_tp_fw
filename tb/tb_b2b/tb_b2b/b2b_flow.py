@@ -21,6 +21,8 @@ def event_rate_delay(io_enum, event, pass_through = False) :
     :event: tb_utils.events DataEvent
     :pass_through: whether or not to implement a delay
 
+    :note: The precision of time delays is taken as nanosecond
+
     :rtype: dict
     :returns: dictionary describing delay for sending next data word
     """
@@ -66,7 +68,7 @@ def event_rate_delay(io_enum, event, pass_through = False) :
         accumulated_delay += (1.0 / float(sample_rate)) # Hz -> time in seconds
 
     accumulated_delay *= 1e9 # convert from seconds to nanoseconds
-    accumulated_delay = truncate(accumulated_delay, 3)
+    accumulated_delay = int(accumulated_delay) # ~convert to nearest ns
 
     delay_dict = {
         "delay" : accumulated_delay

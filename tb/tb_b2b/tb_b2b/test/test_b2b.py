@@ -128,7 +128,7 @@ def b2b_test_0(dut) :
         raise ValueError("Unable to find associated IO for B2B BOARD_ID={}".format(board_id))
     dut._log.info("Setting test IO with base (port_name, port_num) = ({}, {})".format(this_tp.name, this_tp.value))
 
-    num_events_to_process = 2
+    num_events_to_process = -1
     l0id_request = -1
     event_delays = True
 
