@@ -1,9 +1,9 @@
 from scipy import stats
 import numpy as np # to set random seed
 
-random_seed = None
 
 from tb_b2b import b2b_utils
+random_seed_set = []
 
 def bound(low, high, value) :
     return max(low, min(high, value))
@@ -29,7 +29,6 @@ def event_rate_delay(io_enum, event, pass_through = False) :
     :rtype: dict
     :returns: dictionary describing delay for sending next data word
     """
-    global random_seed
     if type(io_enum) != b2b_utils.B2BIO.Inputs :
         raise TypeError("Expected type for io_enum is \"{}\", got \"{}\"".format("b2b_utils.B2BIO.Inputs", type(io_enum)))
 
@@ -53,14 +52,27 @@ def event_rate_delay(io_enum, event, pass_through = False) :
     # Scipy relies on numpy.random for its random number generator,
     # so we should set numpy's random seed so as to ensure some level
     # of reproducibility.
-    # We set the random seed based on the first observed event's header,
+    # We set the random seed based on the observed event's header and footer,
     # which will make the dataflow reproducible for a given set of input
     # test vectors.
-    if not random_seed :
-        random_seed = sum([ int(x.contents) for x in event.header_words ])
+    #
+    # Note: Here a random seed is set each time a new IO input is seen, which
+    # is done so that each IO input has it's own randomized sets of delays.
+    # This is done so that the sets of delays are the same across each of the inputs
+    # being driven regardless of how many number of events the test is loading into
+    # the DUT (if you run N events in one test, and N-1 events in the next test,
+    # the sequence of random numbers will be different and the delays for IO 0 and IO 1
+    # will be different for IO 1 between the two scenarios). This assumes that
+    # the events for each input are loaded all at once, that is: all events
+    # for IO 0 are loaded, then all events for IO 1 are loaded, ...
+    # 
+    global random_seed_set
+    if io_enum.value not in random_seed_set :
+        random_seed = sum([ int(x.contents) for x in event.header_words + event.footer_words ])
         # random seeds must be convertible to 32-bit unsigned ints
         # see: https://docs.scipy.org/doc/numpy-1.15.0/reference/generated/numpy.random.RandomState.seed.html#numpy.random.RandomState.seed
         random_seed = random_seed & 0xffffffff
+        random_seed_set.append(io_enum.value)
         np.random.seed(seed = random_seed)
 
     # Table 3.7 gives the overall cluster rates in MHz, so for a given
