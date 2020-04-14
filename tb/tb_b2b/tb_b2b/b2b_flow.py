@@ -1,4 +1,7 @@
 from scipy import stats
+import numpy as np # to set random seed
+
+random_seed = None
 
 from tb_b2b import b2b_utils
 
@@ -26,6 +29,7 @@ def event_rate_delay(io_enum, event, pass_through = False) :
     :rtype: dict
     :returns: dictionary describing delay for sending next data word
     """
+    global random_seed
     if type(io_enum) != b2b_utils.B2BIO.Inputs :
         raise TypeError("Expected type for io_enum is \"{}\", got \"{}\"".format("b2b_utils.B2BIO.Inputs", type(io_enum)))
 
@@ -44,6 +48,20 @@ def event_rate_delay(io_enum, event, pass_through = False) :
 
     n_modules = event.n_modules
     modules = event.get_modules()
+
+    # We use scipy to sample a PDF of the expected cluster rates.
+    # Scipy relies on numpy.random for its random number generator,
+    # so we should set numpy's random seed so as to ensure some level
+    # of reproducibility.
+    # We set the random seed based on the first observed event's header,
+    # which will make the dataflow reproducible for a given set of input
+    # test vectors.
+    if not random_seed :
+        random_seed = sum([ int(x.contents) for x in event.header_words ])
+        # random seeds must be convertible to 32-bit unsigned ints
+        # see: https://docs.scipy.org/doc/numpy-1.15.0/reference/generated/numpy.random.RandomState.seed.html#numpy.random.RandomState.seed
+        random_seed = random_seed & 0xffffffff
+        np.random.seed(seed = random_seed)
 
     # Table 3.7 gives the overall cluster rates in MHz, so for a given
     # event with N clusters, the average time should just be the sum of N
