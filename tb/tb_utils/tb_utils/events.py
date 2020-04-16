@@ -9,11 +9,13 @@ from DataFormat.DataFormatIO import SubwordUnpacker
 
 class DataWord :
 
-    def __init__(self, contents, is_metadata = False) :
+    def __init__(self, contents, is_metadata = False, timestamp = None, timestamp_unit = None) :
 
         self._contents = contents
         self._is_metadata = is_metadata
         self._flag = None
+        self._timestamp = timestamp
+        self._timestamp_unit = timestamp_unit
 
         if is_metadata :
             gen = DataFormat.BitFieldWordValue(DataFormat.GenMetadata, contents)
@@ -30,6 +32,14 @@ class DataWord :
     @property
     def flag(self) :
         return self._flag
+
+    @property
+    def timestamp(self) :
+        return self._timestamp
+
+    @property
+    def timestamp_unit(self) :
+        return self._timestamp_unit
 
     def __str__(self) :
         return self.hex()
@@ -62,6 +72,10 @@ class DataWord :
                 '?' * given_len if num_hex_chars > given_len else
                 '0x' + extra_zeros + hex_result if num_hex_chars < given_len else
                 None)
+
+    def set_timestamp(self, time, units) :
+        self._timestamp = float(time)
+        self._timestamp_unit = str(units)
 
     def get_binary(self, size = 64) :
 

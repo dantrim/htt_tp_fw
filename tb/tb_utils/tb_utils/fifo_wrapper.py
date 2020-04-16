@@ -25,8 +25,10 @@ class FifoWrapper :
         
 
         self._write_out = write_out
+        self._write_out_time = write_out
         self._output_directory = out_dir
         self._output_filename = ""
+        self._output_filename_time = ""
         self._first_write = True
 
         if self.write_out :
@@ -39,8 +41,20 @@ class FifoWrapper :
                 out_path = Path("./")
 
             # construct full output filename
-            out_path = out_path / "{}_{}_{}_{:02}.evt".format(str(type(self).__name__.lower()), self.block_name, io_enum.name.replace("_",""), int(io_enum.value))
+            io_name = io_enum.name
+            name_num = io_name.split("_")[-1]
+            if name_num.isdigit() :
+                name_num = "{:02}".format(int(name_num))
+                io_name = "".join(io_name.split("_")[:-1])
+                io_name += name_num
+            else :
+                io_name = io_name.replace("_","")
+            self._output_directory = str(out_path)
+            out_path = out_path / "{}_{}_{:02}_{}.evt".format(str(type(self).__name__.lower()), self.block_name, int(io_enum.value), io_name)
             self._output_filename = str(out_path)
+
+            if self.write_out_time :
+                self._output_filename_time = self._output_filename.replace(".evt","_timing.txt")
 
     @property
     def fifo(self) :
@@ -72,6 +86,10 @@ class FifoWrapper :
     @property
     def write_out(self) :
         return self._write_out
+
+    @property
+    def write_out_time(self) :
+        return self._write_out_time
 
     @property
     def output_directory(self) :
@@ -111,16 +129,26 @@ class FifoWrapper :
 
         transaction, time_ns = transaction_tuple
         dword = self.transaction_to_data_word(transaction)
+        dword.set_timestamp(time_ns, units = "ns")
         self._observed_words.append(dword)
 
     def write_word(self, transaction_tuple) :
 
         transaction, time_ns = transaction_tuple
         word = self.transaction_to_data_word(transaction)
+        word.set_timestamp(time_ns, units = "ns")
         wfmt = { True : "wb", False : "ab" }[self._first_write]
         with open(self.output_filename, wfmt) as ofile :
             word.write_testvec_fmt(ofile)
-            self._first_write = False
+
+        wfmt = { True : "w", False : "a" }[self._first_write]
+        if self.write_out_time :
+            with open(self._output_filename_time, wfmt) as ofile :
+                if self._first_write :
+                    ofile.write("info_data_file:{}\n".format(self.output_filename))
+                    ofile.write("info_time_unit:{}\n".format("ns"))
+                ofile.write("{}\n".format(time_ns))
+        self._first_write = False
 
 class FifoDriver(FifoWrapper, Driver) :
 
