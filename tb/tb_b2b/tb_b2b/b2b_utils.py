@@ -86,9 +86,7 @@ def get_testvector_files(base_tp, testvec_dir, which) :
                         ordered_files.append(tfile)
                         break
     if which.lower() == "output" :
-        print("BLAH {}".format(55 * '='))
         for i,f in enumerate(ordered_files) :
-            print("BLAH {} : {}".format(i, f))
         
     
     return ordered_files

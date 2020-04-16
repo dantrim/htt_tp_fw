@@ -2,7 +2,8 @@
 SIM ?= questa
 #COMPLIB_DIR = /home/psundara/xilinx/compiled_libraries/v2019.1
 COMPLIB_DIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1
-export TESTVECDIR=/home/dantrim/work/tdaq-htt-firmware/testvecs/20200124
+#export TESTVECDIR=/home/dantrim/work/tdaq-htt-firmware/testvecs/20200124
+export TESTVECDIR=/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/
 
 # Location of sources (and spy buffer sources).
 SRCDIR = $(PWD)/../../../../src
