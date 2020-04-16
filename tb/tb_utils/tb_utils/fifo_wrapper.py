@@ -110,14 +110,12 @@ class FifoWrapper :
     def store_word(self, transaction_tuple) :
 
         transaction, time_ns = transaction_tuple
-
         dword = self.transaction_to_data_word(transaction)
         self._observed_words.append(dword)
 
     def write_word(self, transaction_tuple) :
 
         transaction, time_ns = transaction_tuple
-
         word = self.transaction_to_data_word(transaction)
         wfmt = { True : "wb", False : "ab" }[self._first_write]
         with open(self.output_filename, wfmt) as ofile :
@@ -140,7 +138,7 @@ class FifoDriver(FifoWrapper, Driver) :
         if self._in_delay :
             yield self._delay.wait() # don't let any words be written until delays are registered as completed
             self._in_delay = False
-            
+
         if "delay" in kwargs :
             unit = "ns"
             if "delay_unit" in kwargs :
@@ -161,16 +159,18 @@ class FifoDriver(FifoWrapper, Driver) :
         while self.fifo.almost_full != 0 :
             yield RisingEdge(self.clock)
 
-        self.fifo.write_data <= int(transaction)
-        self.fifo.write_enable <= 1
-        time = cocotb.utils.get_sim_time(units = "ns") # keep track of the simulation time (this time should coincide with what appears in the waveforms)
+        self.fifo.write_enable <= 1 # strobe the FIFO write enable signal
+        self.fifo.write_data <= int(transaction) # write data to FIFO write_data register
 
-        yield RisingEdge(self.clock) # latch
-        self.fifo.write_enable <= 0 # end the write enable strobe
+        # keep track of the simulation time (this time coincides with what appears in the waveforms)
+        time = cocotb.utils.get_sim_time(units = "ns")
 
+        yield RisingEdge(self.clock) # latch write data register on next clock rising edge
+        self.fifo.write_enable <= 0 # set write enable strobe low
+
+        # dump written words and times to output file for later analysis
         if self.write_out :
             self.write_word((int(transaction), time))
-
 
 class FifoMonitor(FifoWrapper, Monitor) :
 
@@ -193,15 +193,24 @@ class FifoMonitor(FifoWrapper, Monitor) :
 
         while True :
 
+            # wait until rising edge of clock
             yield RisingEdge(self.clock)
+
+            # wait until simulation reaches stage where signals/registers are settled
             yield ReadOnly()
 
             if self.fifo.empty.value == 0 :
+
+                # retrieve data from the FIFO read_data register
                 transaction = self.fifo.read_data.value
-                time = cocotb.utils.get_sim_time(units = "ns") # keep track of the simulation time (this time should coincide with what appears in the waveforms)
-                yield NextTimeStep()
-                self.fifo.read_enable <= 1 # strobe the read-enable only if there is data available
-                self._recv((transaction, time))
+
+                # keep track of the simulation time (this time coincides with what appears in the waveforms)
+                time = cocotb.utils.get_sim_time(units = "ns")
+
+                yield NextTimeStep() # leave ReadOnly phase
+                self.fifo.read_enable <= 1 # strobe the FIFO read-enable signal
+
+                self._recv((transaction, time)) # store the FIFO data and time for use by registered callbacks
             else :
                 yield NextTimeStep()
                 self.fifo.read_enable <= 0
