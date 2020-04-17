@@ -85,8 +85,4 @@ def get_testvector_files(base_tp, testvec_dir, which) :
                     if final_tag == name :
                         ordered_files.append(tfile)
                         break
-    if which.lower() == "output" :
-        for i,f in enumerate(ordered_files) :
-        
-    
     return ordered_files

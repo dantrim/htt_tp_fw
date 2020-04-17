@@ -192,12 +192,12 @@ class ModuleData :
     def footer_description_strings(self) :
 
         out = []
-        if self._footer is None :
-            return out
 
         footer_words = self.footer_field_names()
         for fw in footer_words :
             fieldvals = [hex(self.footer_field(x)) for x in fw]
+            if self._footer is None :
+                fieldvals = [hex(0xdeadbeef) for _ in fieldvals]
             fieldvals = zip(fw, fieldvals)
             out.append( ", ".join(["{}:{}".format(x,y) for x,y in list(fieldvals)] ))
         return out
@@ -349,7 +349,7 @@ class ModuleData :
                             expectfooter = False
 
         if data_type == data_type_clus and (self._footer == None or self._footer == 0x0) :
-            raise Exception("ERROR Faield to find FOOTER for clustered data")
+            print("WARNING Failed to find MODULE FOOTER for clustered data")
 
         self._parse_header()
 

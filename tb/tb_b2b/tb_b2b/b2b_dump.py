@@ -10,6 +10,7 @@
 ## date: April 2020
 ##
 
+import os, struct
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -73,6 +74,24 @@ def check_events_map(events_map, n_events_request = -1, l0id_request = -1) :
 
     return ok
 
+def dump_words(filename, endian = "little") :
+
+    path = Path(filename)
+    ok = path.exists() and path.is_file()
+    if not ok :
+        raise Exception("Cannot find provided file {}".format(filename))
+
+    with open(filename, "rb") as input_file :
+        filesize = os.stat(filename).st_size
+        for _ in range(0, filesize, 9) :
+            data = input_file.read(9)
+            if len(data) != 9 :
+                raise Exception("Malformed event data file {}".format(filename))
+            fmt = { "little" : "<?Q", "big" : ">?Q" }[endian]
+            is_metadata, contents = struct.unpack(fmt, data)
+            word = events.DataWord(contents, is_metadata)
+            print(word)
+
 def dump_events(filename, event_list, detailed_modules = False, write_out = False) :
 
     meta_output = []
@@ -105,12 +124,15 @@ def dump_events(filename, event_list, detailed_modules = False, write_out = Fals
             for i, dw in enumerate(module.data_words) :
                 if i == 0 :
                     module_desc = "  {}".format(", ".join(module.header_description_strings()[0].split(",")[:4]))
+                    dummy = hex(0xdeadbeef)
+                    if dummy in module_desc :
+                        module_desc = "  *** HEADER ERROR *** {}".format(module_desc)
                     #mod_str = "{}  {}{}".format(dw, desc, module_desc)
                     #output.append(mod_str)
                 elif i == 1 :
                     module_desc = "  {}".format(", ".join(module.footer_description_strings()[0].split(",")))
-                    #mod_str = "{}  {}{}".format(dw, desc, module_desc)
-                    #output.append(mod_str)
+                    if hex(0xdeadbeef) in module_desc :
+                        module_desc = "  *** FOOTER ERROR *** {}".format(module_desc)
                 # right now the footer (and cluster data besides the header) is meangingless
                 #elif i == 1 :
                 #    module_desc = "  {}".format(module.footer_description_strings()[0])
@@ -179,6 +201,10 @@ def main() :
         help = "Dump output to a text file."
     )
 
+    parser.add_argument("--raw", default = False, action = "store_true",
+        help = "Simply dump the contents of the file, word by word"
+    )
+
     ##
     ## get the inputs
     ##
@@ -190,16 +216,20 @@ def main() :
     ## load
     ##
 
-    events_map = load_events_from_inputs(args)
-    events_ok = check_events_map(events_map
-            ,n_events_request = args.n_events
-            ,l0id_request = args.l0id)
-    # right now don't do anything with this...
+    if args.raw :
+        for input_file in args.input :
+            dump_words(input_file)
+    else :
+        events_map = load_events_from_inputs(args)
+        events_ok = check_events_map(events_map
+                ,n_events_request = args.n_events
+                ,l0id_request = args.l0id)
+        # right now don't do anything with this...
 
-    for filename, event_list in events_map.items() :
-        dump_events(filename, event_list
-            ,detailed_modules = args.dump_modules, write_out = args.write
-        )
+        for filename, event_list in events_map.items() :
+            dump_events(filename, event_list
+                ,detailed_modules = args.dump_modules, write_out = args.write
+            )
 
 
 if __name__ == "__main__" :
