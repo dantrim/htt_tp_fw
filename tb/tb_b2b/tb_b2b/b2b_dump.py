@@ -74,12 +74,53 @@ def check_events_map(events_map, n_events_request = -1, l0id_request = -1) :
 
     return ok
 
-def dump_words(filename, endian = "little") :
+def timing_filename_from_file(filename) :
+
+    path = Path(filename)
+    filedir = path.parents[0]
+    timing_filename = filename.replace(".evt", "_timing.txt")
+    timing_file = Path(filedir) / timing_filename
+
+    ok = timing_file.exists() and timing_file.is_file()
+    if not ok :
+        raise Exception("ERROR Timing information file (={}) not found".format(timing_file))
+    return str(timing_file)
+
+def time_info_gen(filename) :
+
+    path = Path(filename)
+    filedir = path.parents[0]
+    timing_filename = timing_filename_from_file(filename)
+
+    with open(timing_filename, "r") as ifile :
+
+        for iline, line in enumerate(ifile) :
+            line = line.strip()
+            if "info" in line.lower() :
+                if "data_file" in line.lower() :
+                    corresponding_data_file = line.strip().split(":")[-1]
+                    data_match = corresponding_data_file.replace(".evt","")
+                    time_match = timing_filename.split("/")[-1].replace("_timing.txt","")
+                    if data_match != time_match :
+                        raise Exception("ERROR Timing file (={}) does not match with expected corresponding data file (={})".format(timing_filename, corresponding_data_file))
+                if "time_unit" in line.lower() :
+                    time_unit = line.strip().split(":")[-1]
+                    yield time_unit
+                continue
+            yield line
+
+def dump_words(filename, endian = "little", load_timing_info = False) :
 
     path = Path(filename)
     ok = path.exists() and path.is_file()
     if not ok :
         raise Exception("Cannot find provided file {}".format(filename))
+
+    timing_gen = None
+    time_unit = None
+    if load_timing_info :
+        timing_gen = time_info_gen(filename)
+        time_unit = next(timing_gen) # first one is the time unit
 
     with open(filename, "rb") as input_file :
         filesize = os.stat(filename).st_size
@@ -90,7 +131,12 @@ def dump_words(filename, endian = "little") :
             fmt = { "little" : "<?Q", "big" : ">?Q" }[endian]
             is_metadata, contents = struct.unpack(fmt, data)
             word = events.DataWord(contents, is_metadata)
-            print(word)
+
+            if timing_gen :
+                word.set_timestamp(next(timing_gen), units = time_unit)
+                print("{: <15} : {}".format("{} {}".format(word.timestamp, time_unit), word))
+            else :
+                print(word)
 
 def dump_events(filename, event_list, detailed_modules = False, write_out = False) :
 
@@ -197,6 +243,9 @@ def main() :
     parser.add_argument("-l", "--l0id", default = "", type = str,
         help = "Specific L0ID to inspect (hexadecimal)."
     )
+    parser.add_argument("-t", "--time", default = False, action = "store_true",
+        help = "Load timing files if found."
+    )
     parser.add_argument("-w", "--write", action = "store_true", default = False,
         help = "Dump output to a text file."
     )
@@ -218,7 +267,7 @@ def main() :
 
     if args.raw :
         for input_file in args.input :
-            dump_words(input_file)
+            dump_words(input_file, load_timing_info = args.time)
     else :
         events_map = load_events_from_inputs(args)
         events_ok = check_events_map(events_map
