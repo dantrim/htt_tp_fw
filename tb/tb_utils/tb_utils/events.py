@@ -9,13 +9,13 @@ from DataFormat.DataFormatIO import SubwordUnpacker
 
 class DataWord :
 
-    def __init__(self, contents, is_metadata = False, timestamp = None, timestamp_unit = None) :
+    def __init__(self, contents, is_metadata = False, timestamp = None, timestamp_units = None) :
 
         self._contents = contents
         self._is_metadata = is_metadata
         self._flag = None
         self._timestamp = timestamp
-        self._timestamp_unit = timestamp_unit
+        self._timestamp_units = timestamp_units
 
         if is_metadata :
             gen = DataFormat.BitFieldWordValue(DataFormat.GenMetadata, contents)
@@ -38,8 +38,8 @@ class DataWord :
         return self._timestamp
 
     @property
-    def timestamp_unit(self) :
-        return self._timestamp_unit
+    def timestamp_units(self) :
+        return self._timestamp_units
 
     def __str__(self) :
         return self.hex()
@@ -75,7 +75,7 @@ class DataWord :
 
     def set_timestamp(self, time, units) :
         self._timestamp = float(time)
-        self._timestamp_unit = str(units)
+        self._timestamp_units = str(units)
 
     def get_binary(self, size = 64) :
 
@@ -143,8 +143,8 @@ class ModuleData :
 
     def header_field_names(self) :
         header_words = [
-            ["FLAG","TYPE","DET","ROUTING","SPARE"]
-            ,["MODID","MODTYPE","ORIENTATION","SPARE"]
+            ["FLAG","TYPE","DET","ROUTING"]#,"SPARE"]
+            ,["MODID","MODTYPE","ORIENTATION"]#,"SPARE"]
         ]
         return header_words
 
@@ -595,7 +595,39 @@ def load_events(data_words = [], endian = "little", n_to_load = -1) :
 
     return events
 
-def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_request = -1) :
+def timing_file_from_data_filename(data_file) :
+
+    path = Path(data_file)
+    filedir = path.parents[0]
+    timing_filename = data_file.split("/")[-1].replace(".evt", "_timing.txt") # NOTE this is an expected naming convention
+    timing_file = Path(filedir) / timing_filename
+
+    ok = timing_file.exists() and timing_file.is_file()
+    if not ok :
+        raise Exception("ERROR Timing information file (={}) not found".format(timing_file))
+    return str(timing_file)
+
+def timing_info_gen(filename) :
+
+    timing_filename = timing_file_from_data_filename(filename)
+    with open(timing_filename, "r") as ifile :
+        for iline, line in enumerate(ifile) :
+            line = line.strip()
+            if "info" in line.lower() :
+                if "data_file" in line.lower() :
+                    corresponding_data_file = line.strip().split(":")[-1]
+                    data_match = corresponding_data_file.replace(".evt","")
+                    time_match = timing_filename.split("/")[-1].replace("_timing.txt","")
+                    if data_match != time_match :
+                        raise Exception("ERROR Timing file (={}) does not match with expected corresponding data file (={})".format(timing_filename, corresponding_data_file))
+                if "time_unit" in line.lower() :
+                    time_unit = line.strip().split(":")[-1]
+                    yield time_unit
+                continue
+            yield line
+
+
+def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_request = -1, load_timing_info = False) :
 
     path = Path(filename)
     ok = path.exists() and path.is_file()
@@ -604,6 +636,12 @@ def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_requ
 
     if n_to_load > 0 and l0id_request > 0 :
         raise Exception("ERROR Cannot request specific number of events AND a specific L0ID at the same time")
+
+    timing_gen = None
+    time_units = None
+    if load_timing_info :
+        timing_gen = timing_info_gen(filename)
+        time_units = next(timing_gen) # first one returned is the time unit (str)
 
     events = []
     l0ids_loaded = set()
@@ -618,6 +656,15 @@ def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_requ
             fmt = { "little" : "<?Q", "big" : ">?Q" }[endian]
             is_metadata, contents = struct.unpack(fmt, data)
             word = DataWord(contents, is_metadata)
+
+            ##
+            ## timestamp
+            ##
+            if timing_gen :
+                try :
+                    word.set_timestamp(next(timing_gen), units = time_units)
+                except StopIteration :
+                    raise Exception("ERROR Timing file for loaded data file (={}) has incorrect number of words in it!".format(filename))
 
             if word.is_event_header_start() :
                 if n_to_load > 0 and len(events) >= n_to_load :
