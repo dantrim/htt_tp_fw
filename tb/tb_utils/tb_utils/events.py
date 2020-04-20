@@ -336,17 +336,17 @@ class ModuleData :
                             self._cluster_data.append( DataFormat.BitFieldWordValue(clus_word_format, tw))
                 else :
                     while not empty :
-                        if not expectfooter and self.footer == None :
+                        if (not expectfooter) and (self.footer == None) :
                             val, empty = unpacker.get(clus_word_length)
                             cluster_val = DataFormat.BitFieldWordValue(clus_word_format, val)
                             self._cluster_data.append(cluster_val)
                             expectfooter = cluster_val.getField("LAST") == 1
                         else :
                             val, empty = unpacker.get(clus_footer_length)
+                            expectfooter = False
                             if not self._footer :
                                 self._footer = DataFormat.BitFieldWordValue(clus_footer_format, val)
                                 break
-                            expectfooter = False
 
         if data_type == data_type_clus and (self._footer == None or self._footer == 0x0) :
             print("WARNING Failed to find MODULE FOOTER for clustered data")
