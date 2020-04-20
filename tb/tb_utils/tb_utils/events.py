@@ -139,7 +139,6 @@ class ModuleData :
         self._cluster_data = []
         self._footer = None
         self._header_field_map = {}
-
         self._parse(data_words)
 
     def header_field_names(self) :
@@ -178,6 +177,9 @@ class ModuleData :
     @property
     def cluster_data(self) :
         return self._cluster_data
+
+    def __len__(self) :
+        return len(self._data_words)
 
     def header_description_strings(self) :
 

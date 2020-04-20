@@ -177,9 +177,10 @@ class B2BWrapper(Wrapper) :
         test_n_events = True
         test_l0ids = True
         test_l0ids_order = True
-        test_n_modules = True
         test_event_headers = True
         test_event_footers = True
+        test_n_modules = True
+        test_n_words_module = True
         test_module_headers = True
         test_module_footers = True
 
@@ -279,6 +280,7 @@ class B2BWrapper(Wrapper) :
         l0id_header_fails = []
         l0id_footer_fails = []
         l0id_n_module_fails = []
+        l0id_module_len_fails = {}
 
         failed_footer_fields = set()
         failed_header_fields = set()
@@ -350,8 +352,32 @@ class B2BWrapper(Wrapper) :
             if not n_modules_equal :
                 l0id_n_module_fails.append(l0id)
 
+            ##
+            ## each module has the same number of data words
+            ##
+            module_len_fails = {}
+            if n_modules_equal :
+                expected_modules = expected_event.get_modules()
+                observed_modules = observed_event.get_modules()
+                for imod in range(n_modules_expected) :
+                    expected_module = expected_modules[imod]
+                    observed_module = observed_modules[imod]
+
+                    n_mod_dwords_expected = len(expected_module)
+                    n_mod_dwords_observed = len(observed_module)
+
+                    n_mod_dwords_equal = n_mod_dwords_expected == n_mod_dwords_observed
+                    if not n_mod_dwords_equal :
+                        module_len_fails[imod] = { "expected" : n_mod_dwords_expected, "observed" : n_mod_dwords_observed }
+            l0id_module_len_fails[hex(l0id)] = module_len_fails
+
         n_h, n_f, n_m = len(l0id_header_fails), len(l0id_footer_fails), len(l0id_n_module_fails)
-        if n_h or n_f or n_m :
+        n_mod_len_fail = False
+        for l0id, faildict in l0id_module_len_fails.items() :
+            if faildict :
+                n_mod_len_fail = True
+                break
+        if n_h or n_f or n_m or n_mod_len_fail :
             #log.info("{}TEST ERROR{} {} Unexected event header/footer/number of modules:".format(port_str))
             #log.info("TEST {} Unexpected event headers (failed in {} events), event footers (failed in {} events), number of modules (failed in {} events)"
             #    .format(port_str, n_h, n_f, n_m))
@@ -361,7 +387,7 @@ class B2BWrapper(Wrapper) :
                     l.append(-1)
             r0 = "TEST {}".format(port_str)
             #headers = [r0, "Event Header Failures", "Event Footer Failures", "Module Count Failures"]
-            headers = ["{}TEST ERROR {} {}".format(bcolors.FAIL, port_str, bcolors.ENDC), "L0ID w/ Occurrences"]
+            headers = ["{}TEST ERROR {} {}".format(bcolors.FAIL, port_str, bcolors.ENDC), "L0ID w/ Occurrences", "Info"]
             data = []
             hf_fails = []
             ff_fails = []
@@ -380,11 +406,37 @@ class B2BWrapper(Wrapper) :
 #                data.append( ["", hf, ff, mf] )
                 #line = "TEST {} {}\t{}\t{}".format(port_str, hf, ff, mf)
                 #log.info(line)
+
             data = [
-                ["Event Header Errors", ", ".join(hf_fails)]
-                ,["Event Footer Errors", ", ".join(ff_fails)]
-                ,["Module Count Errors", ", ".join(mf_fails)]
+                ["Event Header Errors", ", ".join(hf_fails), ""]
+                ,["Event Footer Errors", ", ".join(ff_fails), ""]
+                ,["Module Count Errors", ", ".join(mf_fails), ""]
             ]
+
+            if n_mod_len_fail :
+                test_n_words_module = False
+                l0ids = list(l0id_module_len_fails.keys())
+                l0id_str = ", ".join(l0ids)
+                info_str = {}
+                for l0 in l0ids :
+                    event_fails = []
+                    for module_num, faildict in l0id_module_len_fails[l0].items() :
+                        fail_str = "Module # {:03} (obs: {}, exp: {})".format(module_num, faildict["observed"], faildict["expected"])
+                        event_fails.append(fail_str)
+                    info = ["L0ID: {}".format(l0)]
+                    event_fails = "\n".join(event_fails)
+                    info_str[l0] = event_fails
+                
+                is_first = True
+                for il0, l0 in enumerate(l0ids) :
+                    if l0id_module_len_fails[l0] :
+                        if is_first :
+                            data.append( ["Module Length Errors", l0, "{}".format(info_str[l0])] )
+                            is_first = False
+                        else :
+                            data.append( ["", l0, "{}".format(info_str[l0])] )
+            else :
+                data.append( ["Module Length Errors", "", ""] )
             table = columnar(data, headers, no_borders = False)
             log.info(table)
 
@@ -403,22 +455,13 @@ class B2BWrapper(Wrapper) :
             ,["Event headers correct", result_str[test_event_headers], "Bad event header fields:\n{}".format(", ".join(failed_header_fields))]
             ,["Event footers correct", result_str[test_event_footers], "Bad event footer fields:\n{}".format(", ".join(failed_footer_fields))]
             ,["Correct # of modules/event", result_str[test_n_modules], ""]
+            ,["Module lengths correct", result_str[test_n_words_module], ""]
             ,["Correct module headers/event", "NOT TESTED (YET)", ""]
             ,["Correct module footers/event", "NOT TESTED (YET)", ""]
         ]
         table = columnar(data, table_header, no_borders = False)
         log.info(table)
         log.info(n_x * "*")
-
-     #   log.info("TEST {}           *** SUMMARY ***".format(port_str))
-     #   log.info("TEST {} > Correct # events               : {}".format(port_str, result_str[test_n_events]))
-     #   log.info("TEST {} > Correct L0IDs                  : {}".format(port_str, result_str[test_l0ids]))
-     #   log.info("TEST {} > Correct L0ID order             : {}".format(port_str, result_str[test_l0ids_order]))
-     #   log.info("TEST {} > Event headers correct          : {}".format(port_str, result_str[test_event_headers]))
-     #   log.info("TEST {} > Event footers coorect          : {}".format(port_str, result_str[test_event_footers]))
-     #   log.info("TEST {} > Correct # of modules per event : {}".format(port_str, result_str[test_n_modules]))
-     #   log.info("TEST {} > Correct module headers         : NOT TESTED (YET)".format(port_str))
-     #   log.info("TEST {} > Correct module footers         : NOT TESTED (YET)".format(port_str))
 
         return (test_n_events
                 and test_l0ids
@@ -440,10 +483,8 @@ class B2BWrapper(Wrapper) :
         for port_num, exp_events in enumerate(expected_output_events) :
 
             fifo, io, is_active = self.output_ports[port_num]
-            #port_str = "(port_num, port_name) = ({}, {})".format(io.value, io.name)
             port_str = "({}, {})".format(io.value, io.name)
             port_passed = self.compare_port_with_expected(port_num, exp_events)
-#            log.info("TEST {} => B2B Port passed? {}".format(port_str, result_str[port_passed]))
             if not port_passed :
                 test_passed = False
 
@@ -458,8 +499,5 @@ class B2BWrapper(Wrapper) :
         data.append(["{}FINAL B2B RESULT{}".format(bcolors.OKBLUE,bcolors.ENDC), result_str[test_passed]])
         table = columnar(data, header, no_borders = False)
         log.info(table)
-#        log.info("TEST {}".format(60 * "="))
-#        log.info("TEST *** ==> B2B TEST passed? {} ***".format( result_str[test_passed]))
-#        log.info("TEST {}".format(60 * "="))
 
         return test_passed
