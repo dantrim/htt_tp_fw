@@ -23,8 +23,10 @@ def event_rate_delay(io_enum, event, pass_through = False) :
     ##
     ## UNIT rates from Table 3.8 of HTT specifications document.
     ##
-    unit_event_rates = [x * 1e3 for x in (320, 330, 420)] # kHz -> Hz
-    #unit_event_rates = [x * 1e3 for x in (1000, 1000, 1000)]
+    unit_event_rates = [20 * x * 1e3 for x in (320, 330, 420)] # kHz -> Hz
+
+#    if io_enum.value == 0 :
+#        unit_event_rates = [x * 1e3 for x in (100, 100, 100)]
 
     # We use scipy to sample a PDF of the expected cluster rates.
     # Scipy relies on numpy.random for its random number generator,

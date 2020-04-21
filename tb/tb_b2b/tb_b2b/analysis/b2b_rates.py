@@ -22,20 +22,20 @@ def check_inputs(input_filelist = []) :
     
     return all_ok
 
-def make_dummy_plot(args) :
+def event_lists_gen(input_filelist = []) :
 
-    ##
-    ## load the data
-    ##
-    input_filenames = args.input
-    input_event_lists = []
-    for ifile, filename in enumerate(args.input) :
+    events_list = []
+    for ifile, filename in enumerate(input_filelist) :
         loaded_events = events.load_events_from_file(filename
-            ,endian = DATA_ENDIAN
-            ,load_timing_info = True
-        )
+                                    ,endian = DATA_ENDIAN
+                                    ,load_timing_info = True
+                        )
         print("INFO Loaded {} events from file #{:02} (={})".format(len(loaded_events), ifile, filename))
-        input_event_lists.append(loaded_events)
+        events_list.append(loaded_events)
+        #yield loaded_events
+    return events_list
+
+def make_dummy_plot(args) :
 
     ##
     ## generate the data
@@ -45,7 +45,7 @@ def make_dummy_plot(args) :
     event_boundaries = []
     y_data = []
     labels = []
-    for input_num, input_events in enumerate(input_event_lists) :
+    for input_num, input_events in enumerate(event_lists_gen(args.input)) :
         n_words = 0
         input_x_data = []
         input_y_data = []
@@ -60,7 +60,7 @@ def make_dummy_plot(args) :
                 input_y_data.append(n_words)
         x_data.append( input_x_data )
         y_data.append( input_y_data )
-        label = Path( input_filenames[input_num] ).stem
+        label = Path( args.input[input_num] ).stem
         labels.append(label)
 
     ##
@@ -73,7 +73,7 @@ def make_dummy_plot(args) :
     ##
     ## plot the data
     ##
-    for i in range(len(input_event_lists)) :
+    for i in range(len(x_data)) :
         ax.plot(x_data[i], y_data[i], label = labels[i])
     event_bounds_x, event_bounds_y = zip(*event_boundaries)
     ax.plot(event_bounds_x, event_bounds_y, "ro", markersize = 2)
@@ -86,6 +86,87 @@ def make_dummy_plot(args) :
     print("Saving figure: {}".format(os.path.abspath(outname)))
     fig.savefig(outname, bbox_inches = "tight")
 
+def make_rate_plot(args) :
+
+    ##
+    ## generate the data
+    ##
+
+    time_unit = ""
+    n_for_average = 2
+    n_events = 0
+    x_data = []
+    y_data = []
+    event_boundaries = []
+    labels = []
+    events_lists = event_lists_gen(args.input)
+    for input_num, input_events in enumerate(events_lists) :
+        n_words = 0
+        rate = 0.0
+        t0, t1 = 0.0, 0.0
+        x_event = []
+        y_event = []
+        for ievent, event in enumerate(input_events) :
+
+            for iword, word in enumerate(event.words) :
+                if not time_unit :
+                    time_unit = word.timestamp_units
+                if word.is_start_of_event() :
+                    if ievent == 0 :
+                        t0 = word.timestamp
+                        n_events = 1
+                    else :
+                        n_events += 1
+                    if n_events == n_for_average :
+                        delta = word.timestamp - t0
+                        delta *= 1e-9 # ns -> s
+                        rate = n_for_average * 1.0 / delta
+                        rate /= 1e3 # Hz -> kHz
+                        x_event.append( word.timestamp )
+                        y_event.append(rate)
+                        t0 = word.timestamp
+                        n_events = 1
+
+#                #if word.is_start_of_event() :
+#                #    event_boundaries.append( [n_words, word.timestamp] )
+#                if not time_unit :
+#                    time_unit = word.timestamp_units
+#                n_words += 1
+#                if n_words == 1 :
+#                    t0 = word.timestamp
+#                elif n_words == n_for_average :
+#                    t1 = word.timestamp
+#                    delta = (t1 - t0) * 1e-9 # ns -> seconds
+#                    rate = (1.0 * n_for_average) / delta
+#                    x_event.append( word.timestamp )
+#                    y_event.append(rate)
+#                    rate = 0.0
+#                    n_words = 0
+        x_data.append( x_event )
+        y_data.append( y_event )
+        label = Path( args.input[input_num] ).stem
+        labels.append( Path( args.input[input_num] ).stem )
+
+    ##
+    ## create the canvas
+    ##
+    fig, pad = tb_plot.default_canvas( x_label = "Time [{}]".format(time_unit)
+                                        ,y_label = "Rate [kHz]")
+
+    ##
+    ## plot the data
+    ##
+    for i, _ in enumerate(args.input) :
+        pad.plot(x_data[i], y_data[i], label = labels[i])
+    pad.legend(loc = "best", frameon = False, fontsize = 8)
+
+    ##
+    ## save figure
+    ##
+    outname = "b2b_rate_plot.pdf"
+    print("Saving figure: {}".format(os.path.abspath(outname)))
+    fig.savefig(outname, bbox_inches = "tight")
+
 def main() :
 
     parser = ArgumentParser(description = "Utility for analyzing B2B data rates")
@@ -95,13 +176,19 @@ def main() :
     parser.add_argument("--dummy", action = "store_true", default = False,
         help = "Produce a dummy plot."
     )
+    parser.add_argument("--word-rate", action = "store_true", default = False,
+        help = "Compute word rate"
+    )
     args = parser.parse_args()
 
     input_files_ok = check_inputs(args.input)
     if not input_files_ok :
         sys.exit(1)
+
     if args.dummy :
         make_dummy_plot(args)
+
+    make_rate_plot(args)
 
 if __name__ == "__main__" :
     main()

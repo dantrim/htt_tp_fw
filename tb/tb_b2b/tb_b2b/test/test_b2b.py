@@ -128,7 +128,7 @@ def b2b_test_0(dut) :
         raise ValueError("Unable to find associated IO for B2B BOARD_ID={}".format(board_id))
     dut._log.info("Setting test IO with base (port_name, port_num) = ({}, {})".format(this_tp.name, this_tp.value))
 
-    num_events_to_process = 10
+    num_events_to_process = 50
     l0id_request = -1
     event_delays = True
 
@@ -184,7 +184,7 @@ def b2b_test_0(dut) :
     yield Combine(*send_finished_signal)
     dut._log.info("Sending finished!")
 
-    timer = Timer(20, "us")
+    timer = Timer(int(num_events_to_process * 1.0 / 2), "us")
     dut._log.info("Going to wait 20 microseconds")
     yield timer
 
