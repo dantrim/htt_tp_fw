@@ -7,5 +7,6 @@ setup(name = "tb_utils"
         ,author = "Daniel Joseph Antrim"
         ,author_email = "daniel.joseph.antrim@cern.ch"
         ,packages = ["tb_utils"]
+        ,install_requires = ["numpy", "matplotlib"]
         ,zip_safe = False
 )
