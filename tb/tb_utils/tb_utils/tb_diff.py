@@ -133,19 +133,41 @@ def diffprint(word0, word1, diff, indent = "", description = "") :
 
 def order_modules(modules0, modules1) :
 
+    idx0 = []
     idx1 = []
+
+    out0 = []
     out1 = []
+    remainders = []
     for i in range(len(modules0)) :
         mod0 = modules0[i]
+        h0 = mod0.header_words[0]
+        h01 = mod0.header_words[1]
+        f = mod0.footer
+        found_equal = False
         for j in range(len(modules1)) :
             mod1 = modules1[j]
+            h1 = mod1.header_words[0]
+            h11 = mod1.header_words[1] 
+            f1 = mod1.footer
             if mod1 == mod0 :
-                out1.append(mod1)
-                if j in idx1 :
-                    print("ERROR WORD REPRODUCED")
-                idx1.append(j)
+                found_equal = True
 
-    return modules0, out1
+                out0.append(mod0)
+                out1.append(mod1)
+
+                idx0.append(i)
+                idx1.append(j)
+                break
+
+    for i, mod in enumerate(modules0) :
+        if i not in idx0  and mod not in out0 :
+            out0.append(mod)
+    for i, mod in enumerate(modules1) :
+        if i not in idx1 and mod not in out1 :
+            out1.append(mod)
+
+    return out0, out1
 
 def compare_event(event0, event1, args) :
 
@@ -179,24 +201,57 @@ def compare_event(event0, event1, args) :
     else :
         modules_0, modules_1 = order_modules(modules_0, modules_1)
         for i in range(len(modules_0)) :
-            print("")
             module0 = modules_0[i]
             module1 = modules_1[i]
-            for idx, j in enumerate(range(len(module0))) :
-                m0 = module0.data_words[j]
-                m1 = module1.data_words[j]
 
-                pass_through = False
-                mask = []
-                # mask out or ignore flagging module data as bad, only worry about module footer and header
-                if idx == 1 :
-                    mask = np.arange(11, 19, 1)
-                elif idx >= 2 and idx != (len(module0) - 1):
-                    pass_through = True
-                elif idx == (len(module0) - 1) : # footer
-                    mask = np.arange(0, 11, 1)
-                m0, m1, diff = diff_data_words(m0, m1, pass_through = pass_through, mask = list(mask))
-                diffprint(m0, m1, diff, indent = indent)
+            print("{} {}".format(indent, 40 * "-"))
+
+            max_len = max( [len(module0), len(module1)] )
+            for idx in range(max_len) :
+                m0 = None
+                m1 = None
+                if idx < len(module0) :
+                    m0 = module0.data_words[idx]
+                if idx < len(module1) :
+                    m1 = module1.data_words[idx]
+
+                if m0 and m1 :
+                    pass_through = False
+                    mask = []
+                    # mask out or ignore flagging module data as bad, only worry about module footer and header
+                    if idx == 1 :
+                        mask = np.arange(11, 19, 1)
+                    elif idx >= 2 and idx != (len(module0) - 1):
+                        pass_through = True
+                    elif idx == (len(module0) - 1) : # footer
+                        mask = np.arange(0, 11, 1)
+                    m0, m1, diff = diff_data_words(m0, m1, pass_through = pass_through, mask = list(mask))
+                    diffprint(m0, m1, diff, indent = indent)
+
+                else :
+                    if not m0 :
+                        m0 = events.DataWord(0x0, False)
+                    elif not m1 :
+                        m1 = events.DataWord(0x0, False)
+                    print("WARNING Module lengths are not the same!")
+                    m0, m1, diff = diff_data_words(m0, m1, pass_through = pass_through, mask = np.arange(0, 19, 1))
+                    diffprint(m0, m1, diff, indent = indent)
+#
+#            for idx, j in enumerate(range(len(module0))) :
+#                m0 = module0.data_words[j]
+#                m1 = module1.data_words[j]
+#
+#                pass_through = False
+#                mask = []
+#                # mask out or ignore flagging module data as bad, only worry about module footer and header
+#                if idx == 1 :
+#                    mask = np.arange(11, 19, 1)
+#                elif idx >= 2 and idx != (len(module0) - 1):
+#                    pass_through = True
+#                elif idx == (len(module0) - 1) : # footer
+#                    mask = np.arange(0, 11, 1)
+#                m0, m1, diff = diff_data_words(m0, m1, pass_through = pass_through, mask = list(mask))
+#                diffprint(m0, m1, diff, indent = indent)
 
     print("\n")
     ##
@@ -227,8 +282,6 @@ def compare_files(args) :
     if args.l0id :
         l0id_request = args.l0id
     events0 = events.load_events_from_file(filename0, endian = args.endian, n_to_load = args.n_events, l0id_request = l0id_request)
-    dummy = events.DataEvent(0x44)
-    events0.append(dummy)
     events1 = events.load_events_from_file(filename1, endian = args.endian, n_to_load = args.n_events, l0id_request = l0id_request)
 
     ##
