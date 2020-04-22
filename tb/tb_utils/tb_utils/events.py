@@ -181,6 +181,20 @@ class ModuleData :
     def __len__(self) :
         return len(self._data_words)
 
+    def __eq__(self, other) :
+        lengths_equal = len(self._data_words) == len(other)
+        all_words_equal = True
+        if lengths_equal :
+            h0, h1 = hex(self.header_words[0].value), hex(self.header_words[1].value)
+            h0_other, h1_other = hex(other.header_words[0].value), hex(other.header_words[1].value)
+            headers_equal = (h0 == h0_other) and (h1 == h1_other)
+
+            footers_equal = (hex(self.footer.value) == hex(other.footer.value))
+
+            data_equal = headers_equal and footers_equal
+        mod_eq = lengths_equal and data_equal
+        return mod_eq
+
     def header_description_strings(self) :
 
         out = []

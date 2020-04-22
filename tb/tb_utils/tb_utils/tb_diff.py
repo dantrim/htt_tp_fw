@@ -1,6 +1,7 @@
 from difflib import Differ
 from argparse import ArgumentParser
 import numpy as np
+from columnar import columnar
 
 from tb_utils import events
 from colorama import Fore, Back, Style, init
@@ -21,8 +22,8 @@ def colored_dataword(dataword, bad_pos = []) :
 
     hex_string = str(dataword)
 
-    if not bad_pos :
-        return hex_string
+    #if not bad_pos :
+    #    return hex_string
 
     tmp = ""
     for idx, char in enumerate(hex_string) :
@@ -31,15 +32,61 @@ def colored_dataword(dataword, bad_pos = []) :
             tmp += Fore.RED + char
             tmp += Style.RESET_ALL
         else :
-            tmp += char
+            # make it green for fun
+            #tmp += Fore.RESET + char
+            tmp += Fore.GREEN + char
+    #print("{} ({}) : {} ({})".format(len(hex_string), hex_string, len(tmp), tmp))
     return tmp
 
-def diff_data_words(word0, word1) :
+def meta_field_diff(event0, event1, meta_type = "event_header") :
+
+    h0 = [] 
+    
+    meta_field_names = None
+    field_func0 = None
+    field_func1 = None
+    if meta_type == "event_header" :
+        meta_field_names = event0.header_field_names()
+        field_func0 = event0.header_field
+        field_func1 = event1.header_field
+    elif meta_type == "event_footer" :
+        meta_field_names = event0.footer_field_names()
+        field_func0 = event0.footer_field
+        field_func1 = event1.footer_field
+
+    for ih, field_names_i in enumerate(meta_field_names) :
+        h0_i = []
+        for ifield, field_name in enumerate(field_names_i) :
+            field0 = field_func0(field_name)
+            field1 = field_func1(field_name)
+    
+            error = ""
+            if field0 != field1 :
+                color = Fore.RED
+                error = " ERROR"
+            else :
+                color = Fore.GREEN
+            prev0 = "{}{}:{}".format(field_name, error, hex(int(field0)))
+            prev1 = "{}{}:{}".format(field_name, error, hex(int(field1)))
+            out_str = color + "{} / {}".format(prev0.replace(":",": "), prev1.split(":")[-1])
+            h0_i.append(out_str)
+        h0.append(h0_i)
+
+    ##
+    ## set all strings to be fixed length
+    ##
+    col_width_0 = max(len(word) for row in h0 for word in row) + 2
+
+    tmp0 = []
+    for row in h0 :
+        tmp = [word.ljust(col_width_0) for word in row]
+        tmp0.append(tmp)
+    h0 = tmp0
+    return h0
+
+def diff_data_words(word0, word1, pass_through = False, mask = []) :
 
     word0_nibbles, word1_nibbles = list(str(word0)), list(str(word1))
-    if word0.is_start_of_event() :
-        for i in [4,5,6,7] :
-            word0_nibbles[i] = "9"
     # the str representation of events.DataWord should always represent data as 65-bits
     if len(word0_nibbles) != len(word1_nibbles) :
         raise Exception("ERROR Incorrect data word lengths (word0={}, word1={})".format(len(str(word0)), len(str(word1))))
@@ -48,12 +95,15 @@ def diff_data_words(word0, word1) :
     for i in range(len(word0_nibbles)) :
         nibble0 = word0_nibbles[i]
         nibble1 = word1_nibbles[i]
-        if nibble0 != nibble1 :
+        if nibble0 != nibble1 and i not in mask :
             bad_nibbles.append(i)
+
+    if pass_through :
+        bad_nibbles = []
 
     diff = []
     for i in range(len(word0_nibbles)) :
-        if i in bad_nibbles :
+        if i in bad_nibbles and i not in mask :
             diff.append(True)
         else :
             diff.append(False)
@@ -70,18 +120,37 @@ def diff_str(diff_arr) :
             d += " "
     return d
 
-def print_words_with_diff(word0, word1, diff, indent = "") :
+def diffprint(word0, word1, diff, indent = "", description = "") :
 
-    print("{} {: <20} {: <20}".format(indent, str(word0), str(word1)))
+    if not description:
+        print("{} {: <20}  {: <20}".format(indent, str(word0), str(word1)))
+    else :
+        print("{} {: <20}  {: <20}  {}".format(indent, str(word0), str(word1), description))
+
     if np.any(np.array(diff)) :
         dstr = diff_str(diff)
-        print("{} {: <20}{: <20}".format(indent, dstr, dstr))
+        print("{} {: <20} {: <20}".format(indent, dstr, dstr))
 
+def order_modules(modules0, modules1) :
+
+    idx1 = []
+    out1 = []
+    for i in range(len(modules0)) :
+        mod0 = modules0[i]
+        for j in range(len(modules1)) :
+            mod1 = modules1[j]
+            if mod1 == mod0 :
+                out1.append(mod1)
+                if j in idx1 :
+                    print("ERROR WORD REPRODUCED")
+                idx1.append(j)
+
+    return modules0, out1
 
 def compare_event(event0, event1, args) :
 
     l0id = event0.l0id
-    indent = "{: <10}".format("")
+    indent = "{: <10}".format(" ")
 
     ##
     ## compare header words
@@ -90,11 +159,61 @@ def compare_event(event0, event1, args) :
     if len(header_data_0) != len(header_data_1) :
         raise Exception("ERROR Malformed headers")
     header_length = len(header_data_0)
+
+    header_fields_0, header_fields_1 = event0.header_description_strings(), event1.header_description_strings()
     for i in range(header_length) :
         h0 = header_data_0[i]
         h1 = header_data_1[i]
         h0, h1, diff = diff_data_words(h0, h1)
-        print_words_with_diff(h0, h1, diff, indent = indent)
+        header_diff_strings = meta_field_diff(event0, event1, meta_type = "event_header")#, header_field_names)
+        description = " ".join(header_diff_strings[i])
+        diffprint(h0, h1, diff, indent = indent, description = description)
+
+    ##
+    ## compare modules
+    ##
+    modules_0, modules_1 = event0.get_modules(), event1.get_modules()
+    n_modules_0, n_modules_1 = len(modules_0), len(modules_1)
+    if n_modules_0 != n_modules_1 :
+        print("{} Number of modules differ: {} / {}".format(indent, n_modules_0, n_modules_1))
+    else :
+        modules_0, modules_1 = order_modules(modules_0, modules_1)
+        for i in range(len(modules_0)) :
+            print("")
+            module0 = modules_0[i]
+            module1 = modules_1[i]
+            for idx, j in enumerate(range(len(module0))) :
+                m0 = module0.data_words[j]
+                m1 = module1.data_words[j]
+
+                pass_through = False
+                mask = []
+                # mask out or ignore flagging module data as bad, only worry about module footer and header
+                if idx == 1 :
+                    mask = np.arange(11, 19, 1)
+                elif idx >= 2 and idx != (len(module0) - 1):
+                    pass_through = True
+                elif idx == (len(module0) - 1) : # footer
+                    mask = np.arange(0, 11, 1)
+                m0, m1, diff = diff_data_words(m0, m1, pass_through = pass_through, mask = list(mask))
+                diffprint(m0, m1, diff, indent = indent)
+
+    print("\n")
+    ##
+    ## compare footer words
+    ##
+    footer_data_0, footer_data_1 = event0.footer_words, event1.footer_words
+    if len(footer_data_0) != len(footer_data_1) :
+        raise Exception("ERROR Malformed footers")
+    footer_length = len(footer_data_0)
+    footer_fields_0, footer_fields_1 = event0.footer_description_strings(), event1.footer_description_strings()
+    for i in range(footer_length) :
+        f0 = footer_data_0[i]
+        f1 = footer_data_1[i]
+        f0, f1, diff = diff_data_words(f0, f1)
+        footer_diff_strings = meta_field_diff(event0, event1, meta_type = "event_footer")
+        description = " ".join(footer_diff_strings[i])
+        diffprint(f0, f1, diff, indent = indent, description = description)
 
 def compare_files(args) :
 
@@ -106,14 +225,8 @@ def compare_files(args) :
 
     events0 = events.load_events_from_file(filename0, endian = args.endian, n_to_load = args.n_events)
     dummy = events.DataEvent(0x44)
-    #dummy1 = events.DataEvent(0x72)
     events0.append(dummy)
-    #events0.append(dummy1)
     events1 = events.load_events_from_file(filename1, endian = args.endian, n_to_load = args.n_events)
-    #dummy10 = events.DataEvent(0x72)
-    #dummy11 = events.DataEvent(0x44)
-    #events1.append(dummy10)
-    #events1.append(dummy11)
 
     ##
     ## number of events
