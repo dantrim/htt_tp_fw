@@ -626,6 +626,43 @@ def timing_info_gen(filename) :
                 continue
             yield line
 
+def file_event_generator(filename, endian = "little", n_to_load = -1) :
+
+    path = Path(filename)
+    ok = path.exists() and path.is_file()
+    if not ok :
+        raise Exception("Cannot find provided file {}".format(filename))
+
+    at_event_end = False
+    with open(filename, "rb") as ifile :
+        current_event = None
+        filesize = os.stat(filename).st_size
+        for _ in range(0, filesize, 9) :
+            data = ifile.read(9)
+            if len(data) != 9 :
+                raise Exception("Malformed event data file {}".format(filename))
+
+            fmt = { "little" : "<?Q", "big" : ">?Q" }[endian]
+            is_metadata, contents = struct.unpack(fmt, data)
+            word = DataWord(contents, is_metadata)
+
+            if word.is_event_header_start() :
+
+                if at_event_end and current_event is not None :
+                    current_event.parse()
+                    yield current_event
+
+                if n_to_load > 0 and len(events) >= n_to_load :
+                    break
+
+                header = DataFormat.BitFieldWordValue(DataFormat.EVT_HDR1, contents)
+                current_event = DataEvent(header.getField("L0ID"))
+
+            if current_event is not None :
+                current_event.add_word(word)
+
+            if word.is_event_footer_start() :
+                at_event_end = True
 
 def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_request = -1, load_timing_info = False) :
 
