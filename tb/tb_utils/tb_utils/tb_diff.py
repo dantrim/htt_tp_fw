@@ -223,10 +223,13 @@ def compare_files(args) :
     print("File0: {}".format(filename0))
     print("File1: {}".format(filename1))
 
-    events0 = events.load_events_from_file(filename0, endian = args.endian, n_to_load = args.n_events)
+    l0id_request = -1
+    if args.l0id :
+        l0id_request = args.l0id
+    events0 = events.load_events_from_file(filename0, endian = args.endian, n_to_load = args.n_events, l0id_request = l0id_request)
     dummy = events.DataEvent(0x44)
     events0.append(dummy)
-    events1 = events.load_events_from_file(filename1, endian = args.endian, n_to_load = args.n_events)
+    events1 = events.load_events_from_file(filename1, endian = args.endian, n_to_load = args.n_events, l0id_request = l0id_request)
 
     ##
     ## number of events
@@ -298,7 +301,12 @@ def main() :
     parser.add_argument("-e", "--endian", default = "little", type = str
         ,help = "Endian-ness of data evt files"
     )
+    parser.add_argument("-l", "--l0id", default = "", type = str
+        ,help = "Request a specific L0ID to be diff'd [hex string format, e.g. 0x44]"
+    )
     args = parser.parse_args()
+    if args.l0id != "" :
+        args.l0id = int(args.l0id, 16)
 
     ##
     ## diff
