@@ -280,6 +280,7 @@ class ModuleData :
 
         h0 = DataFormat.BitFieldWordValue(DataFormat.M_HDR, value = words[0].contents)
         h1 = DataFormat.BitFieldWordValue(DataFormat.M_HDR2)
+        #print("MODULE H0 = {}".format(hex(h0.value)))
         self._header = [h0, h1]
 
         data_type = self._header[0].getField("TYPE")
@@ -295,7 +296,7 @@ class ModuleData :
 
         expectfooter = False
 
-        for iword, word in enumerate(words) :
+        for iword, word in enumerate(words[1:]) :
 
             unpacker = SubwordUnpacker(word.contents, DataFormat.WORD_LENGTH)
             empty = False
@@ -339,6 +340,9 @@ class ModuleData :
                     val, empty = unpacker.get(DataFormat.M_HDR2.nbits)
                     h1.value = val
 
+                ##
+                ## here we handle mis-shapened words
+                ##
                 # test for empty module
                 if len(words[1:]) == 1 :
                     tmp_words = []
@@ -365,10 +369,30 @@ class ModuleData :
                                 self._footer = DataFormat.BitFieldWordValue(clus_footer_format, val)
                                 break
 
+                ##
+                ## if not doing mis-shapened word handling, uncomment this
+                ##
+                #while not empty :
+                #    if (not expectfooter) and (self.footer == None) :
+                #        val, empty = unpacker.get(clus_word_length)
+                #        cluster_val = DataFormat.BitFieldWordValue(clus_word_format, val)
+                #        self._cluster_data.append(cluster_val)
+                #        expectfooter = cluster_val.getField("LAST") == 1
+                #    else :
+                #        val, empty = unpacker.get(clus_footer_length)
+                #        expectfooter = False
+                #        if not self._footer :
+                #            self._footer = DataFormat.BitFieldWordValue(clus_footer_format, val)
+                #            break
+
         if data_type == data_type_clus and (self._footer == None or self._footer == 0x0) :
             print("WARNING Failed to find MODULE FOOTER for clustered data")
 
         self._parse_header()
+        #dw = DataWord(self.footer.value, False)
+        #print(" MODULE FOOTER = {}".format(dw))
+        #print("       H1 = {} -> {}".format(dw, hex(h1.value)))
+        #print("   MODID  = {}    -> {}".format(hex(h1.getField("MODID")), bin(h1.getField("MODID"))))
 
     def _parse_header(self) :
 
