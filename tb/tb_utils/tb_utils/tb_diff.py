@@ -1,4 +1,5 @@
 from difflib import Differ
+import re
 from argparse import ArgumentParser
 import numpy as np
 from columnar import columnar
@@ -9,6 +10,11 @@ init(autoreset = True)
 #Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
 #Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
 #Style: DIM, NORMAL, BRIGHT, RESET_ALL
+
+def remove_ansi(instring) :
+
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', instring)
 
 def event_at_l0id(events_list, l0id) :
 
@@ -75,7 +81,7 @@ def meta_field_diff(event0, event1, meta_type = "event_header") :
     ##
     ## set all strings to be fixed length
     ##
-    col_width_0 = max(len(word) for row in h0 for word in row) + 2
+    col_width_0 = max(len(word) for row in h0 for word in row[:-1]) + 2
 
     tmp0 = []
     for row in h0 :
@@ -98,8 +104,14 @@ def diff_data_words(word0, word1, pass_through = False, mask = []) :
         if nibble0 != nibble1 and i not in mask :
             bad_nibbles.append(i)
 
+
     if pass_through :
         bad_nibbles = []
+
+    if str(word0) == str(dummy_data_word()) or str(word1) == str(dummy_data_word()) :
+        #bad_nibbles = [i for i in range(len(word0_nibbles))]
+        bad_nibbles = [i for i in range(len(word1_nibbles))]
+        yep = True
 
     diff = []
     for i in range(len(word0_nibbles)) :
@@ -122,52 +134,160 @@ def diff_str(diff_arr) :
 
 def diffprint(word0, word1, diff, indent = "", description = "") :
 
-    if not description:
-        print("{} {: <20}  {: <20}".format(indent, str(word0), str(word1)))
-    else :
-        print("{} {: <20}  {: <20}  {}".format(indent, str(word0), str(word1), description))
+    word0_str = str(word0)
+    word1_str = str(word1)
 
-    if np.any(np.array(diff)) :
-        dstr = diff_str(diff)
-        print("{} {: <20} {: <20}".format(indent, dstr, dstr))
+    is_uneven = False
+    mod_0_is_short = remove_ansi(word0_str) == str(dummy_data_word())
+    mod_1_is_short = remove_ansi(word1_str) == str(dummy_data_word())
+    if mod_0_is_short or mod_1_is_short :
+        is_uneven = True
+        mod_short_str = ""
+        if mod_0_is_short :
+            mod_short_str = Fore.RED + "File0" + Fore.RESET
+            word0_str = Fore.RED + 19 * "x" + Fore.RESET
+        else :
+            mod_short_str = Fore.RED + "File1" + Fore.RESET
+            word1_str = Fore.RED + 19 * "x" + Fore.RESET
+        description = "{} ".format(mod_short_str) + Fore.RED + "SHORT MODULE" + Fore.RESET + "{} {}".format(":" if description else "", description)
+
+    if not description:
+        print("{} {: <20}  {: <20}".format(indent, word0_str, word1_str))
+    else :
+        print("{} {: <20}  {: <20}  {}".format(indent, word0_str, word1_str, description))
+
+    if not is_uneven :
+        if np.any(np.array(diff)) :
+            dstr = diff_str(diff)
+            print("{} {: <20} {: <20}".format(indent, dstr, dstr))
+
+def dummy_data_word() :
+
+    return events.DataWord(contents = 0xdeadbeefc0cac01a, is_metadata = True)
+
+def dummy_module(test_module) :
+
+    n_words = len(test_module)
+    dummy_data = [x for x in test_module.header_words]
+    dummy_data.append( dummy_data_word() for _ in range(n_words - len(test_module.header_words - 1)) )
+    dummy_data.append( test_module.footer )
+    dummy = events.ModuleData(data_words = dummy_data)
+    #dummy = events.ModuleData(data_words = [dummy_data_word() for _ in range(n_words)])
+    return dummy
 
 def order_modules(modules0, modules1) :
 
-    idx0 = []
-    idx1 = []
+    ##
+    ## assume same # of modules
+    ##
+    out_0, out_1 = [], []
+    n_modules = len(modules0)
+    for imodule0, module0 in enumerate(modules0) :
+        found_match = False
+        for imodule1, module1 in enumerate(modules1) :
+    #for imodule in range(n_modules) :
+    #    module0, module1 = modules0[imodule], modules1[imodule]
+        
+            n_words_0, n_words_1 = len(module0), len(module1)
 
-    out0 = []
-    out1 = []
-    remainders = []
-    for i in range(len(modules0)) :
-        mod0 = modules0[i]
-        h0 = mod0.header_words[0]
-        h01 = mod0.header_words[1]
-        f = mod0.footer
-        found_equal = False
-        for j in range(len(modules1)) :
-            mod1 = modules1[j]
-            h1 = mod1.header_words[0]
-            h11 = mod1.header_words[1] 
-            f1 = mod1.footer
-            if mod1 == mod0 :
-                found_equal = True
 
-                out0.append(mod0)
-                out1.append(mod1)
-
-                idx0.append(i)
-                idx1.append(j)
+            ##
+            ## equality based on header/footer
+            ##
+            h0, h1 = [x.value for x in module0.header_words], [x.value for x in module1.header_words]
+            f0, f1 = module0.footer.value, module1.footer.value
+            headers_equal = h0 == h1
+            footers_equal = f0 == f1
+            module_equal = (headers_equal and footers_equal)
+            #print("-> {} {} --> ? {}".format([hex(x) for x in h0], [hex(x) for x in h1], headers_equal))
+            #print("-> {} {} --> ? {}".format(hex(f0), hex(f1), footers_equal))
+            if module0 == module1 : # and imodule0 != 0 :
+            #if module_equal :
+                #print("FOUND EQUAL MODS")
+                if module0 not in out_0 :
+                    out_0.append(module0)
+                if module1 not in out_1 :
+                    out_1.append(module1)
+                found_match = True
                 break
 
-    for i, mod in enumerate(modules0) :
-        if i not in idx0  and mod not in out0 :
-            out0.append(mod)
-    for i, mod in enumerate(modules1) :
-        if i not in idx1 and mod not in out1 :
-            out1.append(mod)
+        if found_match :
+            lm0, lm1 = out_0[-1], out_1[-1]
+            n_words_0, n_words_1 = len(lm0), len(lm1)
+            # append dummy words to pad
+            if n_words_0 != n_words_1 :
+                print("FOO MODULE LENGTHS DIFFER {} {}".format(n_words_0, n_words_1))
+                while len(module0) < len(module1) :
+                    module0._data_words.append( dummy_data_word() )
+                while len(module1) < len(module0) :
+                    module1._data_words.append( dummy_data_word() )
+                print("FOO -> NEW LENGTHS     -> {} {}".format(len(module0), len(module1)))
+        else :
+            print("FOUND NO MATCH")
 
-    return out0, out1
+    for mod in modules0 :
+        if mod not in out_0 :
+            out_0.append(mod)
+            #out_1.append(dummy_module(mod))
+    for mod in modules1 :
+        if mod not in out_1 :
+            out_1.append(mod)
+            #out_0.append(dummy_module(mod))
+
+    return out_0, out_1
+        
+#    ##
+#    ## PREVIOUS
+#    ##
+#
+#    idx0 = []
+#    idx1 = []
+#
+#    out0 = []
+#    out1 = []
+#    remainders = []
+#    for i in range(len(modules0)) :
+#        mod0 = modules0[i]
+#        h0 = mod0.header_words[0]
+#        h01 = mod0.header_words[1]
+#        f = mod0.footer
+#        found_equal = False
+#        for j in range(len(modules1)) :
+#            mod1 = modules1[j]
+#            h1 = mod1.header_words[0]
+#            h11 = mod1.header_words[1] 
+#            f1 = mod1.footer
+#            if mod1 == mod0 :
+#                found_equal = True
+#
+#                out0.append(mod0)
+#                out1.append(mod1)
+#
+#                idx0.append(i)
+#                idx1.append(j)
+#                break
+#
+#    for i, mod in enumerate(modules0) :
+#        if i not in idx0  and mod not in out0 :
+#            out0.append(mod)
+#    for i, mod in enumerate(modules1) :
+#        if i not in idx1 and mod not in out1 :
+#            out1.append(mod)
+#
+#    return out0, out1
+
+def module_footer_start_idx(data_word) :
+
+    hex_str = str(data_word)
+    hex_str_rev = "".join(list(hex_str)[::-1])
+    back_idx = -1
+    for i in range(0, len(hex_str_rev)-1, 2) :
+        byte = hex_str_rev[i:i+2]
+        if byte == "77" :
+            back_idx = i + 2
+    idx = len(hex_str) - back_idx
+    return idx
+   
 
 def compare_event(event0, event1, args) :
 
@@ -204,6 +324,9 @@ def compare_event(event0, event1, args) :
             module0 = modules_0[i]
             module1 = modules_1[i]
 
+            #module_header_description_strings_0 = module0.header_description_strings()
+            #module_header_description_strings_1 = module1.header_description_strings()
+
             print("{} {}".format(indent, 40 * "-"))
 
             max_len = max( [len(module0), len(module1)] )
@@ -224,9 +347,19 @@ def compare_event(event0, event1, args) :
                     elif idx >= 2 and idx != (len(module0) - 1):
                         pass_through = True
                     elif idx == (len(module0) - 1) : # footer
-                        mask = np.arange(0, 11, 1)
+                        footer_idx = module_footer_start_idx(module0.data_words[idx])
+                        if footer_idx >= 0 :
+                            mask = np.arange(0, footer_idx, 1)
+#                        if module0.is_pixel() :
+#                            mask = np.arange(0, 11, 1)
+#                        else :
+#                            mask = np.arange(0, 15, 1)
+                    description = ""
+                    if idx < 2 :
+                        module_header_diff_strings = meta_field_diff(module0, module1, meta_type = "event_header")
+                        description = " ".join(module_header_diff_strings[idx])
                     m0, m1, diff = diff_data_words(m0, m1, pass_through = pass_through, mask = list(mask))
-                    diffprint(m0, m1, diff, indent = indent)
+                    diffprint(m0, m1, diff, indent = indent, description = description)
 
                 else :
                     if not m0 :
@@ -253,7 +386,7 @@ def compare_event(event0, event1, args) :
 #                m0, m1, diff = diff_data_words(m0, m1, pass_through = pass_through, mask = list(mask))
 #                diffprint(m0, m1, diff, indent = indent)
 
-    print("\n")
+    print("{} {}".format(indent, 40 * "-"))
     ##
     ## compare footer words
     ##

@@ -17,11 +17,6 @@ module TopLevel #(
     output reg [SIZE-1:0] output_data
 );
 
-    // Random wires for the spy buffers.
-    // I wrote the testbench in such a way that none of these matter;
-    // the driver/monitor reaches into the spy buffer's toplevel
-    // rather than look at these. But maybe that was a bad idea.
-
     // These are outputs of the SpyBuffer block
     wire buffer_almost_full;
     wire buffer_empty;
@@ -45,20 +40,7 @@ module TopLevel #(
         .read_enable(buffer_read_enable),
         .almost_full(buffer_almost_full),
         .empty(buffer_empty),
-        // The following should not be needed until one actually wants
-        // to use the spy-buffer functionality, whereas for now we just
-        // want to use the fifo functionality.
-        .freeze(1'b0),
-        .spy_read_enable(1'b0),
-        .spy_meta_read_enable(1'b0),
-        .spy_read_addr(1'b0),
-        .spy_meta_read_addr(1'b0),
-        .spy_write_addr(),
-        .spy_meta_write_addr(),
-        .spy_data(),
-        .spy_meta_read_data()
     );
-
 endmodule
 
 `default_nettype wire

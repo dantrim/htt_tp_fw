@@ -3,19 +3,27 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge
 from cocotb.decorators import coroutine
 from cocotb.result import TestFailure, TestSuccess
-from tptest import events, util
 
 from fifo_wrapper import FifoWrapper
 
 CLOCK_SPEED = 200 # ns
 
 def initialize_wires(dut) :
+
+    ##
+    ## zero some signals
+    ##
     wires = [dut.buffer_write_enable, dut.buffer_read_enable, dut.input_data, dut.output_data]
     for wire in wires :
         wire <= 0
 
 @cocotb.coroutine
 def reset(dut) :
+
+    ##
+    ## reset is active LOW
+    ##
+
     dut.reset <= 1
     yield ClockCycles(dut.clock, 1)
     dut.reset <= 0
@@ -37,15 +45,7 @@ def test_fifo(dut) :
     yield events_sent.wait()
     yield fifo_wrapper.wait_for_events(timeout = 10000, units = "ns")
 
-    sep = 85 * "*"
-    cocotb.log.info(sep)
-    n_exp, n_obs = fifo_wrapper.word_count()
-    ok = n_exp == n_obs
-    msg = dut._log.info
-    if not ok :
-        msg = dut._log.error
-    msg(" => Number of received transactions match number of expected? {} (exp={}, obs={})".format(ok, n_exp, n_obs))
-    cocotb.log.info(sep)
+    ok = fifo_wrapper.compare_with_expected()
     if not ok :
         raise TestFailure
     else :

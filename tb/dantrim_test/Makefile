@@ -24,7 +24,7 @@ VHDL_SOURCES =
 # Toplevel (RTL) and module (Python) for tests.
 TOPLEVEL=TopLevel
 TOPLEVEL_LANG=verilog
-MODULE=DantrimTests3
+MODULE=SpyBufferTest.py
 
 # We need to set the include path appropriately!
 EXTRA_ARGS += +incdir+$(SRCDIR)

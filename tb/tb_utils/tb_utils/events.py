@@ -140,6 +140,7 @@ class ModuleData :
         self._footer = None
         self._header_field_map = {}
         self._parse(data_words)
+        self._is_dummy = False
 
     def header_field_names(self) :
         header_words = [
