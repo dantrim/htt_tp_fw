@@ -323,6 +323,8 @@ def compare_event(event0, event1, args) :
     indent = "{: <10}".format(" ")
 
     n_words_0, n_words_1 = len(event0), len(event1)
+    for i, w in enumerate(event0) :
+        print("FOO EVENT0 [{}] : {}".format(i, w))
     n_mod_0, n_mod_1 = event0.n_modules, event1.n_modules
     word_str = "{: <20} {:<20}".format("NWORDS   = {}".format(n_words_0), "NWORDS   = {}".format(n_words_1))
     err = ""
