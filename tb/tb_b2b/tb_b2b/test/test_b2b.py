@@ -129,7 +129,6 @@ def b2b_test_0(dut) :
     dut._log.info("Setting test IO with base (port_name, port_num) = ({}, {})".format(this_tp.name, this_tp.value))
 
     num_events_to_process = 20
-    l0id_request = -1
     event_delays = True
 
     ##
@@ -178,13 +177,13 @@ def b2b_test_0(dut) :
     ## send events
     ##
     dut._log.info("Sending input events")
-    send_finished_signal = b2b.send_input_events(input_testvector_files, num_events_to_process, l0id_request, event_delays)
+    send_finished_signal = b2b.send_input_events(input_testvector_files, n_to_send = num_events_to_process, event_delays = event_delays)
     if not send_finished_signal :
         raise cocotb.result.TestFailure("ERROR Event sending timed out! Number of expected inputs with events = {}".format(len(send_finished_signal)))
     yield Combine(*send_finished_signal)
     dut._log.info("Sending finished!")
 
-    timer = Timer(int(num_events_to_process * 1.0 / 2), "us")
+    timer = Timer(20, "us")#int(num_events_to_process * 1.0 / 2), "us")
     dut._log.info("Going to wait 20 microseconds")
     yield timer
 
@@ -193,13 +192,13 @@ def b2b_test_0(dut) :
     ##
     expected_output_events = []
     for port_num, testvec in enumerate(output_testvector_files) :
-        out_events = events.load_events_from_file(testvec, n_to_load = num_events_to_process, l0id_request = l0id_request)
+        out_events = events.load_events_from_file(testvec, n_to_load = num_events_to_process)
         expected_output_events.append(out_events)
         
     for oport in b2b.output_ports :
         monitor, io, _ = oport
         words = monitor.observed_words
-        recvd_events = events.load_events(words, "little") 
+        recvd_events = events.load_events(words, "little")
         cocotb.log.info("Output for {} (output port num {}) received {} events".format(io.name, io.value, len(recvd_events)))
         
     test_passed = b2b.compare_outputs_with_expected(expected_output_events = expected_output_events)
