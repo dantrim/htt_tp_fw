@@ -422,7 +422,7 @@ def compare_event(event0, event1, args) :
                     module_header_diff_strings = meta_field_diff(module, module, meta_type = "event_header")
                     description = " ".join(module_header_diff_strings[iword])
                     if iword == 0 :
-                        description = "{: <10} {}".format(Fore.RED + "MODULE #{:03}".format(iunmatched) + Fore.RESET, description) 
+                        description = "{: <10} {}".format(Fore.RED + "MODULE #{}/{:03}".format(iunmatched, imodule) + Fore.RESET, description) 
                 elif (iword == len(module) - 1) :
                     # this is assumed to contain the footer
                     module_footer_diff_strings = meta_field_diff(module, module, meta_type = "event_footer")
