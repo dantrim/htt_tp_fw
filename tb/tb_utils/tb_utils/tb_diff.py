@@ -213,8 +213,8 @@ def order_modules(modules0, modules1) :
             module_equal = (headers_equal and footers_equal)
             #print("-> {} {} --> ? {}".format([hex(x) for x in h0], [hex(x) for x in h1], headers_equal))
             #print("-> {} {} --> ? {}".format(hex(f0), hex(f1), footers_equal))
-            #if module0 == module1 : # and imodule0 != 0 :
-            if module_equal :
+            if module0 == module1 : # and imodule0 != 0 :
+            #if module_equal :
                 #print("FOUND EQUAL MODS")
                 already_matched = module0 in out_0
                 already_matched = already_matched and (module1 in out_1)
@@ -365,13 +365,21 @@ def compare_event(event0, event1, args) :
     n_modules_0, n_modules_1 = len(modules_0), len(modules_1)
     modules_0, modules_1, unmatched_modules_0, unmatched_modules_1 = order_modules(modules_0, modules_1)
 
+    #print("len matched_0={} matched_1={}, unmatched_0={}, unmatched_1={}".format(len(modules_0), len(modules_1), len(unmatched_modules_0), len(unmatched_modules_1)))
+    #print(" --> ")
+    #for i in range(len(modules_0)) :
+    #    print("     [{}] {}  {}".format(i, modules_0[i], modules_1[i]))
+
     ## print matched modules
     for imodule in range(len(modules_0)) :
+        #print(" -> accessing imodule={} (len modules_0={} modules_1={})".format(imodule, len(modules_0), len(modules_1)))
         module0 = modules_0[imodule]
         module1 = modules_1[imodule]
+        #print(" ==> module lengths = {} {}".format(len(module0), len(module1)))
 
         print("{} {}".format(indent, 40 * "-"))
         for iword in range( len(module0) ) :
+            #print("   --> accessing word {}".format(iword))
             module_word0 = module0.data_words[iword]
             module_word1 = module1.data_words[iword]
 
