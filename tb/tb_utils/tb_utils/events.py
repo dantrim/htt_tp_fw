@@ -137,10 +137,6 @@ class ModuleData :
 
         self._data_words = data_words
         self._l0id = l0id
-
-        print("FOO MODULEDATA INIT L0ID={}:".format(hex(l0id)))
-        for i, w in enumerate(data_words) :
-            print("FOO   => {}: {}".format(i, w))
         self._header = []
         self._cluster_data = []
         self._footer = None
@@ -519,11 +515,7 @@ class DataEvent :
         modules = []
         for imod, mod in enumerate(self._module_idx) :
             start, stop = mod
-            print("FOO IMOD = {}, START={}, STOP={}".format(imod, start, stop))
             words = self._words[start:stop]
-            print("FOO -->")
-            for i, w in enumerate(words) :
-                print("FOO -->   {}: {}".format(i, w))
             modules.append( self._words[start : stop] )
         return modules
 
@@ -553,19 +545,17 @@ class DataEvent :
 
                 if self._pending_module() :
                     self._module_idx[-1][1] = self._pos
-                    print("FOO MOD STOP L0ID={} at ({},{})".format(hex(self.l0id), self._module_idx[-1][0], self._module_idx[-1][1]))
 
                 if word.is_event_footer_start() :
                     self._footer_idx = [self._pos, self._pos + 3]
+
                 elif word.is_module_header_start() :
-                    print("FOO MOD START L0ID={} {} at _pos = {}".format(hex(self.l0id), word, self._pos))
                     mod_idx = [self._pos, -1]
                     self._module_idx.append(mod_idx)
         self._pos += 1
 
-    def _unmatched_module_words(self) :
+    def unmatched_data_words(self) :
 
-        print("UNMATCHED L0ID = {}".format(hex(self.l0id)))
         ##
         ## first gather the indices of the datawords that are accounted for
         ##
@@ -573,8 +563,6 @@ class DataEvent :
         used_idx.extend( list(range( self._footer_idx[0], self._footer_idx[1], 1) ))
         for imod, mod in enumerate(self._module_idx) :
             mod_idx_0, mod_idx_1 = mod
-            if self.l0id == 0x47 :
-                print("FOO BLAH idx 0 = {}, idx 1 = {}".format(mod_idx_0, mod_idx_1))
             used_idx.extend( range(mod_idx_0, mod_idx_1, 1 ) )
         used_idx = sorted(used_idx)
 
@@ -583,10 +571,11 @@ class DataEvent :
         ##
         expected_indices = range(0, len(self._words), 1) # if every word was accounted for
         unused_idx = sorted(list(set(expected_indices) - set(used_idx)))
-        print("UNUSED IDX {}".format(unused_idx))
-        if len(unused_idx) :
-            print("WARNING Uaccounted for module data words ({} in total) in event L0ID={}".format(len(unused_idx), hex(self.l0id)))
-        
+
+        unused_data_words = []
+        for idx in unused_idx :
+            unused_data_words.append(self._words[idx])
+        return unused_data_words
 
     def write(self, ofd, endian = "little") :
         for word in self.words :
@@ -645,7 +634,7 @@ class DataEvent :
             out.append( ", ".join(["{}:{}".format(x,y) for x,y in list(fieldvals)]) )
         return out
 
-def load_events(data_words = [], endian = "little", n_to_load = -1) :
+def load_events(data_words = [], endian = "little", n_to_load = -1, l0id_request = -1) :
 
     """
     Load data from a list of DataWord objects
@@ -654,20 +643,32 @@ def load_events(data_words = [], endian = "little", n_to_load = -1) :
 
     current_event = None
     events = []
+    l0ids_loaded = set()
     for word in data_words :
+
 
         if word.is_event_header_start() :
             if n_to_load > 0 and len(events) >= n_to_load :
                 break
+            if l0id_request > 0 and int(l0id_request) in l0ids_loaded :
+                break
             header = DataFormat.BitFieldWordValue(DataFormat.EVT_HDR1, word.contents)
             current_event = DataEvent(header.getField("L0ID"))
+            l0ids_loaded.add(int(current_event.l0id))
         
-        #if current_event is not None :
-        if current_event :
+        if current_event is not None :
             current_event.add_word(word)
         
         if word.is_event_footer_start() :
             events.append(current_event)
+
+    if int(l0id_request) > 0 and len(events) > 0 :
+        tmp = []
+        for event in events :
+            if int(event.l0id) == int(l0id_request) :
+                tmp.append(event)
+                break
+        events = tmp
 
     for event in events :
         event.parse()
@@ -753,8 +754,6 @@ def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_requ
     if n_to_load > 0 and l0id_request > 0 :
         raise Exception("ERROR Cannot request specific number of events AND a specific L0ID at the same time")
 
-    print("FOO {}".format(90 * "*"))
-    print("FOO FROM FILE: {}".format(filename))
     timing_gen = None
     time_units = None
     if load_timing_info :
@@ -785,9 +784,6 @@ def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_requ
                     raise Exception("ERROR Timing file for loaded data file (={}) has incorrect number of words in it!".format(filename))
 
             if word.is_event_header_start() :
-                if len(events) :
-                    last_event = events[-1]
-                    last_event._unmatched_module_words()
                 if n_to_load > 0 and len(events) >= n_to_load :
                     break
                 if l0id_request > 0 and int(l0id_request) in l0ids_loaded :
@@ -797,7 +793,6 @@ def load_events_from_file(filename, endian = "little", n_to_load = -1, l0id_requ
                 l0ids_loaded.add(int(current_event.l0id))
 
             if current_event is not None :
-                print("FOO ADDING WORD at pos {}: {}".format(current_event._pos, word))
                 current_event.add_word(word)
 
             if word.is_event_footer_start() :
