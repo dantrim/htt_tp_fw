@@ -23,7 +23,8 @@
 
 *~
 
-*/build/
-*/sim_build/
+*.evt
+*build/
+*sim_build/
 *.autosave
 *pycache*
