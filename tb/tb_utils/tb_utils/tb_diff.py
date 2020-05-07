@@ -3,6 +3,7 @@ import re
 from argparse import ArgumentParser
 import numpy as np
 import sys
+import json
 from columnar import columnar
 
 from tb_utils import events
@@ -60,6 +61,9 @@ def meta_field_diff(event0, event1, meta_type = "event_header") :
         meta_type -> str: String indicating which type of meta fields should be decoded,
                             possible values are "event_header", "event_footer", "module_header", and "module_footer"
 
+    returns:
+        -> str: Descriptions of meta field data
+    bad_fields -> list(str): List of any of the header/footer fields at which an error is found
     """
 
     h0 = [] 
@@ -79,6 +83,7 @@ def meta_field_diff(event0, event1, meta_type = "event_header") :
         field_func0 = event0.footer_field
         field_func1 = event1.footer_field
 
+    bad_fields = []
     for ih, field_names_i in enumerate(meta_field_names) :
         h0_i = []
         for ifield, field_name in enumerate(field_names_i) :
@@ -99,11 +104,12 @@ def meta_field_diff(event0, event1, meta_type = "event_header") :
             if field0 != field1 or bad_flag :
                 color = Fore.RED
                 error = " DIFFERROR"
+                bad_fields.append(field_name)
             else :
                 color = Fore.GREEN
             prev0 = "{}{}:{}".format(field_name, error, hex(int(field0)))
             prev1 = "{}{}:{}".format(field_name, error, hex(int(field1)))
-            if event0 is event1 :
+            if event0 is event1 : # handles the case when providing the same inputs twice
                 out_str = color + "{}".format(prev0.replace(":",": "))
             else :
                 out_str = color + "{} / {}".format(prev0.replace(":",": "), prev1.split(":")[-1])
@@ -120,7 +126,7 @@ def meta_field_diff(event0, event1, meta_type = "event_header") :
         tmp = [word.ljust(col_width_0) for word in row]
         tmp0.append(tmp)
     h0 = tmp0
-    return h0
+    return h0, list(set(bad_fields))
 
 def colored_dataword(dataword, bad_pos = []) :
     """
@@ -337,6 +343,8 @@ def order_modules(modules0, modules1) :
     idx_matched_0, idx_matched_1 = [], []
 
     unmatched_0, unmatched_1 = [], []
+
+    #error_reasons = set()
     for imodule0 in range( len(modules0) ) :
         module0 = modules0[imodule0]
         for imodule1 in range( len(modules1) ) :
@@ -354,13 +362,27 @@ def order_modules(modules0, modules1) :
     
                     idx_matched_1.append(imodule1)
                     out_1.append(module1)
+            #else :
+            #    len_ok = len(module0) == len(module1)
+            #    h0, h1 = [x.value for x in module0.header_words], [x.value for x in module1.header_words]
+            #    f0, f1 = module0.footer.value, module1.footer.value
+            #    headers_ok = h0 == h1
+            #    footers_ok = f0 == f1
+            #    if not len_ok :
+            #        error_reasons.add("MODULE_LENGTH")
+            #    if not headers_ok :
+            #        error_reasons.add("MODULE_HEADER")
+            #    if not footers_ok :
+            #        error_reasons.add("MODULE_FOOTER")
 
     for imodule0 in range(len(modules0)) :
         if imodule0 not in idx_matched_0 :
             unmatched_0.append( modules0[imodule0] )
+            #error_reasons.add("MODULE_UNMATCHED")
     for imodule1 in range(len(modules1)) :
         if imodule1 not in idx_matched_1 :
             unmatched_1.append( modules1[imodule1] )
+            #error_reasons.add("MODULE_UNMATCHED")
 
     return out_0, out_1, unmatched_0, unmatched_1
         
@@ -420,9 +442,18 @@ def event_is_equal(event0, event1, verbose = False) :
     """
 
     all_ok = True
+    event_test_results = {
+        "n_words" : [True, None]
+        ,"event_header" : [True, None]
+        ,"event_footer" : [True, None]
+        ,"module_count" : [True, None]
+        ,"module_data" : [True, None]
+        ,"floating_data" : [True, None]
+    }
+
+
     l0id = event0.l0id
     indent = "{: <10}".format(" ")
-
     ###########################################################################
     ###########################################################################
     ##
@@ -434,18 +465,26 @@ def event_is_equal(event0, event1, verbose = False) :
     n_mod_0, n_mod_1 = event0.n_modules, event1.n_modules
     word_str = "{: <20} {:<20}".format("NWORDS   = {}".format(n_words_0), "NWORDS   = {}".format(n_words_1))
     err = ""
+    event_test_results["n_words"] = [n_words_0 == n_words_1, {"n_words_0" : n_words_0, "n_words_1" : n_words_1}]
     if n_words_0 != n_words_1 :
+        all_ok = False
+
         word_str = Fore.RED + word_str + Fore.RESET
         err = Fore.RED + "DIFFERROR" + Fore.RESET
 
     if verbose :
         print("{} {} {: <20}".format(indent, word_str, err))
 
-        mod_str = "{: <20} {: <20}".format("NMODULES = {}".format(n_mod_0), "NMODULES = {}".format(n_mod_1))
-        err = ""
-        if n_mod_0 != n_mod_1 :
-            mod_str = Fore.RED + mod_str + Fore.RESET
-            err = Fore.RED + "DIFFERROR" + Fore.RESET
+    mod_str = "{: <20} {: <20}".format("NMODULES = {}".format(n_mod_0), "NMODULES = {}".format(n_mod_1))
+    err = ""
+    event_test_results["module_count"] = [n_mod_0 == n_mod_1, {"n_modules_0" : n_mod_0, "n_modules_1" : n_mod_1}]
+    if n_mod_0 != n_mod_1 :
+        all_ok = False
+
+        mod_str = Fore.RED + mod_str + Fore.RESET
+        err = Fore.RED + "DIFFERROR" + Fore.RESET
+
+    if verbose :
         print("{} {} {: <20}".format(indent, mod_str, err))
 
     ###########################################################################
@@ -468,14 +507,19 @@ def event_is_equal(event0, event1, verbose = False) :
         h0 = header_data_0[i]
         h1 = header_data_1[i]
         h0, h1, diff = diff_data_words(h0, h1)
-        header_diff_strings = meta_field_diff(event0, event1, meta_type = "event_header")
+        header_diff_strings, bad_fields = meta_field_diff(event0, event1, meta_type = "event_header")
         description = " ".join(header_diff_strings[i])
+
+        if bad_fields :
+            event_test_results["event_header"] = [False, {"bad_fields" : bad_fields}]
 
         if verbose :
             diffprint(h0, h1, diff, indent = indent, description = description)
 
         if np.any(np.array(diff)) :
             all_ok = False
+            if not bad_fields :
+                raise Exception("ERROR We have event header dataword differences but no registered bad fields!")
 
     ###########################################################################
     ###########################################################################
@@ -547,12 +591,12 @@ def event_is_equal(event0, event1, verbose = False) :
 
             description = ""
             if iword < 2 :
-                module_header_diff_strings = meta_field_diff(module0, module1, meta_type = "module_header")
+                module_header_diff_strings, bad_fields = meta_field_diff(module0, module1, meta_type = "module_header")
                 description = " ".join(module_header_diff_strings[iword])
                 if iword == 0 :
                     description = "{: <10} {}".format(Fore.RESET + "MODULE #{:03}".format(imodule), description) 
             elif (iword == len(module0) - 1) : # footer
-                module_footer_diff_strings = meta_field_diff(module0, module1, meta_type = "module_footer")
+                module_footer_diff_strings, bad_fields = meta_field_diff(module0, module1, meta_type = "module_footer")
                 description = " ".join(module_footer_diff_strings[0])
             module_word0, module_word1, diff = diff_data_words(module_word0, module_word1, pass_through = pass_through, mask = list(mask))
 
@@ -560,6 +604,8 @@ def event_is_equal(event0, event1, verbose = False) :
                 diffprint(module_word0, module_word1, diff, indent = indent, description = description)
 
             if np.any(np.array(diff)) :
+                # We really shouldn't get here, since the ordered modules returned by "order_modules" are
+                # matched based on equality!
                 all_ok = False
 
     ##
@@ -569,6 +615,11 @@ def event_is_equal(event0, event1, verbose = False) :
     ## of the events to be compared. That is, the module only appears
     ## in event0 or event1.
     ##
+    n_unmatched_0, n_unmatched_1 = len(unmatched_modules_0), len(unmatched_modules_1)
+    any_unmatched = (n_unmatched_0 + n_unmatched_1) > 0
+    if any_unmatched :
+        event_test_results["module_data"] = [False, {"n_unmatched_0" : n_unmatched_0, "n_unmatched_1" : n_unmatched_1}]
+        
     for iunmatched, unmatched_modules in enumerate( [unmatched_modules_0, unmatched_modules_1] ) :
         for imodule, module in enumerate(unmatched_modules) :
 
@@ -583,19 +634,19 @@ def event_is_equal(event0, event1, verbose = False) :
                 description = ""
 
                 if iword < 2 :
-                    module_header_diff_strings = meta_field_diff(module, module, meta_type = "module_header")
+                    module_header_diff_strings, bad_fields = meta_field_diff(module, module, meta_type = "module_header")
                     description = " ".join(module_header_diff_strings[iword])
                     if iword == 0 :
                         description = "{: <10} {}".format(Fore.RED + "MODULE #{}/{:03}".format(iunmatched, imodule) + Fore.RESET, description) 
 
                 elif (iword == len(module) - 1) :
                     # this is assumed to contain the footer
-                    module_footer_diff_strings = meta_field_diff(module, module, meta_type = "module_footer")
+                    module_footer_diff_strings, bad_fields = meta_field_diff(module, module, meta_type = "module_footer")
                     description = " ".join(module_footer_diff_strings[0])
                     description = Fore.GREEN + "(FOOTER={})".format(hex(module.footer.value)) + Fore.RESET + " {}".format(description)
 
                 if iword >= 1 and len(module) == 2 :
-                    module_footer_diff_strings = meta_field_diff(module, module, meta_type = "module_footer")
+                    module_footer_diff_strings, bad_fields = meta_field_diff(module, module, meta_type = "module_footer")
                     description = " ".join(module_footer_diff_strings[0])
                     description = Fore.GREEN + "(FOOTER={})".format(hex(module.footer.value)) + Fore.RESET + " {}".format(description)
                     description = Fore.RED + "SHORTMODULEWARN" + Fore.RESET + " {}".format(description)
@@ -620,6 +671,7 @@ def event_is_equal(event0, event1, verbose = False) :
     has_unused = len(unused_module_data_0) or len(unused_module_data_1)
     if has_unused :
         all_ok = False
+        n_unused_0, n_unused_1 = 0, 0
         for iunused, unused_data_words in enumerate( [unused_module_data_0, unused_module_data_1] ) :
             print("{} {}".format(indent, 40 * "-"))
             for iword, word in enumerate(unused_data_words) :
@@ -627,6 +679,11 @@ def event_is_equal(event0, event1, verbose = False) :
                             ,1 : Fore.BLUE + "{: ^20} {: <20}".format(" ", str(word)) + Fore.RESET } [iunused]
                 description = Fore.BLUE + "headless" + Fore.RESET
                 print("{} {} {}".format(indent, word_fmt, description))
+                if iunused == 0 :
+                    n_unused_0 += 1
+                else :
+                    n_unused_1 += 1
+        event_test_results["floating_data"] = [False, {"n_floating_0" : n_unused_0, "n_floating_1" : n_unused_1}]
 
     ###########################################################################
     ###########################################################################
@@ -648,19 +705,24 @@ def event_is_equal(event0, event1, verbose = False) :
         f0 = footer_data_0[i]
         f1 = footer_data_1[i]
         f0, f1, diff = diff_data_words(f0, f1)
-        footer_diff_strings = meta_field_diff(event0, event1, meta_type = "event_footer")
+        footer_diff_strings, bad_fields = meta_field_diff(event0, event1, meta_type = "event_footer")
         description = " ".join(footer_diff_strings[i])
+
+        if bad_fields :
+            event_test_results["event_footer"] = [False, {"bad_fields" : bad_fields}]
 
         if verbose :
             diffprint(f0, f1, diff, indent = indent, description = description)
 
         if np.any(np.array(diff)) :
             all_ok = False
+            if not bad_fields :
+                raise Exception("ERROR We have event footer dataword differences but no registered bad fields!")
 
     if verbose :
         print("{} {}".format(indent, 40 * "-"))
 
-    return all_ok
+    return all_ok, event_test_results
 
 
 def events_are_equal(events0, events1, verbose = False) :
@@ -678,6 +740,12 @@ def events_are_equal(events0, events1, verbose = False) :
     """
 
     all_ok = True
+    global_test_results = {
+        "n_events" : [True, None]
+        ,"recvd_l0ids" : [True, None]
+        ,"event_order" : [True, None]
+    }
+    
 
     ###########################################################################
     ###########################################################################
@@ -688,6 +756,7 @@ def events_are_equal(events0, events1, verbose = False) :
     ###########################################################################
 
     n_events_0, n_events_1 = len(events0), len(events1)
+    global_test_results["n_events"] = [n_events_0 == n_events_1, {"n_events_0" : n_events_0, "n_events_1" : n_events_1}]
     if n_events_0 != n_events_1 :
         all_ok = False
         if verbose :
@@ -708,6 +777,7 @@ def events_are_equal(events0, events1, verbose = False) :
     l0ids_set_0, l0ids_set_1 = set(l0ids_0), set(l0ids_1)
     if l0ids_set_0 != l0ids_set_1 :
         all_ok = False
+        global_test_results["recvd_l0ids"] = [False, None]
 
         in_0_not_1 = list(l0ids_set_0 - l0ids_set_1)
         in_1_not_0 = list(l0ids_set_1 - l0ids_set_0)
@@ -741,13 +811,17 @@ def events_are_equal(events0, events1, verbose = False) :
         if l0ids_0 != l0ids_1 and l0ids_set_0 == l0ids_set_1 :
             all_ok = False
 
+            first_bad_event, first_bad_l0id = None, None
             if verbose :
                 print("Events in different order between File0 and File1")
                 print("{: <10} First event/L0ID where order differs:".format(""))
                 for i in range(len(l0ids_0)) :
                     if l0ids_0[i] != l0ids_1[i] :
                         print("{:<15} > Event #{}: File0 has L0ID={}, File1 has L0ID={}".format("", i, hex(l0ids_0[i]), hex(l0ids_1[i])))
+                        first_bad_event = i
+                        first_bad_l0id = (l0ids_0[i], l0ids_1[i])
                         break
+            global_test_results["event_order"] = [False, {"first_event_idx" : first_bad_event, "l0id_0" : first_bad_l0id[0], "l0id_1" : first_bad_l0id[1]}]
 
     ###########################################################################
     ###########################################################################
@@ -767,6 +841,8 @@ def events_are_equal(events0, events1, verbose = False) :
     ##
     ###########################################################################
     ###########################################################################
+
+    all_event_test_results = []
     for ievent, l0id in enumerate(all_l0ids) :
 
         if verbose :
@@ -786,9 +862,15 @@ def events_are_equal(events0, events1, verbose = False) :
         if verbose :
             print("Comparing event at L0ID={}".format(hex(l0id)))
 
-        event_equal = event_is_equal(e0, e1, verbose = verbose)
+        event_equal, event_test_results = event_is_equal(e0, e1, verbose = verbose)
         if not event_equal :
             all_ok = False
+        event_test_results = {
+            "L0ID" : hex(l0id)
+            ,"TEST_RESULT" : all_ok
+            ,"RESULTS" : event_test_results
+        }
+        all_event_test_results.append(event_test_results)
 
         if verbose :
             result_str = { True : "YES", False : Fore.RED + "NO" + Fore.RESET }[event_equal]
@@ -801,7 +883,12 @@ def events_are_equal(events0, events1, verbose = False) :
     ## to fully parse these types of events
     ##
 
-    return all_ok
+    final_results = {
+        "global" : global_test_results
+        ,"event" : all_event_test_results
+    }
+
+    return all_ok, final_results
 
 def compare_files(filename0, filename1, requested_l0id = -1, endian = "little", n_events = -1, verbose = False) :
     """
@@ -828,8 +915,10 @@ def compare_files(filename0, filename1, requested_l0id = -1, endian = "little", 
     events0 = events.load_events_from_file(filename0, endian = endian, n_to_load = n_events, l0id_request = l0id_request)
     events1 = events.load_events_from_file(filename1, endian = endian, n_to_load = n_events, l0id_request = l0id_request)
 
-    events_equal = events_are_equal(events0, events1, verbose = verbose)
-    return events_equal
+    events_equal, results_dict = events_are_equal(events0, events1, verbose = verbose)
+    #results = json.dumps(results_dict, indent = 4, sort_keys = False)
+    #print(results)
+    return events_equal, results_dict
 
 def main() :
 
@@ -858,7 +947,7 @@ def main() :
     ##
     ## diff
     ##
-    diff = compare_files(args.input[0], args.input[1], args.l0id
+    diff, _ = compare_files(args.input[0], args.input[1], args.l0id
                                 ,endian = args.endian
                                 ,n_events = args.n_events
                                 ,verbose = args.verbose)

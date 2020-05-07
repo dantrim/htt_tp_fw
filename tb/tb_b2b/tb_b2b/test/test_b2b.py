@@ -1,4 +1,5 @@
 import sys, os
+import json
 
 import cocotb
 from cocotb.clock import Clock
@@ -82,7 +83,7 @@ def b2b_test_0(dut) :
         raise ValueError("Unable to find associated IO for B2B BOARD_ID={}".format(board_id))
     dut._log.info("Setting test IO with base (port_name, port_num) = ({}, {})".format(this_tp.name, this_tp.value))
 
-    num_events_to_process = 20
+    num_events_to_process = 5
     event_delays = True
 
     ##
@@ -154,6 +155,11 @@ def b2b_test_0(dut) :
         words = monitor.observed_words
         recvd_events = events.load_events(words, "little")
         cocotb.log.info("Output for {} (output port num {}) received {} events".format(io.name, io.value, len(recvd_events)))
+
+        ## test
+        events_equal, test_results = tb_diff.events_are_equal(recvd_events, expected_output_events[io.value], verbose = False)
+        #test_results = json.dumps(test_results, indent = 4, sort_keys = False)
+        #print(test_results)
         
     test_passed = b2b.compare_outputs_with_expected(expected_output_events = expected_output_events)
     cocotb_result = { True : cocotb.result.TestSuccess, False : cocotb.result.TestFailure }[test_passed]
