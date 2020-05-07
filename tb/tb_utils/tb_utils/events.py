@@ -145,14 +145,16 @@ class ModuleData :
         self._is_dummy = False
 
 
-    def header_field_names(self) :
+    @staticmethod
+    def header_field_names() :
         header_words = [
             ["FLAG","TYPE","DET","ROUTING"]#,"SPARE"]
             ,["MODID","MODTYPE","ORIENTATION"]#,"SPARE"]
         ]
         return header_words
 
-    def footer_field_names(self) :
+    @staticmethod
+    def footer_field_names() :
         footer_words = [
             ["FLAG", "COUNT", "ERROR"]
         ]
@@ -436,6 +438,27 @@ class DataEvent :
         self._header_fields = []
         self._footer_fields = []
 
+    @staticmethod
+    def header_field_names() :
+        header_words = [
+            ["FLAG", "TRK_TYPE", "SPARE", "L0ID"]
+            ,["BCID", "SPARE", "RUNNUMBER"]
+            ,["ROI"]
+            ,["EFPU_ID", "EFPU_PID", "TIME"]
+            ,["Connection_ID", "Transaction_ID"]
+            ,["STATUS", "CRC"]
+        ]
+        return header_words
+
+    @staticmethod
+    def footer_field_names() :
+        footer_words = [
+            ["FLAG", "SPARE", "META_COUNT", "HDR_CRC"]
+            ,["ERROR_FLAGS"]
+            ,["WORD_COUNT", "CRC"]
+        ]
+        return footer_words
+
     def parse(self) :
         self._parse_header()
         self._parse_footer()
@@ -593,26 +616,20 @@ class DataEvent :
     def __iter__(self) :
         return iter(self.words)
 
-    # should be static/external
-    def header_field_names(self) :
-        header_words = [
-            ["FLAG", "TRK_TYPE", "SPARE", "L0ID"]
-            ,["BCID", "SPARE", "RUNNUMBER"]
-            ,["ROI"]
-            ,["EFPU_ID", "EFPU_PID", "TIME"]
-            ,["Connection_ID", "Transaction_ID"]
-            ,["STATUS", "CRC"]
-        ]
-        return header_words
 
-    # should be static/external
-    def footer_field_names(self) :
-        footer_words = [
-            ["FLAG", "SPARE", "META_COUNT", "HDR_CRC"]
-            ,["ERROR_FLAGS"]
-            ,["WORD_COUNT", "CRC"]
-        ]
-        return footer_words
+    def header_field_strings(self) :
+        output = []
+        for iheader_word_num, field_names in enumerate(self.header_field_names()) :
+            field_list = [self.header_field(x) for x in fields]
+            output.append(field_list)
+        return output
+
+    def footer_field_strings(self) :
+        output = []
+        for ifooter_word_num, field_names in enumerate(self.footer_field_names()) :
+            field_list = [self.footer_field(x) for x in fields]
+            output.append(field_list)
+        return output
 
     def header_description_strings(self) :
 

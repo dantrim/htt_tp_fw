@@ -45,7 +45,7 @@ def event_at_l0id(events_list, l0id) :
 
 def meta_field_diff(event0, event1, meta_type = "event_header") :
     """
-    Perform the diff of the header/footer information of the input events, "event0" and "event1".
+    Perform the diff of the header/footer information of the input events or modules, "event0" and "event1".
 
     This function does a comparison of the values of the decoded bit-fields within
     the headers and footers. It generates the output to print to stdout
@@ -55,8 +55,8 @@ def meta_field_diff(event0, event1, meta_type = "event_header") :
 
 
     inputs:
-        event0 -> tb_utils.events.DataEvent: Event associated with input file 0
-        event1 -> tb_utils.events.Dataevent: Event associated with input file 1
+        event0 -> tb_utils.events.DataEvent or tb_utils.events.ModuleData: Event or module associated with input file 0
+        event1 -> tb_utils.events.Dataevent or tb_utils.events.ModuleData: Event or module associated with input file 1
         meta_type -> str: String indicating which type of meta fields should be decoded,
                             possible values are "event_header", "event_footer", "module_header", and "module_footer"
 
@@ -205,7 +205,6 @@ def diff_data_words(word0, word1, pass_through = False, mask = [], colorize = Tr
     if colorize :
         out0, out1 = colored_dataword(word0, bad_nibbles), colored_dataword(word1, bad_nibbles)
     return out0, out1, diff
-    #return colored_dataword(word0, bad_nibbles), colored_dataword(word1, bad_nibbles), diff
 
 def diff_str(diff_arr) :
     """
@@ -346,14 +345,6 @@ def order_modules(modules0, modules1) :
             ##
             ## equality based on header/footer and number of module data words
             ##
-
-            #n_words_0, n_words_1 = len(module0), len(module1)
-            #h0, h1 = [x.value for x in module0.header_words], [x.value for x in module1.header_words]
-            #f0, f1 = module0.footer.value, module1.footer.value
-            #headers_equal = h0 == h1
-            #footers_equal = f0 == f1
-            #module_equal = (headers_equal and footers_equal)
-
             if module0 == module1 : 
                 already_matched = module0 in out_0
                 already_matched = already_matched and (module1 in out_1)
@@ -473,14 +464,11 @@ def event_is_equal(event0, event1, verbose = False) :
         raise Exception("ERROR Malformed headers")
     header_length = len(header_data_0)
 
-    # TODO: should not use X_description_strings() methods
-
-    header_fields_0, header_fields_1 = event0.header_description_strings(), event1.header_description_strings()
     for i in range(header_length) :
         h0 = header_data_0[i]
         h1 = header_data_1[i]
         h0, h1, diff = diff_data_words(h0, h1)
-        header_diff_strings = meta_field_diff(event0, event1, meta_type = "event_header")#, header_field_names)
+        header_diff_strings = meta_field_diff(event0, event1, meta_type = "event_header")
         description = " ".join(header_diff_strings[i])
 
         if verbose :
@@ -656,8 +644,6 @@ def event_is_equal(event0, event1, verbose = False) :
         raise Exception("ERROR Malformed footers")
 
     footer_length = len(footer_data_0)
-    # TODO: do not use X_description_strings() this is clunky/failure prone
-    footer_fields_0, footer_fields_1 = event0.footer_description_strings(), event1.footer_description_strings()
     for i in range(footer_length) :
         f0 = footer_data_0[i]
         f1 = footer_data_1[i]
