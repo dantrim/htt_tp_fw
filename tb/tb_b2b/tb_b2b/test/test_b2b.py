@@ -8,15 +8,11 @@ from cocotb.result import TestFailure, TestSuccess
 
 from tb_b2b import b2b_utils
 import tb_b2b.b2b_wrapper as wrapper
-#from tb_b2b import fifo_wrapper
-#from tb_utils import fifo_wrapper
+
 from tb_utils.fifo_wrapper import FifoDriver, FifoMonitor
-#from tb_b2b.fifo_wrapper import B2BFifoDriver, B2BFifoMonitor
-
-from event_parse import event_table
-from event_parse import decoder
-
 from tb_utils import events
+
+from tb_utils import tb_diff
 
 
 ##
@@ -54,48 +50,6 @@ def initialize_test_state(dut) :
 
     initialize_spybuffers(fifos = input_fifos)
     initialize_spybuffers(fifos = output_fifos)
-
-    #initialize_b2b(dut)
-
-#    #inputs
-#    in_buffers = [x.input_buffer for x in dut.input_cluster_SpyBuffer]
-#
-#    #outputs
-#    out_buffers = [x.output_buffer for x in dut.output_cluster_SpyBuffer]
-#
-#    n_in_ok = len(in_buffers) == len(b2b_utils.B2BIO.Inputs)
-#    n_out_ok = len(out_buffers) == len(b2b_utils.B2BIO.Outputs)
-#    io_ok = n_in_ok and n_out_ok
-#    if not io_ok :
-#        raise Exception("ERROR # of B2B inputs or outputs between CocoTB and RTL simulation \
-#                do not match:\n\t -> CocoTB expects (IN,OUT)=({},{})\n\t -> RTL expects    \
-#                (IN,OUT)=({},{})".format( len(b2b_utils.B2BIO.Inputs)
-#                                            ,len(b2b_utils.B2BIO.Outputs)
-#                                            ,len(in_buffers), len(out_buffers)))
-#
-#    # initialize the input spybuffer fifos
-#    for ibuff, buff in enumerate(in_buffers) :
-#
-#        #kludgedut.cluster_data_reg[ibuff] <= 0
-#        #dut.cluster_data[ibuff] <= 0
-#        dut.cluster_wren[ibuff] <= 0
-#        dut.cluster_rd_req[ibuff] <= 0
-#        dut.cluster_empty[ibuff] <= 1
-#        dut.cluster_almost_full[ibuff] <= 0
-#        dut.input_data[ibuff] <= 0
-#        dut.cluster_data[ibuff] <= 0
-#        buff.write_data <= 0
-#
-#
-#    # initialize the output spybuffer fifos
-#    for ibuff, buff in enumerate(out_buffers) :
-#        dut.board_wren[ibuff] <= 0
-#        dut.board_ren[ibuff] <= 0
-#        dut.board_empty[ibuff] <= 1
-#        dut.board_cluster_data[ibuff] <= 0
-#        dut.board_almost_full[ibuff] <= 0
-#        dut.output_data[ibuff] <= 0
-#
 
 @cocotb.coroutine
 def reset(dut) :

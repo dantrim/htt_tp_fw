@@ -2,6 +2,7 @@ from difflib import Differ
 import re
 from argparse import ArgumentParser
 import numpy as np
+import sys
 from columnar import columnar
 
 from tb_utils import events
@@ -185,7 +186,6 @@ def dummy_module(test_module) :
     dummy_data.append( dummy_data_word() for _ in range(n_words - len(test_module.header_words - 1)) )
     dummy_data.append( test_module.footer )
     dummy = events.ModuleData(data_words = dummy_data)
-    #dummy = events.ModuleData(data_words = [dummy_data_word() for _ in range(n_words)])
     return dummy
 
 def order_modules(modules0, modules1) :
@@ -201,21 +201,19 @@ def order_modules(modules0, modules1) :
         module0 = modules0[imodule0]
         for imodule1 in range( len(modules1) ) :
             module1 = modules1[imodule1]
-            n_words_0, n_words_1 = len(module0), len(module1)
 
             ##
-            ## equality based on header/footer
+            ## equality based on header/footer and number of module data words
             ##
-            h0, h1 = [x.value for x in module0.header_words], [x.value for x in module1.header_words]
-            f0, f1 = module0.footer.value, module1.footer.value
-            headers_equal = h0 == h1
-            footers_equal = f0 == f1
-            module_equal = (headers_equal and footers_equal)
-            #print("-> {} {} --> ? {}".format([hex(x) for x in h0], [hex(x) for x in h1], headers_equal))
-            #print("-> {} {} --> ? {}".format(hex(f0), hex(f1), footers_equal))
-            if module0 == module1 : # and imodule0 != 0 :
-            #if module_equal :
-                #print("FOUND EQUAL MODS")
+
+            #n_words_0, n_words_1 = len(module0), len(module1)
+            #h0, h1 = [x.value for x in module0.header_words], [x.value for x in module1.header_words]
+            #f0, f1 = module0.footer.value, module1.footer.value
+            #headers_equal = h0 == h1
+            #footers_equal = f0 == f1
+            #module_equal = (headers_equal and footers_equal)
+
+            if module0 == module1 : 
                 already_matched = module0 in out_0
                 already_matched = already_matched and (module1 in out_1)
                 if not already_matched :
@@ -224,86 +222,31 @@ def order_modules(modules0, modules1) :
     
                     idx_matched_1.append(imodule1)
                     out_1.append(module1)
-            #else :
-            #    if imodule0 in idx_matched_0 : pass
-            #    if imodule1 in idx_matched_1 : pass
-            #    print("MODULE FOUND NOT EQUAL")
-            #    print(" --> HEADERS = {} {} ? {}".format([hex(x) for x in h0], [hex(x) for x in h1], headers_equal))
-            #    print(" --> FOOTERS = {} {} ? {}".format(hex(f0), hex(f1), footers_equal))
 
     for imodule0 in range(len(modules0)) :
         if imodule0 not in idx_matched_0 :
-            #print(60 * "*")
-            #print("MODULES FOUND TO NOT MATCH")
-            #module0 = modules0[imodule0]
-            #for imodule1 in range(len(modules1)) :
-            #    if imodule1 not in idx_matched_1 :
-            #        module1 = modules1[imodule1]  
-            #        h0, h1 = [x.value for x in module0.header_words], [x.value for x in module1.header_words]
-            #        f0, f1 = module0.footer.value, module1.footer.value
-            #        headers_equal = h0 == h1
-            #        footers_equal = f0 == f1
-            #        module_equal = (headers_equal and footers_equal)
-            #        #print(" --> HEADERS = {} {} ? {}".format([hex(x) for x in h0], [hex(x) for x in h1], headers_equal))
-            #        #print(" --> FOOTERS = {} {} ? {}".format(hex(f0), hex(f1), footers_equal))
-                    
             unmatched_0.append( modules0[imodule0] )
     for imodule1 in range(len(modules1)) :
         if imodule1 not in idx_matched_1 :
             unmatched_1.append( modules1[imodule1] )
 
-#    for mod in modules0 :
-#        if mod not in out_0 :
-#            out_0.append(mod)
-#            #out_1.append(dummy_module(mod))
-#    for mod in modules1 :
-#        if mod not in out_1 :
-#            out_1.append(mod)
-#            #out_0.append(dummy_module(mod))
-
     return out_0, out_1, unmatched_0, unmatched_1
         
-#    ##
-#    ## PREVIOUS
-#    ##
-#
-#    idx0 = []
-#    idx1 = []
-#
-#    out0 = []
-#    out1 = []
-#    remainders = []
-#    for i in range(len(modules0)) :
-#        mod0 = modules0[i]
-#        h0 = mod0.header_words[0]
-#        h01 = mod0.header_words[1]
-#        f = mod0.footer
-#        found_equal = False
-#        for j in range(len(modules1)) :
-#            mod1 = modules1[j]
-#            h1 = mod1.header_words[0]
-#            h11 = mod1.header_words[1] 
-#            f1 = mod1.footer
-#            if mod1 == mod0 :
-#                found_equal = True
-#
-#                out0.append(mod0)
-#                out1.append(mod1)
-#
-#                idx0.append(i)
-#                idx1.append(j)
-#                break
-#
-#    for i, mod in enumerate(modules0) :
-#        if i not in idx0  and mod not in out0 :
-#            out0.append(mod)
-#    for i, mod in enumerate(modules1) :
-#        if i not in idx1 and mod not in out1 :
-#            out1.append(mod)
-#
-#    return out0, out1
-
 def module_footer_start_idx(data_word) :
+    """
+    From a module footer dataword (full 65-bit dataword), find the
+    starting index of footer.
+
+    For example:
+        If the data word is 0x11234577abcd (arbitrary), this function returns 7.
+
+    inputs:
+        data_word -> tb_utils.events.DataWord: DataWord for the module footer
+
+    returns:
+        -> int: index of string representation of the hex-formatted data word, -1
+                if is not a module footer word.
+    """
 
     hex_str = str(data_word)
     hex_str_rev = "".join(list(hex_str)[::-1])
@@ -316,11 +259,44 @@ def module_footer_start_idx(data_word) :
     return idx
    
 
-def compare_event(event0, event1, args) :
+def event_is_equal(event0, event1, verbose = False) :
+    """
+    Compare two events, "event0" and "event1", to each other.
+    Performs word-for-word (bit-for-bit) comparison of:
+        1) event headers
+        2) module headers
+        3) module footers
+        4) event footers
+    Checks that the number of modules, as well as the module lengths (number
+    of data words in a module) are the same between event0 and event1.
+
+    Note:
+        Right now the module (cluster) data are not checked.
+
+    Note:
+        Module ordering within the two events are not expected to be the
+        same, so their order is not enforced to be the same.
+
+    inputs:
+        event0 -> tb_utils.events.DataEvent : An event from the first input file
+        event1 -> tb_utils.events.DataEvent : An event from the second input file
+        verbose -> bool : Flag for printing output
+
+    returns:
+        -> bool : True if events are found to be equal, False if not
+    """
 
     all_ok = True
     l0id = event0.l0id
     indent = "{: <10}".format(" ")
+
+    ###########################################################################
+    ###########################################################################
+    ##
+    ## Check that the number of data words in each event are the same
+    ##
+    ###########################################################################
+    ###########################################################################
 
     n_words_0, n_words_1 = len(event0), len(event1)
     n_mod_0, n_mod_1 = event0.n_modules, event1.n_modules
@@ -329,22 +305,34 @@ def compare_event(event0, event1, args) :
     if n_words_0 != n_words_1 :
         word_str = Fore.RED + word_str + Fore.RESET
         err = Fore.RED + "DIFFERROR" + Fore.RESET
-    print("{} {} {: <20}".format(indent, word_str, err))
-    mod_str = "{: <20} {: <20}".format("NMODULES = {}".format(n_mod_0), "NMODULES = {}".format(n_mod_1))
-    err = ""
-    if n_mod_0 != n_mod_1 :
-        mod_str = Fore.RED + mod_str + Fore.RESET
-        err = Fore.RED + "DIFFERROR" + Fore.RESET
-    print("{} {} {: <20}".format(indent, mod_str, err))
 
+    if verbose :
+        print("{} {} {: <20}".format(indent, word_str, err))
+
+        mod_str = "{: <20} {: <20}".format("NMODULES = {}".format(n_mod_0), "NMODULES = {}".format(n_mod_1))
+        err = ""
+        if n_mod_0 != n_mod_1 :
+            mod_str = Fore.RED + mod_str + Fore.RESET
+            err = Fore.RED + "DIFFERROR" + Fore.RESET
+        print("{} {} {: <20}".format(indent, mod_str, err))
+
+    ###########################################################################
+    ###########################################################################
     ##
-    ## compare event header words
+    ## Compare the event headers
     ##
-    print("{} {}".format(indent, 40 * "-"))
+    ###########################################################################
+    ###########################################################################
+    if verbose :
+        print("{} {}".format(indent, 40 * "-"))
+
     header_data_0, header_data_1 = event0.header_words, event1.header_words
+
     if len(header_data_0) != len(header_data_1) :
         raise Exception("ERROR Malformed headers")
     header_length = len(header_data_0)
+
+    # TODO: should not use X_description_strings() methods
 
     header_fields_0, header_fields_1 = event0.header_description_strings(), event1.header_description_strings()
     for i in range(header_length) :
@@ -353,46 +341,82 @@ def compare_event(event0, event1, args) :
         h0, h1, diff = diff_data_words(h0, h1)
         header_diff_strings = meta_field_diff(event0, event1, meta_type = "event_header")#, header_field_names)
         description = " ".join(header_diff_strings[i])
-        diffprint(h0, h1, diff, indent = indent, description = description)
+
+        if verbose :
+            diffprint(h0, h1, diff, indent = indent, description = description)
 
         if np.any(np.array(diff)) :
             all_ok = False
 
+    ###########################################################################
+    ###########################################################################
     ##
-    ## compare modules
+    ## Compare the events' module data
     ##
+    ###########################################################################
+    ###########################################################################
+
     modules_0, modules_1 = event0.get_modules(), event1.get_modules()
     n_modules_0, n_modules_1 = len(modules_0), len(modules_1)
-    modules_0, modules_1, unmatched_modules_0, unmatched_modules_1 = order_modules(modules_0, modules_1)
 
-    #print("len matched_0={} matched_1={}, unmatched_0={}, unmatched_1={}".format(len(modules_0), len(modules_1), len(unmatched_modules_0), len(unmatched_modules_1)))
-    #print(" --> ")
-    #for i in range(len(modules_0)) :
-    #    print("     [{}] {}  {}".format(i, modules_0[i], modules_1[i]))
+    ##
+    ## Order modules between the events in each of the provided event lists
+    ## (this is needed since the provided testvectors may order the module
+    ## data differently than the actual firmware block).
+    ##
+    ## Here, "unmatched" modules are those that do not appear in both
+    ## events.
+    ##
+    modules_0, modules_1, unmatched_modules_0, unmatched_modules_1 = order_modules(modules_0, modules_1)
 
     ## print matched modules
     for imodule in range(len(modules_0)) :
-        #print(" -> accessing imodule={} (len modules_0={} modules_1={})".format(imodule, len(modules_0), len(modules_1)))
         module0 = modules_0[imodule]
         module1 = modules_1[imodule]
-        #print(" ==> module lengths = {} {}".format(len(module0), len(module1)))
 
-        print("{} {}".format(indent, 40 * "-"))
+        if verbose :
+            print("{} {}".format(indent, 40 * "-"))
+
         for iword in range( len(module0) ) :
-            #print("   --> accessing word {}".format(iword))
             module_word0 = module0.data_words[iword]
             module_word1 = module1.data_words[iword]
 
-            pass_through = False
-            mask = []
+            pass_through = False # allow this word to pass the check
+            mask = [] # mask any bits that we don't want to consider for comparison
+
             if iword == 1 :
-                mask = np.arange(11, 19, 1)
+                ##
+                ## First 32-bits of second module word are header, but the
+                ## rest are data. As we are not (at the moment) comparing/checking
+                ## cluster-level data, mask the cluster data in this header-containing
+                ## word but do not mask the header information (which we are
+                ## currently comparing/checking).
+                ##
+                #mask = np.arange(11, 19, 1)
+                mask = range(11, 19, 1)
+
             elif iword >= 2 and iword != (len(module0) - 1) :
+                ##
+                ## As we are not performing cluster-level data comparison/check,
+                ## allow these non-header/footer-containing data words to
+                ## pass the inspection
+                ##
                 pass_through = True
             else :
+                ##
+                ## Find the indices of the footer word.
+                ## Even though the footer is guaranteed to be within the last
+                ## dataword of a set of (well-formatted) module data, it
+                ## it's starting position and length are not fixed.
+                ## For pixel (strip) the footer has length 32 (16), and it
+                ## can be aligned at any Nth position (where N is the 
+                ## 
                 footer_idx = module_footer_start_idx(module_word0)
                 if footer_idx >= 0 :
-                    mask = np.arange(0, footer_idx, 1)
+                    # mask the bits NOT corresponding to the footer data
+                    #mask = np.arange(0, footer_idx, 1)
+                    mask = range(0, footer_idx, 1)
+
             description = ""
             if iword < 2 :
                 module_header_diff_strings = meta_field_diff(module0, module1, meta_type = "event_header")
@@ -403,31 +427,45 @@ def compare_event(event0, event1, args) :
                 module_footer_diff_strings = meta_field_diff(module0, module1, meta_type = "event_footer")
                 description = " ".join(module_footer_diff_strings[0])
             module_word0, module_word1, diff = diff_data_words(module_word0, module_word1, pass_through = pass_through, mask = list(mask))
-            diffprint(module_word0, module_word1, diff, indent = indent, description = description)
+
+            if verbose :
+                diffprint(module_word0, module_word1, diff, indent = indent, description = description)
 
             if np.any(np.array(diff)) :
                 all_ok = False
 
-    ## print unmatched modules
+    ##
+    ## Inspect/compare the unmatched module data.
+    ## Unmatched modules are those that are fully built modules (i.e.
+    ## contain HEADER+CLUSTER_DATA[]+FOOTER, but only appear in one
+    ## of the events to be compared. That is, the module only appears
+    ## in event0 or event1.
+    ##
     for iunmatched, unmatched_modules in enumerate( [unmatched_modules_0, unmatched_modules_1] ) :
         for imodule, module in enumerate(unmatched_modules) :
 
-            all_ok = False # we got here, which means there are differences
+            # if we get here, there are obviously issues
+            all_ok = False
 
-            print("{} {}".format(indent, 40 * "-"))
+            if verbose :
+                print("{} {}".format(indent, 40 * "-"))
+
             for iword in range( len(module) ) :
                 module_word = module.data_words[iword]
                 description = ""
+
                 if iword < 2 :
                     module_header_diff_strings = meta_field_diff(module, module, meta_type = "event_header")
                     description = " ".join(module_header_diff_strings[iword])
                     if iword == 0 :
                         description = "{: <10} {}".format(Fore.RED + "MODULE #{}/{:03}".format(iunmatched, imodule) + Fore.RESET, description) 
+
                 elif (iword == len(module) - 1) :
                     # this is assumed to contain the footer
                     module_footer_diff_strings = meta_field_diff(module, module, meta_type = "event_footer")
                     description = " ".join(module_footer_diff_strings[0])
                     description = Fore.GREEN + "(FOOTER={})".format(hex(module.footer.value)) + Fore.RESET + " {}".format(description)
+
                 if iword >= 1 and len(module) == 2 :
                     module_footer_diff_strings = meta_field_diff(module, module, meta_type = "event_footer")
                     description = " ".join(module_footer_diff_strings[0])
@@ -437,14 +475,18 @@ def compare_event(event0, event1, args) :
                 word_fmt = { 0 : Fore.RED + "{: <20} {: ^20}".format(str(module_word), "nomatch") + Fore.RESET
                             , 1 : Fore.RED + "{: ^20} {: <20}".format("nomatch", str(module_word)) + Fore.RESET } [iunmatched]
 
-                if not description:
-                    print("{} {}".format(indent, word_fmt))
-                else :
-                    print("{} {} {}".format(indent, word_fmt, description))
+                if verbose :
+                    if not description:
+                        print("{} {}".format(indent, word_fmt))
+                    else :
+                        print("{} {} {}".format(indent, word_fmt, description))
 
     ##
-    ## check if any data words somehow did not get grouped into a module
-    ## (this can happen if a header/META word is missing)
+    ## Here we inspect/print those module data that were not able to be
+    ## associated with _any_ module in either of the events For example, if a module
+    ## header/footer boundary is not observed then the associated data
+    ## words will be "floating" and not a part of any of the built module
+    ## objects considered in the above checks (those returned by get_modules()).
     ##
     unused_module_data_0, unused_module_data_1 = event0.unmatched_data_words(), event1.unmatched_data_words()
     has_unused = len(unused_module_data_0) or len(unused_module_data_1)
@@ -458,14 +500,23 @@ def compare_event(event0, event1, args) :
                 description = Fore.BLUE + "headless" + Fore.RESET
                 print("{} {} {}".format(indent, word_fmt, description))
 
+    ###########################################################################
+    ###########################################################################
     ##
-    ## compare event footer words
+    ## Compare/check the event footers
     ##
-    print("{} {}".format(indent, 40 * "-"))
+    ###########################################################################
+    ###########################################################################
     footer_data_0, footer_data_1 = event0.footer_words, event1.footer_words
+
+    if verbose :
+        print("{} {}".format(indent, 40 * "-"))
+
     if len(footer_data_0) != len(footer_data_1) :
         raise Exception("ERROR Malformed footers")
+
     footer_length = len(footer_data_0)
+    # TODO: do not use X_description_strings() this is clunky/failure prone
     footer_fields_0, footer_fields_1 = event0.footer_description_strings(), event1.footer_description_strings()
     for i in range(footer_length) :
         f0 = footer_data_0[i]
@@ -473,49 +524,73 @@ def compare_event(event0, event1, args) :
         f0, f1, diff = diff_data_words(f0, f1)
         footer_diff_strings = meta_field_diff(event0, event1, meta_type = "event_footer")
         description = " ".join(footer_diff_strings[i])
-        diffprint(f0, f1, diff, indent = indent, description = description)
+
+        if verbose :
+            diffprint(f0, f1, diff, indent = indent, description = description)
 
         if np.any(np.array(diff)) :
             all_ok = False
-    print("{} {}".format(indent, 40 * "-"))
+
+    if verbose :
+        print("{} {}".format(indent, 40 * "-"))
 
     return all_ok
 
-def compare_files(args) :
 
-    filename0 = args.input[0]
-    filename1 = args.input[1]
-    print(80 * "=")
-    print("File0: {}".format(filename0))
-    print("File1: {}".format(filename1))
+def events_are_equal(events0, events1, verbose = verbose) :
+    """
+    Compares the two lists of loaded events, "events0" and "events1",
+    to each other.
 
-    l0id_request = -1
-    if args.l0id :
-        l0id_request = args.l0id
-    events0 = events.load_events_from_file(filename0, endian = args.endian, n_to_load = args.n_events, l0id_request = l0id_request)
-    events1 = events.load_events_from_file(filename1, endian = args.endian, n_to_load = args.n_events, l0id_request = l0id_request)
+    inputs:
+        events0 -> list : List of events (tb_utils.events.DataEvent) from first file
+        events1 -> list : List of events (tb_utils.events.DataEvent) from second file
+        verbose -> bool : Flag for whether or not to print output
 
+    returns:
+        -> bool: True if events0 and events1 are found to be the same, False if not
+    """
+
+    all_ok = True
+
+    ###########################################################################
+    ###########################################################################
     ##
-    ## number of events
+    ## Compare/check the number of events in the input event lists
     ##
+    ###########################################################################
+    ###########################################################################
+
     n_events_0, n_events_1 = len(events0), len(events1)
     if n_events_0 != n_events_1 :
-        print("Number of events differ")
-        print("{: <10} Number of events in File0: {}".format("", n_events_0))
-        print("{: <10} Number of events in File1: {}".format("", n_events_1))
+        all_ok = False
+        if verbose :
+            print("Number of events differ")
+            print("{: <10} Number of events in File0: {}".format("", n_events_0))
+            print("{: <10} Number of events in File1: {}".format("", n_events_1))
     
     l0ids_0, l0ids_1 = [x.l0id for x in events0], [x.l0id for x in events1]
+
+    ###########################################################################
+    ###########################################################################
     ##
-    ## find L0IDs of events that differ
+    ## Find L0IDs of events that differ
     ##
+    ###########################################################################
+    ###########################################################################
+
     l0ids_set_0, l0ids_set_1 = set(l0ids_0), set(l0ids_1)
     if l0ids_set_0 != l0ids_set_1 :
+        all_ok = False
         in_0_not_1 = list(l0ids_set_0 - l0ids_set_1)
         in_1_not_0 = list(l0ids_set_1 - l0ids_set_0)
         n_max = max( [len(in_0_not_1), len(in_1_not_0)] )
-        print("L0ID differences found:")
-        print("{: <10} {: <30} {: <30}".format("", "L0IDs in File0 NOT in File1", "L0IDs In File1 NOT in File0"))
-        print("{: <10} {: <60}".format("", "-" * 60))
+
+        if verbose :
+            print("L0ID differences found:")
+            print("{: <10} {: <30} {: <30}".format("", "L0IDs in File0 NOT in File1", "L0IDs In File1 NOT in File0"))
+            print("{: <10} {: <60}".format("", "-" * 60))
+
         for i in range(n_max) :
             l0, l1 = "", ""
             if i < len(in_0_not_1) :
@@ -523,37 +598,110 @@ def compare_files(args) :
             if i < len(in_1_not_0) :
                 l1 = hex(in_1_not_0[i])
             info_str = "{: <10} {: <30} {: <30}".format("", l0, l1)
-            print(info_str)
 
+            if verbose :
+                print(info_str)
+
+    ###########################################################################
+    ###########################################################################
     ##
-    ## check of order of L0IDs is the same between the files (assuming that they are the same length)
+    ## Check of order of L0IDs is the same between the files
+    ## (assuming that they are the same length)
     ##
+    ###########################################################################
+    ###########################################################################
+
     if n_events_0 == n_events_1 :
         if l0ids_0 != l0ids_1 and l0ids_set_0 == l0ids_set_1 :
-            print("Events in different order between File0 and File1")
-            print("{: <10} First event/L0ID where order differs:".format(""))
-            for i in range(len(l0ids_0)) :
-                if l0ids_0[i] != l0ids_1[i] :
-                    print("{:<15} > Event #{}: File0 has L0ID={}, File1 has L0ID={}".format("", i, hex(l0ids_0[i]), hex(l0ids_1[i])))
-                    break
+            all_ok = False
 
+            if verbose :
+                print("Events in different order between File0 and File1")
+                print("{: <10} First event/L0ID where order differs:".format(""))
+                for i in range(len(l0ids_0)) :
+                    if l0ids_0[i] != l0ids_1[i] :
+                        print("{:<15} > Event #{}: File0 has L0ID={}, File1 has L0ID={}".format("", i, hex(l0ids_0[i]), hex(l0ids_1[i])))
+                        break
+
+    ###########################################################################
+    ###########################################################################
     ##
-    ## sort the events by L0ID for further comparison
+    ## Sort the events by L0ID for further comparison
     ##
+    ###########################################################################
+    ###########################################################################
+
     events0 = sorted(events0, key = lambda x : x.l0id)
     events1 = sorted(events1, key = lambda x : x.l0id)
     all_l0ids = sorted(list(set(l0ids_0 + l0ids_1)))
+
+    ##
+    ## Check each event
+    ##
+
     for ievent, l0id in enumerate(all_l0ids) :
-        print("{: <10}".format(100 * "="))
+
+        if verbose :
+            print("{: <10}".format(100 * "="))
+
         in_both = l0id in l0ids_0 and l0id in l0ids_1
         if not in_both :
-            print("L0ID {} not in both files, skipping detailed comparison".format(hex(l0id)))
+            if verbose :
+                print("L0ID {} not in both files, skipping detailed comparison".format(hex(l0id)))
             continue
+
+        ##
+        ## Perform detailed comparison of the event data for this L0ID
+        ##
         e0, e1 = event_at_l0id(events0, l0id), event_at_l0id(events1, l0id)
-        print("Comparing event at L0ID={}".format(hex(l0id)))
-        diff_ok = compare_event(e0, e1, args)
-        result_str = { True : "YES", False : Fore.RED + "NO" + Fore.RESET }[diff_ok]
-        print("{: <10} EVENT OK? {}".format("", result_str))
+
+        if verbose :
+            print("Comparing event at L0ID={}".format(hex(l0id)))
+
+        event_equal = event_is_equal(e0, e1, verbose = verbose)
+        if not event_equal :
+            all_ok = False
+
+        if verbose :
+            result_str = { True : "YES", False : Fore.RED + "NO" + Fore.RESET }[event_equal]
+            print("{: <10} EVENT OK? {}".format("", result_str))
+
+    ##
+    ## We should not need to handle (here) the case of "floating" events (those
+    ## events that appear in one of the input events list but not the other)
+    ## since we report the difference in L0IDs above and there is no need
+    ## to fully parse these types of events
+    ##
+
+    return all_ok
+
+def compare_files(filename0, filename1, verbose = False) :
+    """
+    Loads events from the two input files "filename0" and "filename1".
+    Passes the loaded events to comparison function(s).
+
+    inputs:
+        filename0 -> str: path to first file of events
+        filename1 -> str: path to second file of events
+        verbose -> bool : whether or not to print output
+
+    returns:
+        -> bool: True if all loaded events are equal, False if not
+    """
+
+    if verbose :
+        print(80 * "=")
+        print("File0: {}".format(filename0))
+        print("File1: {}".format(filename1))
+
+    l0id_request = -1
+    if args.l0id :
+        l0id_request = args.l0id
+    events0 = events.load_events_from_file(filename0, endian = args.endian, n_to_load = args.n_events, l0id_request = l0id_request)
+    events1 = events.load_events_from_file(filename1, endian = args.endian, n_to_load = args.n_events, l0id_request = l0id_request)
+
+    events_equal = events_are_equal(events0, events1, verbose = verbose)
+    return events_equal
 
 def main() :
 
@@ -570,6 +718,9 @@ def main() :
     parser.add_argument("-l", "--l0id", default = "", type = str
         ,help = "Request a specific L0ID to be diff'd [hex string format, e.g. 0x44]"
     )
+    parser.add_argument("-v", "--verbose", default = False, action = "store_true"
+        ,help = "Print out the diff information"
+    )
     args = parser.parse_args()
     if args.l0id != "" :
         args.l0id = int(args.l0id, 16)
@@ -577,7 +728,8 @@ def main() :
     ##
     ## diff
     ##
-    compare_files(args)
+    diff = compare_files(args.input[0], args.input[1], verbose = args.verbose)
+    sys.exit(int(not diff))
 
 if __name__ == "__main__" :
     main()
