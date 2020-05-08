@@ -10,10 +10,8 @@ from cocotb.result import TestFailure, TestSuccess
 from tb_b2b import b2b_utils
 import tb_b2b.b2b_wrapper as wrapper
 
+from tb_utils import events, tb_diff, result_handler
 from tb_utils.fifo_wrapper import FifoDriver, FifoMonitor
-from tb_utils import events
-
-from tb_utils import tb_diff
 
 
 ##
@@ -150,6 +148,9 @@ def b2b_test_0(dut) :
         out_events = events.load_events_from_file(testvec, n_to_load = num_events_to_process)
         expected_output_events.append(out_events)
         
+
+    all_tests_passed = True
+    all_test_results = []
     for oport in b2b.output_ports :
         monitor, io, _ = oport
         words = monitor.observed_words
@@ -158,11 +159,16 @@ def b2b_test_0(dut) :
 
         ## test
         events_equal, test_results = tb_diff.events_are_equal(recvd_events, expected_output_events[io.value], verbose = False)
-        #test_results = json.dumps(test_results, indent = 4, sort_keys = False)
-        #print(test_results)
-        
-    test_passed = b2b.compare_outputs_with_expected(expected_output_events = expected_output_events)
-    cocotb_result = { True : cocotb.result.TestSuccess, False : cocotb.result.TestFailure }[test_passed]
+        result_summary = result_handler.result_summary_dict( "B2B_Output_{:02}".format(io.value), str(output_testvector_files[io.value])
+                    ,test_name = "TEST_B2B_SRC{:02}_DEST{:02}".format(this_tp.value, io.value)
+                    ,test_results = test_results)
+        all_tests_passed = all_tests_passed and result_summary["test_results"]["test_success"]
+        all_test_results.append(result_summary)
+        #print( json.dumps(result_summary, indent = 4, sort_keys = False) )
+
+    result_handler.dump_test_results(all_test_results)
+    #test_passed = b2b.compare_outputs_with_expected(expected_output_events = expected_output_events)
+    cocotb_result = { True : cocotb.result.TestSuccess, False : cocotb.result.TestFailure }[all_tests_passed]
 
     print(b2b)
     raise cocotb_result

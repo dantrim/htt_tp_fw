@@ -2,11 +2,12 @@ from difflib import Differ
 import re
 from argparse import ArgumentParser
 import numpy as np
-import sys
+import sys, os
 import json
 from columnar import columnar
 
 from tb_utils import events
+from tb_utils import result_handler
 from colorama import Fore, Back, Style, init
 init(autoreset = True)
 #Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
@@ -823,6 +824,14 @@ def events_are_equal(events0, events1, verbose = False) :
                         break
             global_test_results["event_order"] = [False, {"first_event_idx" : first_bad_event, "l0id_0" : first_bad_l0id[0], "l0id_1" : first_bad_l0id[1]}]
 
+    ##
+    ## summarize global test results
+    ##
+    global_test_results = {
+        "TEST_RESULT" : all_ok
+        ,"RESULTS" : global_test_results
+    }
+
     ###########################################################################
     ###########################################################################
     ##
@@ -883,6 +892,14 @@ def events_are_equal(events0, events1, verbose = False) :
     ## to fully parse these types of events
     ##
 
+    ###########################################################################
+    ###########################################################################
+    ##
+    ## Summarize the final results (TODO: enforce json schema)
+    ##
+    ###########################################################################
+    ###########################################################################
+
     final_results = {
         "global" : global_test_results
         ,"event" : all_event_test_results
@@ -916,9 +933,15 @@ def compare_files(filename0, filename1, requested_l0id = -1, endian = "little", 
     events1 = events.load_events_from_file(filename1, endian = endian, n_to_load = n_events, l0id_request = l0id_request)
 
     events_equal, results_dict = events_are_equal(events0, events1, verbose = verbose)
-    #results = json.dumps(results_dict, indent = 4, sort_keys = False)
-    #print(results)
-    return events_equal, results_dict
+
+    result_summary = result_handler.result_summary_dict(os.path.abspath(filename0)
+                            ,os.path.abspath(filename1)
+                            ,test_name="tb_diff"
+                            ,test_results = results_dict
+                    )
+    #results = json.dumps(result_summary, indent = 4, sort_keys = False)
+    result_handler.dump_test_results( [result_summary], event_detail = True )
+    return events_equal, result_summary
 
 def main() :
 
