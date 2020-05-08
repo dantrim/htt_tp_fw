@@ -83,6 +83,7 @@ def b2b_test_0(dut) :
 
     num_events_to_process = 5
     event_delays = True
+    event_level_detail_in_summary = False
 
     ##
     ## clock
@@ -136,7 +137,7 @@ def b2b_test_0(dut) :
     yield Combine(*send_finished_signal)
     dut._log.info("Sending finished!")
 
-    timer = Timer(20, "us")#int(num_events_to_process * 1.0 / 2), "us")
+    timer = Timer(20, "us")
     dut._log.info("Going to wait 20 microseconds")
     yield timer
 
@@ -157,6 +158,13 @@ def b2b_test_0(dut) :
         recvd_events = events.load_events(words, "little")
         cocotb.log.info("Output for {} (output port num {}) received {} events".format(io.name, io.value, len(recvd_events)))
 
+        ##
+        ## we expect nothing from the current board but there may be testvectors,
+        ## so "zero" out any testvectors for this output
+        ##
+        if io.value == this_tp.value :
+            expected_output_events[io.value] = []
+
         ## test
         events_equal, test_results = tb_diff.events_are_equal(recvd_events, expected_output_events[io.value], verbose = False)
         result_summary = result_handler.result_summary_dict( "B2B_Output_{:02}".format(io.value), str(output_testvector_files[io.value])
@@ -164,11 +172,12 @@ def b2b_test_0(dut) :
                     ,test_results = test_results)
         all_tests_passed = all_tests_passed and result_summary["test_results"]["test_success"]
         all_test_results.append(result_summary)
-        #print( json.dumps(result_summary, indent = 4, sort_keys = False) )
 
-    result_handler.dump_test_results(all_test_results)
-    #test_passed = b2b.compare_outputs_with_expected(expected_output_events = expected_output_events)
+        output_json_name = "test_results_summary_B2B_src{}_dest{}.json".format("{}{:02}".format(this_tp.name.split("_")[0], int(this_tp.name.split("_")[1])), "{}{:02}".format(io.name.split("_")[0], int(io.name.split("_")[1])))
+        with open(output_json_name, "w", encoding = "utf-8") as f :
+            json.dump(result_summary, f, ensure_ascii = False, indent = 4)
+
+    result_handler.dump_test_results(all_test_results, event_detail = event_level_detail_in_summary)
     cocotb_result = { True : cocotb.result.TestSuccess, False : cocotb.result.TestFailure }[all_tests_passed]
 
-    print(b2b)
     raise cocotb_result

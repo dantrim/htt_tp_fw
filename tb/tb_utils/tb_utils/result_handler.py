@@ -1,21 +1,33 @@
 import sys, json
 from columnar import columnar # tabulating test results
 
+
 def dump_test_results(test_results_list = [], log = None, event_detail = False) :
-    pass
+
+    from colorama import Fore, Back, Style, init
+    init(autoreset = True)
 
     names = []
     successes = []
     failing_tests = set()
 
-    headers = ["PORT/PATH TESTED", "TEST", "RESULT(ACROSS ALL EVENTS)", "INFO"]
+    test_summary_data = {}
+
+    headers = ["{: <40}".format("PORT/PATH TESTED"), "{: <20}".format("TEST"), "{: <10}".format("RESULT(ACROSS ALL EVENTS)"), "{: <40}".format("INFO")]
     if event_detail :
-        headers = ["PORT/PATH TESTED", "EVENT L0ID", "TEST", "RESULT", "INFO"]
+        headers = ["{: <40}".format("PORT/PATH TESTED"), "{: <15}".format("EVENT L0ID"), "{: <20}".format("TEST"), "{: <10}".format("RESULT(ACROSS ALL EVENTS)"), "{: <40}".format("INFO")]
     rows = []
 
     for itest_result, test_results in enumerate(test_results_list) :
+        if itest_result > 0 :
+            filler_row = []
+            for h in headers :
+                filler_row.append( len(h) * "/")
+            rows.append(filler_row)
+            
         test_results = test_results["test_results"]
         test_name = test_results["test_name"]
+        test_summary_data[test_name] = set()
         overall_success = test_results["test_success"]
         names.append(test_name)
         successes.append(overall_success)
@@ -42,10 +54,11 @@ def dump_test_results(test_results_list = [], log = None, event_detail = False) 
                 row_data.append("")
 
             row_data.append(test.upper())
-            row_data.append( {True:"PASS",False:"FAIL"}[test_info[0]] )
+            row_data.append( {True:"PASS",False:Fore.RED + "FAIL" + Fore.RESET}[test_info[0]] )
 
             if not test_info[0] :
                 failing_tests.add( test.upper() )
+                test_summary_data[test_name].add(test.upper())
 
             if test_info[1] and event_detail :
                 row_data.append( test_info[1] )
@@ -55,6 +68,13 @@ def dump_test_results(test_results_list = [], log = None, event_detail = False) 
             rows.append(row_data)
             sub_test_idx += 1
 
+        filler_row = []
+        filler_row.append("")
+        for h in headers[1:] :
+            filler_row.append( len(h) * "-")
+            #filler_row.append( 20 * "--")
+        rows.append(filler_row)
+
         ##
         ## event
         ##
@@ -63,9 +83,8 @@ def dump_test_results(test_results_list = [], log = None, event_detail = False) 
 
         filler_row = []
         filler_row.append("")
-        for h in headers[1:-1] :
-            filler_row.append( 10 * "//" )
-        filler_row.append("")
+        for h in headers[1:] :
+            filler_row.append( len(h) * "/")
 
         if event_detail :
             for ievent, event in enumerate(events) :
@@ -91,9 +110,10 @@ def dump_test_results(test_results_list = [], log = None, event_detail = False) 
                         row_data.append("")
         
                     row_data.append(test.upper())
-                    row_data.append( {True:"PASS",False:"FAIL"}[test_info[0]] )
+                    row_data.append( {True:"PASS",False:Fore.RED + "FAIL" + Fore.RESET}[test_info[0]] )
                     if not test_info[0] :
                         failing_tests.add( test.upper() )
+                        test_summary_data[test_name].add(test.upper())
 
                     if test_info[1] :
                         row_data.append( test_info[1] )
@@ -118,6 +138,7 @@ def dump_test_results(test_results_list = [], log = None, event_detail = False) 
 
                     if not test_info[0] :
                         failing_tests.add( test.upper() )
+                        test_summary_data[test_name].add(test.upper())
                         event_test_summary[test.upper()] = False
                         if "event_header" in test.lower() :
                             if "bad_fields" in test_info[1] :
@@ -141,7 +162,7 @@ def dump_test_results(test_results_list = [], log = None, event_detail = False) 
                     row_data.append("")
 
                 row_data.append(test.upper())
-                row_data.append( {True:"PASS",False:"FAIL"}[event_test_summary[test]] )
+                row_data.append( {True:"PASS",False:Fore.RED + "FAIL" + Fore.RESET}[event_test_summary[test]] )
                 if "event_header" in test.lower() and test_info[1] :
                     row_data.append( "bad_fields: {}".format(x for x in bad_event_header_fields) )
                 elif "event_footer" in test.lower() :
@@ -153,9 +174,27 @@ def dump_test_results(test_results_list = [], log = None, event_detail = False) 
                 rows.append(row_data)
                 sub_test_idx += 1
 
-    table = columnar(rows, headers, no_borders = False)
-    print(table)
+    table = columnar(rows, headers, no_borders = False, max_column_width = None, terminal_width = 200)
+    if log :
+        log(table)
+    else :
+        print(table)
 
+    ##
+    ## summary of all tests
+    ##
+    headers = ["{: <40}".format(headers[0]), "{: <20}".format("RESULT SUMMARY"), "{: <40}".format("FAILED TESTS")]
+    rows = []
+    for test_name, test_info in test_summary_data.items() :
+        result = {True:"PASS",False:Fore.RED + "FAIL" + Fore.RESET}[len(test_info)==0]
+        failed_tests = ", ".join(test_info)
+        rows.append( [test_name, result, failed_tests] )
+    summary_table = columnar(rows, headers, no_borders = False)
+    if log :
+        log(table)
+    else :
+        print(summary_table)
+        
 def result_summary_dict(input0: str, input1: str, test_name: str, test_results: dict) -> dict :
     overall_passes = overall_test_result(test_results)
     out_results = {

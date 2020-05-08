@@ -907,7 +907,7 @@ def events_are_equal(events0, events1, verbose = False) :
 
     return all_ok, final_results
 
-def compare_files(filename0, filename1, requested_l0id = -1, endian = "little", n_events = -1, verbose = False) :
+def compare_files(filename0, filename1, requested_l0id = -1, endian = "little", n_events = -1, verbose = False, tabulate = (False, False)) :
     """
     Loads events from the two input files "filename0" and "filename1".
     Passes the loaded events to comparison function(s).
@@ -940,7 +940,9 @@ def compare_files(filename0, filename1, requested_l0id = -1, endian = "little", 
                             ,test_results = results_dict
                     )
     #results = json.dumps(result_summary, indent = 4, sort_keys = False)
-    result_handler.dump_test_results( [result_summary], event_detail = True )
+    dump_table, table_event_detail = tabulate
+    if dump_table :
+        result_handler.dump_test_results( [result_summary], event_detail = table_event_detail )
     return events_equal, result_summary
 
 def main() :
@@ -961,6 +963,12 @@ def main() :
     parser.add_argument("-v", "--verbose", default = False, action = "store_true"
         ,help = "Print out the diff information"
     )
+    parser.add_argument("--table", default = False, action = "store_true"
+        ,help = "Print out results of the diff in a table"
+    )
+    parser.add_argument("--table-events", default = False, action = "store_true"
+        ,help = "If printing out summary table (\"--table\" option), print out more detailed information for each event"
+    )
     args = parser.parse_args()
     if args.l0id != "" :
         args.l0id = int(args.l0id, 16)
@@ -973,7 +981,8 @@ def main() :
     diff, _ = compare_files(args.input[0], args.input[1], args.l0id
                                 ,endian = args.endian
                                 ,n_events = args.n_events
-                                ,verbose = args.verbose)
+                                ,verbose = args.verbose
+                                ,tabulate = (args.table, args.table_events))
     sys.exit(int(not diff))
 
 if __name__ == "__main__" :
