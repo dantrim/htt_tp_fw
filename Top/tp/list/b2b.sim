@@ -1,0 +1,3 @@
+#Simulator questa
+../../src/board2board_switching/rtl/TP_DataFormat.sv
+../../tb/board2board_switching_tb/systemverilog/board2board_switching_tb.sv topsim=board2board_switching_tb
