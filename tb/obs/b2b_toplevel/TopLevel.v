@@ -114,8 +114,6 @@ module TopLevel #(
         .b2b_clk(clock),
         .b2b_rst_n(reset),
         .b2b_srst_n(reset),
-        
-        //kludge.cluster_data(cluster_data_reg), 
         .cluster_data(cluster_data), 
         .cluster_req(cluster_rd_req),
         .cluster_almost_full(cluster_almost_full),

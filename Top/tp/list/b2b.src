@@ -1,0 +1,14 @@
+../../src/board2board_switching/rtl/TP_DataFormat.sv
+../../src/board2board_switching/rtl/board2board_switching.sv
+../../src/board2board_switching/rtl/board2board_switching_wrapper.sv
+../../src/board2board_switching/rtl/cluster_merge_engine.sv
+../../src/board2board_switching/rtl/cluster_routing_engine.sv
+../../src/board2board_switching/rtl/cluster_sync_engine.sv
+../../src/board2board_switching/rtl/merge_event_handler.sv
+../../IP/b2b_top_clk_wiz_0/b2b_top_clk_wiz_0.xci
+../../IP/b2b_top_proc_sys_reset_0_0/b2b_top_proc_sys_reset_0_0.xci
+../../IP/b2b_top_proc_sys_reset_0_0/b2b_top_proc_sys_reset_0_0.xci
+../../IP/fifo_65/fifo_generator_0.xci
+../../IP/b2b_top_fifo_generator_0_0/b2b_top_fifo_generator_0_0.xci
+../../IP/b2b_top_fifo_generator_1_0/b2b_top_fifo_generator_1_0.xci
+./top_tp.v
