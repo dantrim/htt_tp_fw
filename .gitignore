@@ -10,3 +10,8 @@ tb/env
 # Ignore sim_build/build dirs.
 tb/*/sim_build
 tb/*/build
+
+#Emacs ignore
+*~
+
+#Vivado ignores

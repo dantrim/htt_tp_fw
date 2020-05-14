@@ -22,7 +22,7 @@ module cluster_sync_engine #(
    parameter  DROP = 2;
 
    parameter  OUT_BIT_LEN       = $clog2(TOTAL_CLUSTERS);
-   parameter  TOTAL_FIFO_GROUPS = $ceil(TOTAL_CLUSTERS/4);
+   parameter  TOTAL_FIFO_GROUPS = TOTAL_CLUSTERS/4 + (TOTAL_CLUSTERS&3 != 0);   // $ceil(TOTAL_CLUSTERS/4);
    
    
    
@@ -76,7 +76,7 @@ module cluster_sync_engine #(
    logic [OUT_BIT_LEN:0]       fifo_mid_inter[TOTAL_CLUSTERS/2];
    logic [OUT_BIT_LEN:0]       fifo_max_order[TOTAL_CLUSTERS];
    
-   logic [TOTAL_CLUSTERS-1:0]  fifo_groups[TOTAL_FIFO_GROUPS][5];
+   logic [3:0] 		       fifo_groups[TOTAL_FIFO_GROUPS][5];
    logic [TOTAL_CLUSTERS-1:0]  fifo_groups_4[5];
    
 /*   sort_4_fifos_by_rd_count 

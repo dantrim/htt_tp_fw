@@ -278,34 +278,65 @@ module sort_4_fifos(
 endmodule 
 
 
-module consolidate_groups #(
-			    parameter TOTAL_CLUSTERS=32
+module consolidate_4_groups #(
+			    parameter TOTAL_CLUSTERS=32,
+			    parameter MAX_CLUSTERS_BLEN = 5
 			    )
-   (input logic fifo_group[4], input logic offset, output logic [5:0]  fifo_group_idx);
+   (input logic [2:0] fifo_group[4][5], input logic [MAX_CLUSTERS_BLEN:0] offset, output logic [MAX_CLUSTERS_BLEN:0]  fifo_group_idx[5]);
    always_comb
      begin
-	if(fifo_group[0] != 4)
+	for(int i=0; i < 5; i++)
 	  begin
-	     fifo_group_idx = fifo_group[0];
-	  end
-	else if(fifo_group[1] != 4)
-	  begin
-	     fifo_group_idx = fifo_group[1] + offset;
-	  end
-	else if(fifo_group[2] != 4)
-	  begin
-	     fifo_group_idx = fifo_group[2] + (offset << 1);
-	  end
-	else if(fifo_group[3] != 4)
-	  begin
-	     fifo_group_idx = fifo_group[2] + (offset << 2);
-	  end
-	else
-	  begin
-	     fifo_group_idx = TOTAL_CLUSTERS;	     
-	  end	
+	     if(fifo_group[0][i] != 4)
+	       begin
+		  fifo_group_idx[i] = fifo_group[0][i];
+	       end
+	     else if(fifo_group[1][i] != 4)
+	       begin
+		  fifo_group_idx[i] = fifo_group[1][i] + offset;
+	       end
+	     else if(fifo_group[2][i] != 4)
+	       begin
+	     fifo_group_idx[i] = fifo_group[2][i] + (offset << 1);
+	       end
+	     else if(fifo_group[3][i] != 4)
+	       begin
+		  fifo_group_idx[i] = fifo_group[2][i] + (offset << 2);
+	       end
+	     else
+	       begin
+		  fifo_group_idx[i] = TOTAL_CLUSTERS;	     
+	       end	
+	  end // for (int i=0; i < 5; i++)
      end
-endmodule // consolidate_groups
+endmodule // consolidate_4_groups
+
+
+
+module consolidate_2_groups #(
+			    parameter TOTAL_CLUSTERS=32,
+			    parameter MAX_CLUSTERS_BLEN = 5
+			    )
+   (input logic [2:0] fifo_group[2][5], input logic [MAX_CLUSTERS_BLEN:0] offset, output logic [MAX_CLUSTERS_BLEN:0]  fifo_group_idx[5]);
+   always_comb
+     begin
+	for(int i=0; i < 5; i++)
+	  begin
+	     if(fifo_group[0][i] != 4)
+	       begin
+		  fifo_group_idx[i] = fifo_group[0][i];
+	       end
+	     else if(fifo_group[1][i] != 4)
+	       begin
+		  fifo_group_idx[i] = fifo_group[1][i] + offset;
+	       end
+	     else
+	       begin
+		  fifo_group_idx[i] = TOTAL_CLUSTERS;	     
+	       end	
+	  end // for (int i=0; i < 5; i++)
+     end
+endmodule // consolidate_2_groups
 
 
 module consolidate_groups_offsets #(
@@ -348,18 +379,20 @@ module find_max_fifo
     input logic [3:0] 		     fifo_groups[TOTAL_CLUSTER_GROUPS][5],
     output logic [OUT_BIT_LEN:0]     fifo_idx
     );
-   parameter SECOND_STAGE_GROUPS = $ceil(TOTAL_CLUSTER_GROUPS/4);
-   parameter THIRD_STAGE_GROUPS  = $ceil(SECOND_STAGE_GROUPS/4);
+   parameter SECOND_STAGE_GROUPS = TOTAL_CLUSTER_GROUPS/4 + (TOTAL_CLUSTER_GROUPS&3 != 0); //$ceil(TOTAL_CLUSTER_GROUPS/4);
+   parameter THIRD_STAGE_GROUPS  = SECOND_STAGE_GROUPS/4 + (SECOND_STAGE_GROUPS&3 != 0); //$ceil(SECOND_STAGE_GROUPS/4);
    parameter MAX_CLUSTERS        = 32;
    parameter MAX_CLUSTERS_BLEN   = $clog2(32);
       
-   genvar 			     i, j;
-   logic [OUT_BIT_LEN:0] 	     grp_fifo_idx[TOTAL_CLUSTER_GROUPS][5]; //Based on number of groups 
+   genvar 			     i, j, k;
+   logic [2:0] 			     grp_fifo_idx[TOTAL_CLUSTER_GROUPS][5]; //Based on number of groups
+   logic [2:0] 			     grp_fifo_idx_2nd[SECOND_STAGE_GROUPS][4][5]; //Based on number of groups 
       
    logic [OUT_BIT_LEN:0] 	     first_stage_fifo_idx;
    logic [OUT_BIT_LEN:0] 	     second_stage_fifo_idx;
-   logic [MAX_CLUSTERS_BLEN:0] 	     grp_fifo_idx_transpose[5][TOTAL_CLUSTER_GROUPS];
+   logic [2:0] 			     grp_fifo_idx_transpose[5][TOTAL_CLUSTER_GROUPS];
    logic [MAX_CLUSTERS_BLEN:0] 	     second_stage_grp[SECOND_STAGE_GROUPS][5];
+   logic [MAX_CLUSTERS_BLEN:0] 	     third_stage_grp[5];
    
    
    
@@ -398,40 +431,63 @@ module find_max_fifo
 	   end
 	 else
 	   begin : second_stage
-	      for(i=0; i < TOTAL_CLUSTER_GROUPS; i++)
+	    /*  for(i=0; i < TOTAL_CLUSTER_GROUPS; i++)
 		begin
 		   for(j=0; j<5; j++)
 		     begin
 			assign grp_fifo_idx_transpose[j][i] = grp_fifo_idx[i][j];
 		     end
 		end
-	      
+	     */
+	      for(i=0; i < SECOND_STAGE_GROUPS; i++)
+		begin
+		   for(j=0; j<4; j++)
+		     begin
+			for(k=0;k<5;k++)
+			  begin
+			     if(i*4 + j == TOTAL_CLUSTER_GROUPS)
+			       assign grp_fifo_idx_2nd[i][j][k] = 4;
+			     else
+			       assign grp_fifo_idx_2nd[i][j][k]= grp_fifo_idx[i*4 + j][k];
+			  end
+		     end
+		end
 	      
 	      for(j=0; j < SECOND_STAGE_GROUPS; j++)
 		begin
-		   for(i=0; i<5; i++)
-		     begin
-			consolidate_groups #(
-					     .TOTAL_CLUSTERS(TOTAL_CLUSTERS)
-					  )
-			pick_2nd_stage_idx_inst(
-					     grp_fifo_idx_transpose[i+:4], 
-						4 , 
-						second_stage_grp[j][i]
-						);
-			
-		     end
+		   consolidate_4_groups
+		    #(
+		      .TOTAL_CLUSTERS(TOTAL_CLUSTERS),
+		      .MAX_CLUSTERS_BLEN(MAX_CLUSTERS_BLEN)
+		      )
+		   pick_2nd_stage_idx_inst(
+					   grp_fifo_idx_2nd[j], //grp_fifo_idx_transpose[i+:4], 
+					   4 , 
+					   second_stage_grp[j]
+					   );
+		   
 		end // for (j=0; j < SECOND_STAGE_GROUPS; j++)
 	      
 	      if(THIRD_STAGE_GROUPS == 1)
 		begin: third_stage_results
 		   get_fifo_idx_2nd_stage #(
-					 .TOTAL_CLUSTERS(TOTAL_CLUSTERS)
+					    .TOTAL_CLUSTERS(TOTAL_CLUSTERS)
 					    )
 		   get_fifo_idx_2nd_stage_inst (
-						.fifo_group_idx(second_stage_grp[0]),
+						.fifo_group_idx(third_stage_grp),
 						.fifo_idx(second_stage_fifo_idx)
 						);
+		   
+		   consolidate_2_groups
+		     #(
+		       .TOTAL_CLUSTERS(TOTAL_CLUSTERS),
+		       .MAX_CLUSTERS_BLEN(MAX_CLUSTERS_BLEN)
+		       )
+		   pick_3rd_stage_idx_inst(
+					   second_stage_grp, //grp_fifo_idx_transpose[i+:4], 
+					   16 , 
+					   third_stage_grp
+					   );
 		end
 	      else
 		begin
@@ -442,7 +498,4 @@ module find_max_fifo
       end // block: find_max_fifo_gen
       
    endgenerate
-
- 
-	    
-  endmodule // find_max_fifo
+endmodule // find_max_fifo
