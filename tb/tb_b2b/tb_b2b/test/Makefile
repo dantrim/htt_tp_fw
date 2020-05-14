@@ -4,12 +4,14 @@ SIM ?= questa
 COMPLIB_DIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1
 #export TESTVECDIR=/home/dantrim/work/tdaq-htt-firmware/testvecs/20200124
 export TESTVECDIR=/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/
+#export TESTVECDIR=/home/psundara/HTT/danny/testvecs_041020/testvecs
+
 
 # Location of sources (and spy buffer sources).
 SRCDIR = $(PWD)/../../../../src
 SBDIR = $(SRCDIR)/SpyBuffer
-#B2BDIR= $(SRCDIR)/board2board_switching
-B2BDIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/tp-fw/src/board2board_switching
+B2BDIR= $(SRCDIR)/board2board_switching
+#B2BDIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/tp-fw/src/board2board_switching
 
 # All Verilog source files.
 VERILOG_SOURCES = \
@@ -23,7 +25,8 @@ VERILOG_SOURCES = \
     $(SBDIR)/aFifo/sync_r2w.v \
     $(SBDIR)/aFifo/sync_w2r.v \
     $(SBDIR)/aFifo/wptr_full.v \
-    $(B2BDIR)/ip/fifo_65/fifo_generator_0/fifo_generator_0_sim_netlist.v \
+    $(B2BDIR)/rtl/find_idx.sv \
+    $(B2BDIR)/ip/fifo_65/fifo_65_sim_netlist.v \
     $(B2BDIR)/rtl/merge_event_handler.sv \
     $(B2BDIR)/rtl/cluster_merge_engine.sv \
     $(B2BDIR)/rtl/cluster_routing_engine.sv \
