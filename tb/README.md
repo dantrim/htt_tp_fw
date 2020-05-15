@@ -1,4 +1,4 @@
-# cocotb-bashed testbench infrastructure for the HTT trigger processor (TP)
+# cocotb-based testbench infrastructure for the HTT trigger processor (TP)
 
 This directory contains the TP's [cocotb](https://github.com/cocotb/cocotb)-based testbench
 infrastructure.
@@ -88,7 +88,7 @@ version of `pip` corresponds to your `python3` instance by running,
 ```bash
 $ pip3 --version
 pip 9.0.3 from /foo/bar/python3.6/site-packages (python 3.6)
-$ python --version
+$ python3 --version
 Python 3.6.8 # looks good!
 ```
 </details>
@@ -98,7 +98,7 @@ Python 3.6.8 # looks good!
 
 Here each of the ```tb``` commands will be briefly described.
 
-All `tb` commands available to are listed by printing the help message:
+All `tb` commands available to you are listed by printing the help message:
 ```bash
 (env) $ tb -h
 Usage: tb [OPTIONS] COMMAND [ARGS]...
