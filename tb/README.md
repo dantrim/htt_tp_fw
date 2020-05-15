@@ -95,5 +95,69 @@ Python 3.6.8 # looks good!
 
 ## Functionality
 <details> <summary> Expand </summary>
-Here each of the `tb` commands will be briefly described.
+
+Here each of the ```tb``` commands will be briefly described.
+
+All `tb` commands available to are listed by printing the help message:
+```bash
+(env) $ tb -h
+Usage: tb [OPTIONS] COMMAND [ARGS]...
+
+  Top-level entrypoint into TP fw cocotb test-bench infrastructure.
+
+Options:
+  -h, --help  Show this message and exit.
+
+Commands:
+  check-config  Check/inspect a testbench's configuration (*.json) file.
+  diff          Diff two *.evt files and test for differences.
+  dump          Dump the contents of an *.evt file.
+  list          List all available testbenches (and their tests).
+  run           Setup and run cocotb-based testbenches.
+  test-summary  Dump the test results *.json file.
+```
+Each command has it's own set of arguments and options, which can be accessed by
+```bash
+(env) $ tb [command] -h
+```
+
+### check-config
+
+The `check-config` command is for inspecting a testbench configuration JSON file.
+A testbench's configuration is placed in the [test_config/](test_config/) directory.
+For example, here is [test_config/config_b2b.json](test_config/config_b2b.json):
+```json
+{
+    "testbench_config" :
+    {
+       "test_name" : "b2b"
+       ,"input_args" :
+       {
+           "n_events" : 10
+           ,"event_delays" : true
+           ,"event_detail" : false
+           ,"clock_period" : 5
+           ,"clock_time_unit" : "ns"
+       },
+       "run_config" :
+       {
+           "output_directory_name" : "b2b"
+           ,"test_location" : "src/tp_tb/testbench/b2b/test"
+       }
+    }
+}
+```
+
+### list
+
+### run
+
+### test-summary
+
+### diff
+
+### dump
+
+
+
 </details>
