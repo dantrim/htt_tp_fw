@@ -2,13 +2,13 @@
 *.swp
 *.swk
 *.swn
-*.root
 *.eps
 *.jpg
 *.pdf
 *.jpeg
 *.app/
 
+*.pickle
 *.slo
 *.lo
 *.o
@@ -24,7 +24,12 @@
 *~
 
 *.evt
+*.root
+*.hex
+*.bin
 *build/
 *sim_build/
 *.autosave
 *pycache*
+
+*test_output/

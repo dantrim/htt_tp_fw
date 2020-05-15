@@ -1,7 +1,8 @@
 import os, struct
-import tb_utils
-from tb_utils import utils
-from tb_b2b import b2b_utils
+#import tb_utils
+#from tb_utils import utils
+from . import utils
+#from tb_b2b import b2b_utils
 from pathlib import Path
 
 from DataFormat import DataFormat, BitField #, BitFieldWordValue
@@ -226,41 +227,41 @@ class ModuleData :
 
         
 
-    def routing_dest(self) :
-
-        """
-        Parse the module routing flags and determine B2B output
-        """
-
-        dest_list = set()
-        routing_flags = self.header_routing
-        for output in b2b_utils.B2BIO.B2BOutputs :
-            is_amtp = "amtp" in output.name.lower()
-            tp_num = int(output.name.split("_")[-1])
-            idx = int(output.value)
-
-            routing_index = {
-                True : 4
-                ,False : 2
-            } [is_amtp]
-
-            tp_offset = {
-                True : 0
-                ,False : 48
-            } [is_amtp]
-
-            mask = {
-                True : 0xf
-                ,False : 0x3
-            } [is_amtp]
-
-            offset = tp_offset + (tp_num * routing_index)
-            mask = (mask << offset)
-            routed = (routing_flags & mask) != 0
-            if routed :
-                dest_list.add(idx)
-
-        return dest_list
+#    def routing_dest(self) :
+#
+#        """
+#        Parse the module routing flags and determine B2B output
+#        """
+#
+#        dest_list = set()
+#        routing_flags = self.header_routing
+#        for output in b2b_utils.B2BIO.B2BOutputs :
+#            is_amtp = "amtp" in output.name.lower()
+#            tp_num = int(output.name.split("_")[-1])
+#            idx = int(output.value)
+#
+#            routing_index = {
+#                True : 4
+#                ,False : 2
+#            } [is_amtp]
+#
+#            tp_offset = {
+#                True : 0
+#                ,False : 48
+#            } [is_amtp]
+#
+#            mask = {
+#                True : 0xf
+#                ,False : 0x3
+#            } [is_amtp]
+#
+#            offset = tp_offset + (tp_num * routing_index)
+#            mask = (mask << offset)
+#            routed = (routing_flags & mask) != 0
+#            if routed :
+#                dest_list.add(idx)
+#
+#        return dest_list
 
     def is_pixel(self) :
         return self.module_type_str().lower() == "pixel"

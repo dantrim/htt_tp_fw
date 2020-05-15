@@ -7,7 +7,9 @@ from cocotb.drivers import Driver
 from cocotb.monitors import Monitor
 from cocotb.triggers import RisingEdge, Event, ReadOnly, NextTimeStep, Timer
 
-import tb_utils
+#import tb_utils
+#from tp_tb.utils import utils
+import tp_tb.utils as utils
 
 class FifoWrapper :
 
@@ -122,7 +124,7 @@ class FifoWrapper :
         fmt = { "little" : "<Q?", "big" : ">?Q" }[endian]
         data = transaction.to_bytes(9, endian)
         contents, is_metadata = struct.unpack(fmt, data)
-        word = tb_utils.events.DataWord(contents, is_metadata)
+        word = utils.events.DataWord(contents, is_metadata)
         return word
 
     def store_word(self, transaction_tuple) :
