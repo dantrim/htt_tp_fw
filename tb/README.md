@@ -262,13 +262,341 @@ testbench's JSON configuration.
 
 <details> <summary> <strong>test-summary</strong> (click to expand) </summary>
 
+```bash
+(env) $ tb test-summary -h
+Usage: tb test-summary [OPTIONS] [INPUT]...
+
+  Dump the test results *.json file.
+
+Options:
+  -q, --quiet         Do not print anything to standard output.
+  -r, --result-only   Simply return whether the test is passed or not.
+  -e, --event-detail  Report event-level test details.
+  -d, --detail        Report test details in addition to final summary.
+  -h, --help          Show this message and exit.
+```
+
+The testbenches result in `test_result_summary*.json` JSON files which report summaries of all tests
+run. The `test-summary` utility provides the user with functionality to dump the
+information contained in these files with varying levels of detail in tabular form.
+
+The option `-r|--result-only` reports in a single line the OR of all test results contained in the
+provided summary files:
+```bash
+(env) $ tb test-summary -r test_output/b2b/test_result_summary_B2B_srcAMTP00_destAMTP01.json
+Test result: PASS
+```
+
+The option `-d|--detail` reports a summary table for each of the provided input summary files, e.g.:
+
+```bash
+(env) $ tb test-summary -d test_output/b2b/test_result_summary_B2B_srcAMTP00_destAMTP01.json
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|PORT/PATH TESTED                        |TEST                |RESULT(ACROSS ALL EVENTS)|INFO                                    |
+|================================================================================================================================|
+|B2B_SRC00_DEST01                        |N_EVENTS            |PASS                     |                                        |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |RECVD_L0IDS         |PASS                     |                                        |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |EVENT_ORDER         |PASS                     |                                        |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |--------------------|-------------------------|----------------------------------------|
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |N_WORDS             |PASS                     |                                        |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |EVENT_HEADER        |PASS                     |                                        |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |EVENT_FOOTER        |FAIL                     |bad_fields: ['CRC']                     |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |MODULE_COUNT        |PASS                     |                                        |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |MODULE_DATA         |PASS                     |                                        |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+|                                        |FLOATING_DATA       |PASS                     |                                        |
+|----------------------------------------|--------------------|-------------------------|----------------------------------------|
+
+|----------------------------------------|--------------------|----------------------------------------|
+|PORT/PATH TESTED                        |RESULT SUMMARY      |FAILED TESTS                            |
+|======================================================================================================|
+|TEST_B2B_SRC00_DEST01                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+```
+
+Providing `test-summary` the `-e|--event-detail` option provides additional breakdown for each of the tests reported in the above (with
+the `-d|--detail` option) but *for each event*.
+
+You can provide `test-summary` any number of `test_result_summary*.json` JSON input files (>=1) and it will
+concatenate their results into a single table. For example:
+
+```bash
+(env) $ tb test-summary -d test_output/b2b/test_results_summary_B2B_srcAMTP00_dest*
+... 
+...
+|----------------------------------------|--------------------|----------------------------------------|
+|PORT/PATH TESTED                        |RESULT SUMMARY      |FAILED TESTS                            |
+|======================================================================================================|
+|TEST_B2B_SRC00_DEST00                   |PASS                |                                        |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST01                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST02                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST03                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST04                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST05                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST06                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST07                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST08                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST09                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST10                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST11                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST12                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+|TEST_B2B_SRC00_DEST13                   |FAIL                |EVENT_FOOTER                            |
+|----------------------------------------|--------------------|----------------------------------------|
+```
 </details>
 
 <details> <summary> <strong>diff</strong> (click to expand) </summary>
 
+```bash
+(env) $ tb diff -h
+Usage: tb diff [OPTIONS] INPUTS...
+
+  Diff two *.evt files and test for differences.
+
+Options:
+  -n, --n-events INTEGER     The number of events to load and be diffed.
+  -e, --endian [little|big]  Endian-ness of data within the files to load.
+  -l, --l0id INTEGER         Select an event with a specific L0ID from the
+                             input files to diff.
+
+  -v, --verbose
+  -t, --table                Print out results of the diff in a table at the
+                             end.
+
+  --event-detail             Print out more detailed information for each
+                             event when tabling is enabled.
+
+  -h, --help                 Show this message and exit.
+```
+
+The `diff` utility is a very useful one. The testbenches output *.evt files (in the same format as the
+testvector files) and the `diff` utility allows for comparing any two of them to each other.
+
+For example, if you drive your design with a given set of testvectors and it produces an output file
+called `fifomonitor_OUTPUT_01.evt` which has an associated testvector providing the *expected* output called `testvector_OUTPUT_01.evt`,
+you can use the `diff` utility as a means to compare them to each other. Choosing to compare only the first event,
+
+```bash
+(env) $ tb diff -n 1 test_output/b2b/fifomonitor_OUTPUT_01.evt ${TESTVECDIR}/testvector_OUTPUT_01.evt
+(env) $ echo $? # non-zero return code indicates that differences exist between the files
+1 # differences exist!
+```
+In the above we see that `tb diff` by default does not print anything to screen, and instead provides a return code.
+Non-zero return codes indicate that there are differences between the two files provided.
+
+To make `tb diff` a bit more informative to the user, you can provide the `-v|--verbose` option:
+```bash
+(env) $ tb diff -n 1 -v test_output/b2b/fifomonitor_OUTPUT_01.evt ${TESTVECDIR}/testvector_OUTPUT_01.evt
+================================================================================
+File0: ./test_output/b2b/fifomonitor_OUTPUT_01.evt
+File1: /foo/bar/testvector_OUTPUT_01.evt
+====================================================================================================
+Comparing event at L0ID=0x2
+           NWORDS   = 61        NWORDS   = 61
+           NMODULES = 3         NMODULES = 3
+           ----------------------------------------
+           0x1ab02000000000002  0x1ab02000000000002  FLAG: 0xab / 0xab          TRK_TYPE: 0x2 / 0x2        SPARE: 0x0 / 0x0           L0ID: 0x2 / 0x2
+           0x004c00000000785a1  0x004c00000000785a1  BCID: 0x4c / 0x4c          SPARE: 0x0 / 0x0           RUNNUMBER: 0x785a1 / 0x785a1
+           0x0000000000fffffff  0x0000000000fffffff  ROI: 0xfffffff / 0xfffffff
+           0x00e3bc00100000000  0x00e3bc00100000000  EFPU_ID: 0xe3bc / 0xe3bc   EFPU_PID: 0x1 / 0x1        TIME: 0x0 / 0x0
+           0x00000000000000002  0x00000000000000002  Connection_ID: 0x0 / 0x0   Transaction_ID: 0x2 / 0x2
+           0x0000000002300bdf9  0x0000000002300bdf9  STATUS: 0x0 / 0x0          CRC: 0x2300bdf9 / 0x2300bdf9
+           ----------------------------------------
+           0x155400000000001fe  0x155400000000001fe  MODULE #000 FLAG: 0x55 / 0x55        TYPE: 0x1 / 0x1          DET: 0x0 / 0x0           ROUTING: 0xff / 0xff
+           0x0130440002e4fc45e  0x01304400034b65f77  MODID: 0x4c11 / 0x4c11   MODTYPE: 0x0 / 0x0       ORIENTATION: 0x0 / 0x0
+           0x067affe58322904d3  0x03e8bf76806b37792
+           0x00b04bf7e1bb54174  0x023ce63e265272015
+           0x032d17a79164ff0fb  0x00fa5d2922513a41f
+           0x04ea95c1830c6d1e5  0x0088e9e156901719f
+           0x04b2054a327c4bc66  0x00697c6c046f7a5d0
+           0x013fde2055ae6eebb  0x05f2b442567e074e4
+           ...
+           ...
+           ...
+           0x05277e6db9cfdd243  0x027061d1bfcba14e7
+           0x0771b000000000000  0x0771b000000000000  FLAG: 0x77 / 0x77    COUNT: 0x1b / 0x1b   ERROR: 0x0 / 0x0
+           ----------------------------------------
+           0x1cd0000042300bdf9  0x1cd0000042300bdf9  FLAG: 0xcd / 0xcd         SPARE: 0x0 / 0x0          META_COUNT: 0x4 / 0x4     HDR_CRC: 0x2300bdf9 / 0x2300bdf9
+           0x00000000000000000  0x00000000000000000  ERROR_FLAGS: 0x0 / 0x0
+           0x00000003adeadbeef  0x00000003a7f812270  WORD_COUNT: 0x3a / 0x3a   CRC DIFFERROR: 0xdeadbeef / 0x7f812270
+                      ^^^^^^^^             ^^^^^^^^
+           ----------------------------------------
+           EVENT OK? NO
+
+```
+Here you see the data being printed word-by-word within each of the files. The column of data on the left corresponds to the data contained in "File0", which is the
+first input file provided at the command line (in our case `test_output/b2b/fifomonitor_OUTPUT_01.evt`), and the column of data on the right corresponds to the second file
+(`${TESTVECDIR}/testvector_OUTPUT_01.evt`).
+
+In addition to printing side-by-side the data words from the two files, there is decoded information to the right. Currently,
+decoded information is provided only for **EVENT HEADER**, **EVENT FOOTER**, **MODULE HEADER**, and **MODULE FOOTER**, given that the testvector
+data for the cluster data words is random and not correlated between the input and output testvectors. The decoded values for each
+field within each of these are shown on the right, alongside the corresponding data word in which the field resides. The
+format of the decoded values are **`FIELD_NAME: VALUE_FILE0 / VALUE_FILE1`**. For example,
+```bash
+WORD_COUNT: 0x3a / 0x3a
+```
+indicates that the `EVENT FOOTER` field "`WORD_COUNT`" had the value of `0x3a` in both input files for the event being parsed.
+
+Any differences that exist between the two files are indicated in the printout and are indicated in **red**. The positions within
+the data itself where the differences are found are subscripted with "`^`" characters indicating the positions
+in the formated hex-strings where the differences are. For example, from the above:
+```bash
+           0x00000003adeadbeef  0x00000003a7f812270  WORD_COUNT: 0x3a / 0x3a   CRC DIFFERROR: 0xdeadbeef / 0x7f812270
+                      ^^^^^^^^             ^^^^^^^^
+```
+points to the `CRC` fields between the files being different: `0xdeadbeef` (for File0) and `0x7f812270` (for File1).
+Any field where an error occurs is also indicated with the flag `DIFFERROR`, as in the above with `CRC DIFFERROR`.
+
+If any of the two files being compared has a different number of modules within a given event, then
+the `diff` utility will report "unmatched" data:
+```bash
+====================================================================================================
+Comparing event at L0ID=0x2
+           NWORDS   = 61        NWORDS   = 61
+           NMODULES = 4         NMODULES = 3
+           ----------------------------------------
+           0x1ab02000000000002  0x1ab02000000000002  FLAG: 0xab / 0xab          TRK_TYPE: 0x2 / 0x2        SPARE: 0x0 / 0x0           L0ID: 0x2 / 0x2
+           0x004c00000000785a1  0x004c00000000785a1  BCID: 0x4c / 0x4c          SPARE: 0x0 / 0x0           RUNNUMBER: 0x785a1 / 0x785a1
+           0x0000000000fffffff  0x0000000000fffffff  ROI: 0xfffffff / 0xfffffff
+           0x00e3bc00100000000  0x00e3bc00100000000  EFPU_ID: 0xe3bc / 0xe3bc   EFPU_PID: 0x1 / 0x1        TIME: 0x0 / 0x0
+           0x00000000000000002  0x00000000000000002  Connection_ID: 0x0 / 0x0   Transaction_ID: 0x2 / 0x2
+           0x0000000002300bdf9  0x0000000002300bdf9  STATUS: 0x0 / 0x0          CRC: 0x2300bdf9 / 0x2300bdf9
+           ----------------------------------------
+           0x155400000000001fe  0x155400000000001fe  MODULE #000 FLAG: 0x55 / 0x55        TYPE: 0x1 / 0x1          DET: 0x0 / 0x0           ROUTING: 0xff / 0xff
+           0x0130440002e4fc45e  0x01304400034b65f77  MODID: 0x4c11 / 0x4c11   MODTYPE: 0x0 / 0x0       ORIENTATION: 0x0 / 0x0
+           0x067affe58322904d3  0x03e8bf76806b37792
+           ...
+           ...
+           0x155400001e00001fe       unmatched          MODULE #002 FLAG: 0x55        TYPE: 0x1          DET: 0x0           ROUTING: 0xf00000ff
+           0x013b2400003a67598       unmatched          MODID: 0x4ec9   MODTYPE: 0x0       ORIENTATION: 0x0
+           0x04722466e08cc527b       unmatched
+           0x00aab117b39c97d15       unmatched
+           0x01fcbfc2526d1e64b       unmatched
+           ...
+           ...
+```
+where we see that the data in File0 had an extra module in it not associated with any module contained in the event data in File1.
+
+In cases where event or module boundaries are not correctly reported in the data (e.g. if the fw block under test discards them by accident),
+then the event building in the `diff` utility will not associate those words to any event or module since it is the event/module headers
+within the data where that data is placed. For example, if a module header is missed, then the subsequent data words
+*until the next observed header or start of footer*, will be "floating", so to speak. If such data is found, it is reported as "headless" by the `diff` utility
+(and indicated with a **blue** text color):
+```bash
+           0x155400001e00001fe       headless
+           0x013b2400003a67598       headless
+           0x04722466e08cc527b       headless
+           0x00aab117b39c97d15       headless
+           0x01fcbfc2526d1e64b       headless
+```
+
+Giving `tb diff` the `-t|--table` option (in combination with the `--event-detail` option) provides tabulated results
+of tests of differences in the same format as the `test-summary` utility.
+
 </details>
 
 <details> <summary> <strong>dump</strong> (click to expand) </summary>
+
+```bash
+(env) $ tb dump -h
+Usage: tb dump [OPTIONS] INPUT_FILE
+
+  Dump the contents of an *.evt file.
+
+Options:
+  -b, --boundary          Indicate event and module boundaries.
+  -p, --parse             Print out (any) decoded information.
+  -t, --timestamp         Indicate timestamps of each word in the file (if
+                          available).
+
+  -n, --n-events INTEGER  Dump a specific number of events.
+  -l, --l0id TEXT         Print out a specific L0ID (can be comma-separated
+                          list for multiple, or a range indicated via
+                          <min>-<max>, e.g. 0x1-0x20).
+
+  -c, --word-count        Indicate the overall word count.
+  -e, --event-word-count  Indicate the word count within each event.
+  -a, --all-opt           Set all options (except for timestamp).
+  --start-l0id INTEGER    Dump events with L0ID >= "start-l0id".
+  --stop-l0id INTEGER     Do not dump events with L0ID > "stop-l0id".
+  --list-l0id             Print L0IDs for the events in the input file.
+  -h, --help              Show this message and exit.
+```
+
+The `dump` utility provides the means to dump in a human-readable form the data contained in the binary *.evt files associated with
+the testvectors and the data files generated by the testbenches. It takes a single input file and dumps the hex-string formated datawords
+to the screen.
+
+There are a lot of configuration options available to the `dump` utility, all primarily related to the level of detail or decoding performed.
+Providing no options just dumps the data words line-by-line:
+```bash
+(env) $ tb dump ./test_output/b2b/fifomonitor_B2B_OUTPUT0.evt
+0x1ab02000000000002
+0x004c00000000785a1
+0x0000000000fffffff
+0x00e3bc00100000000
+0x00000000000000002
+0x0000000002300bdf9
+0x155400000000001fe
+0x0130440002e4fc45e
+0x067affe58322904d3
+...
+...
+0x01120a229593ae9b5
+0x00675239167b879e2
+0x05277e6db9cfdd243
+0x0771b000000000000
+0x1cd0000042300bdf9
+0x00000000000000000
+0x00000003adeadbeef
+```
+
+The `-b|--boundary` option places line indicators of where the EVENT, MODULE, and FOOTER boundaries lie:
+```bash
+(env) $ tb dump -b ./test_output/b2b/fifomonitor_B2B_OUTPUT0.evt
+=================== [EVENT 000]
+0x1ab02000000000002
+0x004c00000000785a1
+0x0000000000fffffff
+0x00e3bc00100000000
+0x00000000000000002
+0x0000000002300bdf9
+------------------- [MODULE 000/000]
+0x155400000000001fe
+0x0130440002e4fc45e
+...
+...
+0x05277e6db9cfdd243
+0x0771b000000000000
+------------------- [FOOTER 000]
+0x1cd0000042300bdf9
+0x00000000000000000
+0x00000003adeadbeef
+```
+
+
 </details>
 
 
