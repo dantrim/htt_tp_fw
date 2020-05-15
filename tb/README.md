@@ -91,5 +91,9 @@ pip 9.0.3 from /foo/bar/python3.6/site-packages (python 3.6)
 $ python --version
 Python 3.6.8 # looks good!
 ```
+</details>
 
+## Functionality
+<details> <summary> Expand </summary>
+Here each of the `tb` commands will be briefly described.
 </details>
