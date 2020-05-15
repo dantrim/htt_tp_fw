@@ -64,7 +64,7 @@ In order to return back to the virtual environment for the cocotb testbenches,
 simply run,
 ```bash
 $ source setup_env.sh
-(env) #
+(env) $
 ```
 Subsequent calls to this script will not attempt to re-install the package, but will only
 initialize the virtual environment and ensure that the top-level entrypoint "`tb`" is accessible.
