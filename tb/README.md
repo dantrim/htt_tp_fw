@@ -59,6 +59,27 @@ Commands:
 If you see the above help message after running the top-level "`tb`" command then
 you should be on your way to running the testbench infrastructure.
 
+### The virtual environment is necessary for running the testbench
+In order to return back to the virtual environment for the cocotb testbenches,
+simply run,
+```bash
+$ source setup_env.sh
+(env) #
+```
+Subsequent calls to this script will not attempt to re-install the package, but will only
+initialize the virtual environment and ensure that the top-level entrypoint "`tb`" is accessible.
+
+That is, **`setup_env.sh` must be sourced every time you return back to running the testbenches**.
+
+### Fresh Installation / Re-installation
+If you wish to make a clean installation, simply delete the `env/` directory created when you
+ran `setup_env.sh` and re-run the installation procedure,
+```bash
+$ rm -rf env/
+$ source setup_env.sh
+(env) $ # everything is all fresh now
+```
+
 ### Note:
 
 If you do not have `pip`, this is because
