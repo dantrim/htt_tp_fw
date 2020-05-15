@@ -1,0 +1,19 @@
+{
+    "testbench_config" :
+    {
+       "test_name" : "b2b"
+       ,"input_args" :
+       {
+           "n_events" : 10
+           ,"event_delays" : true
+           ,"event_detail" : false
+           ,"clock_period" : 5
+           ,"clock_time_unit" : "ns"
+       },
+       "run_config" :
+       {
+           "output_directory_name" : "b2b"
+           ,"test_location" : "src/tp_tb/testbench/b2b/test"
+       }
+    }
+}

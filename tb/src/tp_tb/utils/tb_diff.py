@@ -1,13 +1,11 @@
-from difflib import Differ
 import re
-from argparse import ArgumentParser
 import numpy as np
-import sys, os
+import os
 import json
 from columnar import columnar
 
-from tb_utils import events
-from tb_utils import result_handler
+from . import events
+from . import result_handler
 from colorama import Fore, Back, Style, init
 init(autoreset = True)
 #Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
@@ -942,48 +940,5 @@ def compare_files(filename0, filename1, requested_l0id = -1, endian = "little", 
     #results = json.dumps(result_summary, indent = 4, sort_keys = False)
     dump_table, table_event_detail = tabulate
     if dump_table :
-        result_handler.dump_test_results( [result_summary], event_detail = table_event_detail )
+        result_handler.dump_test_results( [result_summary], event_detail = table_event_detail, full_detail = True )
     return events_equal, result_summary
-
-def main() :
-
-    parser = ArgumentParser(description = "Simple diff between two evt files")
-    parser.add_argument("-i", "--input", nargs = 2
-        ,help = "The two files to be diff'd"
-    )
-    parser.add_argument("-n", "--n-events", default = -1, type = int
-        ,help = "Number of events to load"
-    )
-    parser.add_argument("-e", "--endian", default = "little", type = str
-        ,help = "Endian-ness of data evt files"
-    )
-    parser.add_argument("-l", "--l0id", default = "", type = str
-        ,help = "Request a specific L0ID to be diff'd [hex string format, e.g. 0x44]"
-    )
-    parser.add_argument("-v", "--verbose", default = False, action = "store_true"
-        ,help = "Print out the diff information"
-    )
-    parser.add_argument("--table", default = False, action = "store_true"
-        ,help = "Print out results of the diff in a table"
-    )
-    parser.add_argument("--table-events", default = False, action = "store_true"
-        ,help = "If printing out summary table (\"--table\" option), print out more detailed information for each event"
-    )
-    args = parser.parse_args()
-    if args.l0id != "" :
-        args.l0id = int(args.l0id, 16)
-    else :
-        args.l0id = -1
-
-    ##
-    ## diff
-    ##
-    diff, _ = compare_files(args.input[0], args.input[1], args.l0id
-                                ,endian = args.endian
-                                ,n_events = args.n_events
-                                ,verbose = args.verbose
-                                ,tabulate = (args.table, args.table_events))
-    sys.exit(int(not diff))
-
-if __name__ == "__main__" :
-    main()

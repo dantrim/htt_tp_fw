@@ -2,7 +2,7 @@ import sys, json
 from columnar import columnar # tabulating test results
 
 
-def dump_test_results(test_results_list = [], log = None, event_detail = False) :
+def dump_test_results(test_results_list = [], log = None, event_detail = False, full_detail = False) :
 
     from colorama import Fore, Back, Style, init
     init(autoreset = True)
@@ -174,11 +174,12 @@ def dump_test_results(test_results_list = [], log = None, event_detail = False) 
                 rows.append(row_data)
                 sub_test_idx += 1
 
-    table = columnar(rows, headers, no_borders = False, max_column_width = None, terminal_width = 200)
-    if log :
-        log(table)
-    else :
-        print(table)
+    if full_detail : 
+        table = columnar(rows, headers, no_borders = False, max_column_width = None, terminal_width = 200)
+        if log :
+            log(table)
+        else :
+            print(table)
 
     ##
     ## summary of all tests
