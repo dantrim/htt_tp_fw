@@ -121,7 +121,18 @@ Each command has it's own set of arguments and options, which can be accessed by
 (env) $ tb [command] -h
 ```
 
-### check-config
+<details> <summary> <strong>check-config</strong> (click to expand) </summary>
+
+```bash
+(env) $ tb check-config -h
+Usage: tb check-config [OPTIONS] CONFIG
+
+  Check/inspect a testbench's configuration (*.json) file.
+
+Options:
+  --dump      Dump contents of valid test configuration.
+  -h, --help  Show this message and exit.
+```
 
 The `check-config` command is for inspecting a testbench configuration JSON file.
 A testbench's configuration is placed in the [test_config/](test_config/) directory.
@@ -148,15 +159,117 @@ For example, here is [test_config/config_b2b.json](test_config/config_b2b.json):
 }
 ```
 
-### list
 
-### run
+To check that a testbench configuration is sound, simply provide `check-config` the path to
+a testbench JSON configuration file. If the configuration is valid you will be told accordingly.
+Here is an example using [test_config/config_b2b.json](test_config/config_b2b.json):
+```bash
+(env) $ tb check-config test_config/config_b2b.json
+Test configuration OK
+```
 
-### test-summary
+The flag `--dump` additionally prints the configuration content to screen:
+```bash
+(env) $ tb check-config --dump test_config/config_b2b.json
+Test configuration OK
+------------------------------------------------------------
+Configuration for test "b2b":
+{
+    "test_name": "b2b",
+    "input_args": {
+        "n_events": 10,
+        "event_delays": true,
+        "event_detail": false,
+        "clock_period": 5,
+        "clock_time_unit": "ns"
+    },
+    "run_config": {
+        "output_directory_name": "b2b",
+        "test_location": "src/tp_tb/testbench/b2b/test"
+    }
+}
+------------------------------------------------------------
+```
 
-### diff
+</details>
 
-### dump
+<details> <summary> <strong>list</strong> (click to expand)  </summary>
+
+```bash
+(env) $ tb list -h
+Usage: tb list [OPTIONS]
+
+  List all available testbenches (and their tests).
+
+Options:
+  -h, --help  Show this message and exit.
+```
+ 
+The `list` utility inspects the testbench directories and finds all properly configured
+testbenches that are available to be run. It takes no arguments:
+ 
+```bash
+(env) $ tb list
+Defined testbenches:
+b2b
+```
+
+</details>
+
+<details> <summary> <strong> run </strong> (click to expand)  </summary>
+
+```bash
+(env) $ tb run -h
+Usage: tb run [OPTIONS] CONFIG
+
+  Setup and run cocotb-based testbenches.
+
+Options:
+  -h, --help  Show this message and exit.
+```
+
+The `run` command is the primary driver of testbenches. You call this when you want to run a testbench.
+It takes only a single argument, which is the testbench configuration JSON file that describes the
+test you wish to run. For example,
+
+```bash
+(env) $ tb run test_config/config_b2b.json
+```
+Calling `run` will check that the testbench is configured properly and will construct the
+command that will ultimately execute the compilation of the RTL source files and the running
+of cocotb. Basically, it is nearly the same as setting up your testbench environment and calling
+`make` on the cocotb-configured Makefile for your test.
+
+The path to the provided testbench configuration file is passed to the cocotb tests and
+can be used internally. In this way, the user can specify "input arguments" to pass to their
+test that may change it's behavior. This is the "`input_args`" field of the testbench configuration
+file. In the case of the `b2b` testbench these are (c.f. `tb check-config --dump test_config/config_b2b.json`):
+```bash
+"input_args" :
+{
+    "n_events" : 10
+    ,"event_delays" : true
+    ,"event_detail" : false
+    ,"clock_period" : 5
+    ,"clock_time_unit" : "ns"
+}
+```
+It is up to the designer of the specific testbench to ensure that these "input_args" are properly
+handled within their test, or have suitable defaults in the case of their absence within the
+testbench's JSON configuration.
+
+</details>
+
+<details> <summary> <strong>test-summary</strong> (click to expand) </summary>
+
+</details>
+
+<details> <summary> <strong>diff</strong> (click to expand) </summary>
+
+</details>
+
+<details> <summary> <strong>dump</strong> (click to expand) </summary>
+</details>
 
 
 
