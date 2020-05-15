@@ -10,9 +10,10 @@ on your machine and accessible via the `python3` command in your `$PATH`.
 
 
 ## Installation and Setup
-<details> <summary> Expand </summary
+<details> <summary> Expand </summary>
 
+```bash
+source setup_env.sh
+```
 
-
-You are required to have ```python3```.
 </details>
