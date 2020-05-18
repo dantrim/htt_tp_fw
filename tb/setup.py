@@ -6,8 +6,8 @@ import os
 # stackoverflow to work. It also does not help that the package is camelcased
 # (fun fact: Unix filesystem is case-insensitive!)
 # and matches in name with an existing package on PyPi...
-system_sim_path="https://:@gitlab.cern.ch:8443/atlas-tdaq-p2-firmware/tdaq-htt-firmware/system-simulation.git"
-system_sim_branch="python3_import"
+system_sim_path = "https://:@gitlab.cern.ch:8443/atlas-tdaq-p2-firmware/tdaq-htt-firmware/system-simulation.git"
+system_sim_branch = "python3_import"
 os.system("pip install git+{}@{}".format(system_sim_path, system_sim_branch))
 
 setup(
@@ -23,16 +23,16 @@ setup(
     include_package_data=True,
     python_requires=">=3.6",
     install_requires=[
-        "cocotb"
-        ,"pre-commit"
-        ,"flake8"
-        ,"black"
-        ,"colorama"
-        ,"columnar"
-        ,"numpy"
-        ,"Click>=6.0"
-        ,"bitstring"
-        ,"scipy"
+        "cocotb",
+        "pre-commit==2.3",
+        "flake8==3.8",
+        "black",
+        "colorama",
+        "columnar",
+        "numpy",
+        "Click>=6.0",
+        "bitstring",
+        "scipy",
     ],
-    entry_points={"console_scripts" : ["tb=tp_tb.cli:cli"]}
+    entry_points={"console_scripts": ["tb=tp_tb.cli:cli"]},
 )
