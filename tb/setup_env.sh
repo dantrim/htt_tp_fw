@@ -59,6 +59,19 @@ function activate_venv {
     return 0
 }
 
+function pre_commit_setup {
+    if ! command -v pre-commit -V >/dev/null 2>&1; then
+        echo "ERROR pre-commit not installed"
+        return 1
+    fi
+
+    ##
+    ## put pre-commit hooks in .git
+    ##
+    pre-commit install
+    return 0
+}
+
 function main {
 
     while test $# -gt 0
@@ -94,6 +107,11 @@ function main {
          if ! activate_venv ; then
             return 1
         fi
+
+        if ! pre_commit_setup; then
+            return 1
+        fi
+
     else
         python3 -m venv ${venv_dir_name}
         if [ ! -d ${venv_dir_name} ]; then
@@ -108,9 +126,17 @@ function main {
                 deactivate >/dev/null 2>&1 
                 return 1
             fi
+            ##
+            ## setup pre-commit
+            ##
+            if ! pre_commit_setup; then
+                return 1
+            fi
+
             echo "Installation successful"
         fi
     fi
+
     echo "Virtual environment \"${venv_dir_name}\" has been activated. Type 'deactivate' to exit."
 }
 
