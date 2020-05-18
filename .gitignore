@@ -1,17 +1,55 @@
-# Python/cocotb ignores
+# testbench output
+*test_output/
+
+# python
 
 *.pyc
 *.log
 *.egg-info
+*.pickle
+*pycache*
 
-# Ignore our virtualenv directory
+# build files
+*.lo
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.cxx.d
+
+
+# ignore our virtualenv directory
 tb/env
 
-# Ignore sim_build/build dirs.
-tb/*/sim_build
-tb/*/build
+# ignore cocotb sim_build/build dirs.
+*sim_build/
+*build/
 
-#Emacs ignore
+# emacs ignore
 *~
+*.autosave
+
+# vim autosave
+*.swo
+*.swp
+*.swk
+*.swn
+*.slo
+
+# binary files
+*.evt
+*.root
+*.hex
+*.bin
+
+# image files
+*.eps
+*.jpg
+*.pdf
+*.jpeg
 
 #Vivado ignores
+
+# misc
+*.app/
