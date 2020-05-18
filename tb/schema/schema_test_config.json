@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "def_testbench_config": {
+            "type": "object",
+            "properties": {
+                "test_name" : {"type" : "string"},
+                "input_args" : {"type" : "object"},
+                "run_config": {"$ref": "#/definitions/def_run_config"}
+            },
+            "required": ["test_name", "run_config", "input_args"]
+        },
+        "def_run_config": {
+            "type": "object",
+            "properties": {
+                "output_directory_name" : { "type": "string" },
+                "test_location" : { "type" : "string" }
+            },
+            "required": ["output_directory_name", "test_location"]
+        }
+    },
+    "type": "object",
+    "properties": {
+        "testbench_config": { "$ref": "#/definitions/def_testbench_config"}
+    },
+    "required": ["testbench_config"]
+}
