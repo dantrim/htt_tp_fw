@@ -24,8 +24,8 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "cocotb",
-        "pre-commit==2.3",
-        "flake8==3.8",
+        "pre-commit",
+        "flake8",
         "black",
         "colorama",
         "columnar",
