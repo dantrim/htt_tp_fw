@@ -5,9 +5,12 @@ import click
 from . import utils
 from . import testbench
 
-@click.group(context_settings = dict(help_option_names=["-h", "--help"]))
-def tb() :
+
+@click.group(context_settings=dict(help_option_names=["-h", "--help"]))
+def tb():
     """Top-level entrypoint into TP fw cocotb test-bench infrastructure."""
+
+
 tb.add_command(testbench.run)
 tb.add_command(utils.diff)
 tb.add_command(utils.test_summary)
