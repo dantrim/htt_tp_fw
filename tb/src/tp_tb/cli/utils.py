@@ -60,6 +60,9 @@ def cli() :
 @click.option("-e", "--event-word-count", is_flag = True
         ,help = "Indicate the word count within each event."
 )
+@click.option("-a", "--all-opt", is_flag = True
+        ,help = "Set all options (except for timestamp)."
+)
 @click.option("--start-l0id", type = BASED_INT
         ,help = "Dump events with L0ID >= \"start-l0id\"."
 )
@@ -81,6 +84,7 @@ def dump(
     ,start_l0id
     ,stop_l0id
     ,list_l0id
+    ,all_opt
 ) :
     """Dump the contents of an *.evt file."""
 
@@ -107,6 +111,13 @@ def dump(
         print("ERROR Cannot request L0ID and N_EVENTS simultaneously")
         sys.exit(1)
     l0id_bounds = (start_l0id, stop_l0id)
+
+    if all_opt :
+        boundary = True
+        parse = True
+        timestamp = True
+        word_count = True
+        event_word_count = True
 
     tb_dump.dump_evt_file(input_file.name
         ,do_boundary = boundary
