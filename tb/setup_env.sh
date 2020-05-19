@@ -121,7 +121,7 @@ function main {
             if ! activate_venv ; then
                 return 1
             fi
-            if ! pip install --quiet -e . ; then
+            if ! python -m pip install --quiet -e . ; then
                 echo "ERROR There was a problem in installing the packages"
                 deactivate >/dev/null 2>&1 
                 return 1
