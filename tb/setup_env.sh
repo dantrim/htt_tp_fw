@@ -50,10 +50,24 @@ function python3_available {
     return 0
 }
 
+function update_pip {
+    python -m pip install --upgrade --no-cache-dir pip setuptools wheel 2>&1 >/dev/null
+    status=$?
+    if [[ ! $status -eq 0 ]]; then
+        echo "ERROR Problem in updating pip within the virutal environment"
+        return 1
+    fi
+    return 0
+}
+
 function activate_venv {
     source ${venv_dir_name}/bin/activate
     if [ $? -eq 1 ]; then
         echo "ERROR Could not activate virtual environment \"${venv_dir_name}\""
+        return 1
+    fi
+
+    if ! update_pip; then
         return 1
     fi
     return 0
@@ -68,7 +82,7 @@ function pre_commit_setup {
     ##
     ## put pre-commit hooks in .git
     ##
-    pre-commit install
+    pre-commit install 2>&1 >/dev/null
     return 0
 }
 
@@ -118,14 +132,17 @@ function main {
             echo "ERROR Problem setting up virtual environment \"${venv_dir_name}\""
             return 1
         else 
+
             if ! activate_venv ; then
                 return 1
             fi
-            if ! pip install --quiet -e . ; then
+
+            if ! python -m pip install --quiet -e . ; then
                 echo "ERROR There was a problem in installing the packages"
                 deactivate >/dev/null 2>&1 
                 return 1
             fi
+
             ##
             ## setup pre-commit
             ##
