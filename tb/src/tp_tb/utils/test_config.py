@@ -1,5 +1,16 @@
 import json
 from pathlib import Path
+from jsonschema import validate
+
+from .utils import get_schema_file
+
+
+def testbench_config_from_file(config_file):
+
+    with open(config_file, "r") as infile:
+        config_data = json.load(infile)
+        config = config_data["testbench_config"]
+    return config
 
 
 def input_args_from_config(config):
@@ -25,25 +36,33 @@ def check_config_file(config_file):
     p = Path(config_file)
     file_ok = p.exists() and p.is_file()
     if not file_ok:
-        return (
-            False,
-            f"ERROR Test config file (={config_file}) could not be found or opened",
-        )
+        return False, f"Test config file (={config_file} could not be found or opened"
 
     ##
-    ## parse the json configuration
+    ## schema is valid
     ##
+    schema_file = get_schema_file(schema_type="test_config")
+    if schema_file is None:
+        return False, "Could not find test configuration schema"
+
     try:
-        with open(config_file, "r") as infile:
-            data = json.load(infile)
-    except Exception:
-        return False, f"ERROR Test config file (={config_file}) could not be parsed"
+        with open(config_file, "r") as infile, open(schema_file) as schemafile:
+            config_data = json.load(infile)
+            schema_data = json.load(schemafile)
+    except json.JSONDecodeError as ex:
+        return False, f"Unable to decode JSON configuration and/or schema: {ex}"
 
-    ##
-    ## TODO: rely on jsonschema to validate json data?
-    ##
+    try:
+        validate(instance=config_data, schema=schema_data)
+    except Exception as ex:
+        return False, f"Provided config (={config_file}) fails schema check:\n{ex}"
 
-    config = data["testbench_config"]
+    return True, None
+
+
+def inspect_test_config(config_file):
+
+    config = testbench_config_from_file(config_file)
     run_config = config["run_config"]
     test_name = config["test_name"]
 
@@ -79,4 +98,33 @@ def check_config_file(config_file):
             f"ERROR Expected test Makefile (={str(expected_makefile)}) not found",
         )
 
+    return True, None
+
+
+def check_and_inspect_config_file(config_file):
+
+    ##
+    ## validate the provided configuration file
+    ##
+    config_ok, err = check_config_file(config_file)
+    if not config_ok:
+        return False, err
+
+    ##
+    ## insect the test configuration data itself
+    ##
+    config_ok, err = inspect_test_config(config_file)
+    if not config_ok:
+        return False, err
+
+    return True, None
+
+
+def config_from_file(config_file):
+
+    config_ok, err = check_and_inspect_config_file(config_file)
+    if not config_ok:
+        return None, err
+
+    config = testbench_config_from_file(config_file)
     return config, None

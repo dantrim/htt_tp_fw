@@ -19,7 +19,7 @@ def cli():
 def run(config):
     """Setup and run cocotb-based testbenches."""
 
-    config_data, err = test_config.check_config_file(config)
+    config_data, err = test_config.config_from_file(config)
     if err:
         print(f"Cannot run test: {err}")
         return
@@ -73,9 +73,10 @@ def list():
 @click.option("--dump", is_flag=True, help="Dump contents of valid test configuration.")
 def check_config(config, dump):
     """Check/inspect a testbench's configuration (*.json) file."""
-    parsed_config, err = test_config.check_config_file(config)
+    parsed_config, err = test_config.config_from_file(config)
+
     if err:
-        print(f"ERROR Provided test config (={config}) had errors encountered:")
+        print(f"ERROR Provided test config (={config}) has error(s):")
         print(f" > {err}")
     else:
         print("Test configuration OK")
