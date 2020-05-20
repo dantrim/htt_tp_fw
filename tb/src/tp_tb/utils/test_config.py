@@ -1,6 +1,17 @@
 import json
 from pathlib import Path
 
+from .utils import get_schema_file
+from .utils import validate_against_schema
+
+
+def testbench_config_from_file(config_file):
+
+    with open(config_file, "r") as infile:
+        config_data = json.load(infile)
+        config = config_data["testbench_config"]
+    return config
+
 
 def input_args_from_config(config):
     with open(config, "r") as infile:
@@ -25,25 +36,27 @@ def check_config_file(config_file):
     p = Path(config_file)
     file_ok = p.exists() and p.is_file()
     if not file_ok:
-        return (
-            False,
-            f"ERROR Test config file (={config_file}) could not be found or opened",
-        )
+        return False, f"Test config file (={config_file} could not be found or opened"
 
     ##
-    ## parse the json configuration
+    ## schema is valid
     ##
     try:
-        with open(config_file, "r") as infile:
-            data = json.load(infile)
-    except Exception:
-        return False, f"ERROR Test config file (={config_file}) could not be parsed"
+        with open(config_file, "r") as infile:  # , open(schema_file) as schemafile:
+            config_data = json.load(infile)
+    except json.JSONDecodeError as ex:
+        return False, f"Unable to decode JSON configuration file: {ex}"
 
-    ##
-    ## TODO: rely on jsonschema to validate json data?
-    ##
+    try:
+        valid_ok, err = validate_against_schema(config_data, schema_type="test_config")
+    except Exception as ex:
+        return False, str(ex)
+    return valid_ok, err
 
-    config = data["testbench_config"]
+
+def inspect_test_config(config_file):
+
+    config = testbench_config_from_file(config_file)
     run_config = config["run_config"]
     test_name = config["test_name"]
 
@@ -79,4 +92,33 @@ def check_config_file(config_file):
             f"ERROR Expected test Makefile (={str(expected_makefile)}) not found",
         )
 
+    return True, None
+
+
+def check_and_inspect_config_file(config_file):
+
+    ##
+    ## validate the provided configuration file
+    ##
+    config_ok, err = check_config_file(config_file)
+    if not config_ok:
+        return False, err
+
+    ##
+    ## insect the test configuration data itself
+    ##
+    config_ok, err = inspect_test_config(config_file)
+    if not config_ok:
+        return False, err
+
+    return True, None
+
+
+def config_from_file(config_file):
+
+    config_ok, err = check_and_inspect_config_file(config_file)
+    if not config_ok:
+        return None, err
+
+    config = testbench_config_from_file(config_file)
     return config, None

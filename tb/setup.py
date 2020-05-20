@@ -34,6 +34,7 @@ setup(
         "Click>=6.0",
         "bitstring",
         "scipy",
+        "jsonschema",
     ],
     entry_points={"console_scripts": ["tb=tp_tb.cli:cli"]},
 )
