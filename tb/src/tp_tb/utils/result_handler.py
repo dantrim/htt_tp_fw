@@ -2,6 +2,8 @@ import sys
 import json
 from columnar import columnar  # tabulating test results
 
+from .utils import validate_against_schema
+
 
 def dump_test_results(
     test_results_list=[], log=None, event_detail=False, full_detail=False
@@ -246,6 +248,12 @@ def result_summary_dict(
             "results": test_results,
         }
     }
+
+    valid, err = validate_against_schema(
+        out_results, schema_type="test_results_summary"
+    )
+    if not valid:
+        raise Exception(f"ERROR Test results JSON does not satisfy schema:\n{err}")
     return out_results
 
 

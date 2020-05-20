@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
-from jsonschema import validate
 
 from .utils import get_schema_file
+from .utils import validate_against_schema
 
 
 def testbench_config_from_file(config_file):
@@ -41,23 +41,17 @@ def check_config_file(config_file):
     ##
     ## schema is valid
     ##
-    schema_file = get_schema_file(schema_type="test_config")
-    if schema_file is None:
-        return False, "Could not find test configuration schema"
-
     try:
-        with open(config_file, "r") as infile, open(schema_file) as schemafile:
+        with open(config_file, "r") as infile:  # , open(schema_file) as schemafile:
             config_data = json.load(infile)
-            schema_data = json.load(schemafile)
     except json.JSONDecodeError as ex:
-        return False, f"Unable to decode JSON configuration and/or schema: {ex}"
+        return False, f"Unable to decode JSON configuration file: {ex}"
 
     try:
-        validate(instance=config_data, schema=schema_data)
+        valid_ok, err = validate_against_schema(config_data, schema_type="test_config")
     except Exception as ex:
-        return False, f"Provided config (={config_file}) fails schema check:\n{ex}"
-
-    return True, None
+        return False, str(ex)
+    return valid_ok, err
 
 
 def inspect_test_config(config_file):
