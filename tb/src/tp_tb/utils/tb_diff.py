@@ -77,9 +77,7 @@ def meta_field_diff(event0, event1, meta_type="event_header"):
     ]
     if meta_type not in valid_meta_types:
         raise ValueError(
-            'ERROR "meta_type" can only take values: {}'.format(
-                x for x in valid_meta_types
-            )
+            f'ERROR "meta_type" can only take values: {[x for x in valid_meta_types]}'
         )
 
     meta_field_names = None
@@ -118,16 +116,14 @@ def meta_field_diff(event0, event1, meta_type="event_header"):
                 bad_fields.append(field_name)
             else:
                 color = Fore.GREEN
-            prev0 = "{}{}:{}".format(field_name, error, hex(int(field0)))
-            prev1 = "{}{}:{}".format(field_name, error, hex(int(field1)))
+            prev0 = f"{field_name}{error}:{hex(int(field0))}"
+            prev1 = f"{field_name}{error}:{hex(int(field1))}"
             if (
                 event0 is event1
             ):  # handles the case when providing the same inputs twice
-                out_str = color + "{}".format(prev0.replace(":", ": "))
+                out_str = color + f"{prev0.replace(':', ': ')}"
             else:
-                out_str = color + "{} / {}".format(
-                    prev0.replace(":", ": "), prev1.split(":")[-1]
-                )
+                out_str = color + f"{prev0.replace(':', ': ')} / {prev1.split(':')[-1]}"
             h0_i.append(out_str)
         h0.append(h0_i)
 
@@ -204,9 +200,7 @@ def diff_data_words(word0, word1, pass_through=False, mask=[], colorize=True):
     # the str representation of events.DataWord should always represent data as 65-bits
     if len(word0_nibbles) != len(word1_nibbles):
         raise Exception(
-            "ERROR Incorrect data word lengths (word0={}, word1={})".format(
-                len(str(word0)), len(str(word1))
-            )
+            f"ERROR Incorrect data word lengths (word0={len(str(word0))}, word1={len(str(word1))})"
         )
 
     bad_nibbles = []
@@ -288,16 +282,14 @@ def diffprint(word0, word1, diff, indent="", description=""):
     word1_str = str(word1)
 
     if not description:
-        print("{} {: <20}  {: <20}".format(indent, word0_str, word1_str))
+        print(f"{indent} {word0_str: <20}  {word1_str: <20}")
     else:
-        print(
-            "{} {: <20}  {: <20}  {}".format(indent, word0_str, word1_str, description)
-        )
+        print(f"{indent} {word0_str: <20}  {word1_str: <20}  {description}")
 
     # if not is_uneven :
     if np.any(np.array(diff)):
         dstr = diff_str(diff)
-        print("{} {: <20} {: <20}".format(indent, dstr, dstr))
+        print(f"{indent} {dstr: <20} {dstr: <20}")
 
 
 def order_modules(modules0, modules1):
@@ -442,7 +434,7 @@ def event_is_equal(event0, event1, verbose=False):
         "floating_data": [True, None],
     }
 
-    indent = "{: <10}".format(" ")
+    indent = f"{'': <10}"
     ###########################################################################
     ###########################################################################
     ##
@@ -452,9 +444,10 @@ def event_is_equal(event0, event1, verbose=False):
     ###########################################################################
     n_words_0, n_words_1 = len(event0), len(event1)
     n_mod_0, n_mod_1 = event0.n_modules, event1.n_modules
-    word_str = "{: <20} {:<20}".format(
-        "NWORDS   = {}".format(n_words_0), "NWORDS   = {}".format(n_words_1)
-    )
+    n_0_str = f"NWORDS   = {n_words_0}"
+    n_1_str = f"NWORDS   = {n_words_1}"
+    word_str = f"{n_0_str: <20} {n_1_str:<20}"
+
     err = ""
     event_test_results["n_words"] = [
         n_words_0 == n_words_1,
@@ -467,11 +460,12 @@ def event_is_equal(event0, event1, verbose=False):
         err = Fore.RED + "DIFFERROR" + Fore.RESET
 
     if verbose:
-        print("{} {} {: <20}".format(indent, word_str, err))
+        print(f"{indent} {word_str} {err: <20}")
 
-    mod_str = "{: <20} {: <20}".format(
-        "NMODULES = {}".format(n_mod_0), "NMODULES = {}".format(n_mod_1)
-    )
+    n_0_str = f"NMODULES = {n_mod_0}"
+    n_1_str = f"NMODULES = {n_mod_1}"
+    mod_str = f"{n_0_str: <20} {n_1_str: <20}"
+
     err = ""
     event_test_results["module_count"] = [
         n_mod_0 == n_mod_1,
@@ -484,7 +478,7 @@ def event_is_equal(event0, event1, verbose=False):
         err = Fore.RED + "DIFFERROR" + Fore.RESET
 
     if verbose:
-        print("{} {} {: <20}".format(indent, mod_str, err))
+        print(f"{indent} {mod_str} {err: <20}")
 
     ###########################################################################
     ###########################################################################
@@ -494,7 +488,7 @@ def event_is_equal(event0, event1, verbose=False):
     ###########################################################################
     ###########################################################################
     if verbose:
-        print("{} {}".format(indent, 40 * "-"))
+        print(f"{indent} {'':-^40}")
 
     header_data_0, header_data_1 = event0.header_words, event1.header_words
 
@@ -553,7 +547,7 @@ def event_is_equal(event0, event1, verbose=False):
         module1 = modules_1[imodule]
 
         if verbose:
-            print("{} {}".format(indent, 40 * "-"))
+            print(f"{indent} {'':-^40}")
 
         for iword in range(len(module0)):
             module_word0 = module0.data_words[iword]
@@ -600,9 +594,8 @@ def event_is_equal(event0, event1, verbose=False):
                 )
                 description = " ".join(module_header_diff_strings[iword])
                 if iword == 0:
-                    description = "{: <10} {}".format(
-                        Fore.RESET + "MODULE #{:03}".format(imodule), description
-                    )
+                    mod_num_str = Fore.RESET + f"MODULE #{imodule:03}"
+                    description = f"{mod_num_str: <10} {description}"
             elif iword == len(module0) - 1:  # footer
                 module_footer_diff_strings, bad_fields = meta_field_diff(
                     module0, module1, meta_type="module_footer"
@@ -650,7 +643,7 @@ def event_is_equal(event0, event1, verbose=False):
             all_ok = False
 
             if verbose:
-                print("{} {}".format(indent, 40 * "-"))
+                print(f"{indent} {'':-^40}")
 
             for iword in range(len(module)):
                 module_word = module.data_words[iword]
@@ -662,12 +655,12 @@ def event_is_equal(event0, event1, verbose=False):
                     )
                     description = " ".join(module_header_diff_strings[iword])
                     if iword == 0:
-                        description = "{: <10} {}".format(
+                        mod_str = (
                             Fore.RED
-                            + "MODULE #{}/{:03}".format(iunmatched, imodule)
-                            + Fore.RESET,
-                            description,
+                            + f"MODULE #{iunmatched:03}/{imodule:03}"
+                            + Fore.RESET
                         )
+                        description = f"{mod_str: <10} {description}"
 
                 elif iword == len(module) - 1:
                     # this is assumed to contain the footer
@@ -677,9 +670,9 @@ def event_is_equal(event0, event1, verbose=False):
                     description = " ".join(module_footer_diff_strings[0])
                     description = (
                         Fore.GREEN
-                        + "(FOOTER={})".format(hex(module.footer.value))
+                        + f"(FOOTER={hex(module.footer.value)})"
                         + Fore.RESET
-                        + " {}".format(description)
+                        + f" {description}"
                     )
 
                 if iword >= 1 and len(module) == 2:
@@ -689,31 +682,28 @@ def event_is_equal(event0, event1, verbose=False):
                     description = " ".join(module_footer_diff_strings[0])
                     description = (
                         Fore.GREEN
-                        + "(FOOTER={})".format(hex(module.footer.value))
+                        + f"(FOOTER={hex(module.footer.value)})"
                         + Fore.RESET
-                        + " {}".format(description)
+                        + f" {description}"
                     )
                     description = (
-                        Fore.RED
-                        + "SHORTMODULEWARN"
-                        + Fore.RESET
-                        + " {}".format(description)
+                        Fore.RED + "SHORTMODULEWARN" + Fore.RESET + f" {description}"
                     )
 
                 word_fmt = {
                     0: Fore.RED
-                    + "{: <20} {: ^20}".format(str(module_word), "nomatch")
+                    + f"{str(module_word): <20} {'nomatch': ^20}"
                     + Fore.RESET,
                     1: Fore.RED
-                    + "{: ^20} {: <20}".format("nomatch", str(module_word))
+                    + f"{'nomatch': ^20} {str(module_word): <20}"
                     + Fore.RESET,
                 }[iunmatched]
 
                 if verbose:
                     if not description:
-                        print("{} {}".format(indent, word_fmt))
+                        print(f"{indent} {word_fmt}")
                     else:
-                        print("{} {} {}".format(indent, word_fmt, description))
+                        print(f"{indent} {word_fmt} {description}")
 
     ##
     ## Here we inspect/print those module data that were not able to be
@@ -733,18 +723,14 @@ def event_is_equal(event0, event1, verbose=False):
         for iunused, unused_data_words in enumerate(
             [unused_module_data_0, unused_module_data_1]
         ):
-            print("{} {}".format(indent, 40 * "-"))
+            print(f"{indent} {'':-^40}")
             for iword, word in enumerate(unused_data_words):
                 word_fmt = {
-                    0: Fore.BLUE
-                    + "{: <20} {: ^20}".format(str(word), " ")
-                    + Fore.RESET,
-                    1: Fore.BLUE
-                    + "{: ^20} {: <20}".format(" ", str(word))
-                    + Fore.RESET,
+                    0: Fore.BLUE + f"{str(word): <20} {' ': ^20}" + Fore.RESET,
+                    1: Fore.BLUE + f"{' ': ^20} {str(word): <20}" + Fore.RESET,
                 }[iunused]
                 description = Fore.BLUE + "headless" + Fore.RESET
-                print("{} {} {}".format(indent, word_fmt, description))
+                print(f"{indent} {word_fmt} {description}")
                 if iunused == 0:
                     n_unused_0 += 1
                 else:
@@ -764,7 +750,7 @@ def event_is_equal(event0, event1, verbose=False):
     footer_data_0, footer_data_1 = event0.footer_words, event1.footer_words
 
     if verbose:
-        print("{} {}".format(indent, 40 * "-"))
+        print(f"{indent} {'':-^40}")
 
     if len(footer_data_0) != len(footer_data_1):
         raise Exception("ERROR Malformed footers")
@@ -793,7 +779,7 @@ def event_is_equal(event0, event1, verbose=False):
                 )
 
     if verbose:
-        print("{} {}".format(indent, 40 * "-"))
+        print(f"{indent} {'':-^40}")
 
     return all_ok, event_test_results
 
@@ -836,8 +822,8 @@ def events_are_equal(events0, events1, verbose=False):
         all_ok = False
         if verbose:
             print("Number of events differ")
-            print("{: <10} Number of events in File0: {}".format("", n_events_0))
-            print("{: <10} Number of events in File1: {}".format("", n_events_1))
+            print(f"{'': <10} Number of events in File0: {n_events_0}")
+            print(f"{'': <10} Number of events in File1: {n_events_1}")
 
     l0ids_0, l0ids_1 = [x.l0id for x in events0], [x.l0id for x in events1]
 
@@ -861,11 +847,9 @@ def events_are_equal(events0, events1, verbose=False):
         if verbose:
             print("L0ID differences found:")
             print(
-                "{: <10} {: <30} {: <30}".format(
-                    "", "L0IDs in File0 NOT in File1", "L0IDs In File1 NOT in File0"
-                )
+                f"{'': <10} {'L0IDs in File0 NOT in File1': <30} {'L0IDs in File1 NOT in File0': <30}"
             )
-            print("{: <10} {: <60}".format("", "-" * 60))
+            print(f"{'': <10} {'':-^60}")
 
         for i in range(n_max):
             l0, l1 = "", ""
@@ -873,7 +857,7 @@ def events_are_equal(events0, events1, verbose=False):
                 l0 = hex(in_0_not_1[i])
             if i < len(in_1_not_0):
                 l1 = hex(in_1_not_0[i])
-            info_str = "{: <10} {: <30} {: <30}".format("", l0, l1)
+            info_str = f"{'': <10} {l0: <30} {l1: <30}"
 
             if verbose:
                 print(info_str)
@@ -893,13 +877,11 @@ def events_are_equal(events0, events1, verbose=False):
             first_bad_event, first_bad_l0id = None, None
             if verbose:
                 print("Events in different order between File0 and File1")
-                print("{: <10} First event/L0ID where order differs:".format(""))
+                print(f"{'': <10} First event/L0ID where order differs:")
                 for i in range(len(l0ids_0)):
                     if l0ids_0[i] != l0ids_1[i]:
                         print(
-                            "{:<15} > Event #{}: File0 has L0ID={}, File1 has L0ID={}".format(
-                                "", i, hex(l0ids_0[i]), hex(l0ids_1[i])
-                            )
+                            f"{'':<15} > Event #{i}: File0 has L0ID={hex(l0ids_0[i])}, File1 has L0ID={hex(l0ids_1[i])}"
                         )
                         first_bad_event = i
                         first_bad_l0id = (l0ids_0[i], l0ids_1[i])
@@ -941,15 +923,13 @@ def events_are_equal(events0, events1, verbose=False):
     for ievent, l0id in enumerate(all_l0ids):
 
         if verbose:
-            print("{: <10}".format(100 * "="))
+            print(f"{'':=<100}")
 
         in_both = l0id in l0ids_0 and l0id in l0ids_1
         if not in_both:
             if verbose:
                 print(
-                    "L0ID {} not in both files, skipping detailed comparison".format(
-                        hex(l0id)
-                    )
+                    f"L0ID {hex(l0id)} not in both files, skipping detailed comparison"
                 )
             continue
 
@@ -959,7 +939,7 @@ def events_are_equal(events0, events1, verbose=False):
         e0, e1 = event_at_l0id(events0, l0id), event_at_l0id(events1, l0id)
 
         if verbose:
-            print("Comparing event at L0ID={}".format(hex(l0id)))
+            print(f"Comparing event at L0ID={hex(l0id)}")
 
         event_equal, event_test_results = event_is_equal(e0, e1, verbose=verbose)
         if not event_equal:
@@ -973,7 +953,7 @@ def events_are_equal(events0, events1, verbose=False):
 
         if verbose:
             result_str = {True: "YES", False: Fore.RED + "NO" + Fore.RESET}[event_equal]
-            print("{: <10} EVENT OK? {}".format("", result_str))
+            print(f"{'': <10} EVENT OK? {result_str}")
 
     ##
     ## We should not need to handle (here) the case of "floating" events (those
@@ -1019,8 +999,8 @@ def compare_files(
 
     if verbose:
         print(80 * "=")
-        print("File0: {}".format(filename0))
-        print("File1: {}".format(filename1))
+        print(f"File0: {filename0}")
+        print(f"File1: {filename1}")
 
     l0id_request = -1
     if requested_l0id >= 0:

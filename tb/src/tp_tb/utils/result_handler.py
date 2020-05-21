@@ -20,18 +20,18 @@ def dump_test_results(
     test_summary_data = {}
 
     headers = [
-        "{: <40}".format("PORT/PATH TESTED"),
-        "{: <20}".format("TEST"),
-        "{: <10}".format("RESULT(ACROSS ALL EVENTS)"),
-        "{: <40}".format("INFO"),
+        f"{'PORT/PATH TESTED': <40}",
+        f"{'TEST': <20}",
+        f"{'RESULT(ACROSS ALL EVENTS)': <10}",
+        f"{'INFO': <40}",
     ]
     if event_detail:
         headers = [
-            "{: <40}".format("PORT/PATH TESTED"),
-            "{: <15}".format("EVENT L0ID"),
-            "{: <20}".format("TEST"),
-            "{: <10}".format("RESULT(ACROSS ALL EVENTS)"),
-            "{: <40}".format("INFO"),
+            f"{'PORT/PATH TESTED': <40}",
+            f"{'EVENT L0ID': <15}",
+            f"{'TEST': <20}",
+            f"{'RESULT(ACROSS ALL EVENTS)': <10}",
+            f"{'INFO': <40}",
         ]
     rows = []
 
@@ -124,7 +124,7 @@ def dump_test_results(
                         row_data.append("")
 
                     if event_row == 0:
-                        row_data.append("{}".format(l0id))
+                        row_data.append(f"{l0id}")
                     else:
                         row_data.append("")
 
@@ -192,12 +192,12 @@ def dump_test_results(
                 )
                 if "event_header" in test.lower() and test_info[1]:
                     row_data.append(
-                        "bad_fields: {}".format(x for x in bad_event_header_fields)
+                        f"bad_fields: {[x for x in bad_event_header_fields]}"
                     )
                 elif "event_footer" in test.lower():
                     bad_event_footer_fields = list(bad_event_footer_fields)
                     row_data.append(
-                        "bad_fields: {}".format([x for x in bad_event_footer_fields])
+                        f"bad_fields: {[x for x in bad_event_footer_fields]}"
                     )
                 else:
                     row_data.append("")
@@ -218,9 +218,9 @@ def dump_test_results(
     ## summary of all tests
     ##
     headers = [
-        "{: <40}".format(headers[0]),
-        "{: <20}".format("RESULT SUMMARY"),
-        "{: <40}".format("FAILED TESTS"),
+        f"{headers[0]: <40}",
+        f"{'RESULT SUMMARY': <20}",
+        f"{'FAILED TESTS': <40}",
     ]
     rows = []
     for test_name, test_info in test_summary_data.items():

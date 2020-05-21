@@ -138,9 +138,7 @@ class ModuleData:
 
         if not data_words[0].is_module_header_start():
             raise ValueError(
-                "ModuleData first word (={}) is not a module header!".format(
-                    data_words[0]
-                )
+                f"ModuleData first word (={data_words[0]}) is not a module header!"
             )
 
         self._data_words = data_words
@@ -216,7 +214,7 @@ class ModuleData:
         for hw in header_words:
             fieldvals = [hex(self.header_field(x)) for x in hw]
             fieldvals = zip(hw, fieldvals)
-            out.append(", ".join(["{}:{}".format(x, y) for x, y in list(fieldvals)]))
+            out.append(", ".join([f"{x}:{y}" for x, y in list(fieldvals)]))
         return out
 
     def footer_description_strings(self):
@@ -229,7 +227,7 @@ class ModuleData:
             if self._footer is None:
                 fieldvals = [hex(0xDEADBEEF) for _ in fieldvals]
             fieldvals = zip(fw, fieldvals)
-            out.append(", ".join(["{}:{}".format(x, y) for x, y in list(fieldvals)]))
+            out.append(", ".join([f"{x}:{y}" for x, y in list(fieldvals)]))
         return out
 
     #    def routing_dest(self) :
@@ -288,7 +286,6 @@ class ModuleData:
 
         h0 = DataFormat.BitFieldWordValue(DataFormat.M_HDR, value=words[0].contents)
         h1 = DataFormat.BitFieldWordValue(DataFormat.M_HDR2)
-        # print("MODULE H0 = {}".format(hex(h0.value)))
         self._header = [h0, h1]
 
         data_type = self._header[0].getField("TYPE")
@@ -615,9 +612,7 @@ class DataEvent:
             word.write(ofd, endian)
 
     def __str__(self):
-        return "DataEvent (L0ID={}, N-words={}, N-modules={})".format(
-            hex(self.l0id), len(self.words), self.n_modules
-        )
+        return f"DataEvent (L0ID={hex(self.l0id)}, N-words={len(self.words)}, N-modules={self.n_modules})"
 
     def __repr__(self):
         return self.__str__()
@@ -649,7 +644,7 @@ class DataEvent:
         for hw in header_words:
             fieldvals = [hex(self.header_field(x)) for x in hw]
             fieldvals = zip(hw, fieldvals)
-            out.append(", ".join(["{}:{}".format(x, y) for x, y in list(fieldvals)]))
+            out.append(", ".join([f"{x}:{y}" for x, y in list(fieldvals)]))
         return out
 
     def footer_description_strings(self):
@@ -659,7 +654,7 @@ class DataEvent:
         for fw in footer_words:
             fieldvals = [hex(self.footer_field(x)) for x in fw]
             fieldvals = zip(fw, fieldvals)
-            out.append(", ".join(["{}:{}".format(x, y) for x, y in list(fieldvals)]))
+            out.append(", ".join([f"{x}:{y}" for x, y in list(fieldvals)]))
         return out
 
 
@@ -715,9 +710,7 @@ def timing_file_from_data_filename(data_file):
 
     ok = timing_file.exists() and timing_file.is_file()
     if not ok:
-        raise Exception(
-            "ERROR Timing information file (={}) not found".format(timing_file)
-        )
+        raise Exception(f"ERROR Timing information file (={timing_file}) not found")
     return str(timing_file)
 
 
@@ -736,9 +729,7 @@ def timing_info_gen(filename):
                     )
                     if data_match != time_match:
                         raise Exception(
-                            "ERROR Timing file (={}) does not match with expected corresponding data file (={})".format(
-                                timing_filename, corresponding_data_file
-                            )
+                            f"ERROR Timing file (={timing_filename}) does not match with expected corresponding data file (={corresponding_data_file})"
                         )
                 if "time_unit" in line.lower():
                     time_unit = line.strip().split(":")[-1]
@@ -752,7 +743,7 @@ def file_event_generator(filename, endian="little", n_to_load=-1):
     path = Path(filename)
     ok = path.exists() and path.is_file()
     if not ok:
-        raise Exception("Cannot find provided file {}".format(filename))
+        raise Exception(f"Cannot find provided file {filename}")
 
     at_event_end = False
     n_events_loaded = 0
@@ -762,7 +753,7 @@ def file_event_generator(filename, endian="little", n_to_load=-1):
         for _ in range(0, filesize, 9):
             data = ifile.read(9)
             if len(data) != 9:
-                raise Exception("Malformed event data file {}".format(filename))
+                raise Exception(f"Malformed event data file {filename}")
 
             fmt = {"little": "<?Q", "big": ">?Q"}[endian]
             is_metadata, contents = struct.unpack(fmt, data)
@@ -795,7 +786,7 @@ def load_events_from_file(
     path = Path(filename)
     ok = path.exists() and path.is_file()
     if not ok:
-        raise Exception("Cannot find provided file {}".format(filename))
+        raise Exception(f"Cannot find provided file {filename}")
 
     if n_to_load > 0 and l0id_request > 0:
         raise Exception(
@@ -816,7 +807,7 @@ def load_events_from_file(
         for _ in range(0, filesize, 9):
             data = ifile.read(9)
             if len(data) != 9:
-                raise Exception("Malformed event data file {}".format(filename))
+                raise Exception(f"Malformed event data file {filename}")
 
             fmt = {"little": "<?Q", "big": ">?Q"}[endian]
             is_metadata, contents = struct.unpack(fmt, data)
@@ -830,9 +821,7 @@ def load_events_from_file(
                     word.set_timestamp(next(timing_gen), units=time_units)
                 except StopIteration:
                     raise Exception(
-                        "ERROR Timing file for loaded data file (={}) has incorrect number of words in it!".format(
-                            filename
-                        )
+                        f"ERROR Timing file for loaded data file (={filename}) has incorrect number of words in it!"
                     )
 
             if word.is_event_header_start():

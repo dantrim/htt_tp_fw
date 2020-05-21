@@ -208,7 +208,7 @@ def dump_evt_file(
                         b_string = word_width * sep
                         d_string = f"[MODULE {n_events_loaded:03}/{n_module_count:03}]"
                         boundary_string += f"{b_string} {d_string}"
-                        n_module_count = 1
+                        n_module_count += 1
                     elif data_word.is_event_footer_start():
                         sep = "-"
                         b_string = word_width * sep

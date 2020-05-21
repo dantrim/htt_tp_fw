@@ -17,39 +17,31 @@ def main():
     pwd = Path(os.getcwd())
     dir_above, found, dir_below = str(pwd).partition("tp-fw/tb")
     if not found:
-        print(
-            "Could not find tp-fw/tb directory in current working dir (={})".format(
-                str(pwd)
-            )
-        )
+        print(f"Could not find tp-fw/tb directory in current working dir (={str(pwd)})")
         sys.exit(1)
 
     env_dir = Path(dir_above + found) / "env"
     if not env_dir.is_dir():
-        print('Could not find expected "env" directory (={})'.format(env_dir))
+        print(f'Could not find expected "env" directory (={env_dir})')
         sys.exit(1)
 
     cocotb_cfg = env_dir / "bin" / "cocotb-config"
     if not cocotb_cfg.is_file():
-        print("Could not find cocotb-config (={})".format(cocotb_cfg))
+        print(f"Could not find cocotb-config (={cocotb_cfg})")
         sys.exit(1)
 
     res = subprocess.run(
         [cocotb_cfg, "--makefiles"], stdout=subprocess.PIPE, encoding="utf-8"
     )
     if res.returncode:
-        print(
-            "Unable to obtain makefile directory from cocotb-config: {}".format(
-                res.stdout
-            )
-        )
+        print(f"Unable to obtain makefile directory from cocotb-config: {res.stdout}")
         sys.exit(1)
 
     makefile_dir = str(res.stdout).strip()
 
     questa_makefile = Path(makefile_dir) / "simulators" / "Makefile.questa"
     if not questa_makefile.is_file():
-        print("Unable to locate QuestaSim makefile (={})".format(questa_makefile))
+        print(f"Unable to locate QuestaSim makefile (={questa_makefile})")
         sys.exit(1)
 
     default_makefile_dir = pwd / "default_makefiles"
@@ -57,27 +49,19 @@ def main():
     if default_makefile_dir.is_dir():
         default_questa_makefile = default_makefile_dir / "Makefile.questa"
         if default_questa_makefile.is_file():
-            print(
-                "Using default QuestaSim makefile found in {}".format(
-                    default_makefile_dir
-                )
-            )
+            print(f"Using default QuestaSim makefile found in {default_makefile_dir}")
     else:
         # copy cocotb one
         mkfile_name = str(questa_makefile).split("/")[-1]
-        shutil.copy(questa_makefile, "default_{}".format(mkfile_name))
+        shutil.copy(questa_makefile, f"default_{mkfile_name}")
         print(
-            'Created default QuestaSim makefile (="{}") in current directory'.format(
-                mkfile_name
-            )
+            f"Created default QuestaSim makefile (={mkfile_name}) in current directory"
         )
 
         default_questa_makefile = pwd / mkfile_name
         if default_questa_makefile.is_file():
             print(
-                "Using default QuestaSim makefile found in {}".format(
-                    default_questa_makefile
-                )
+                f"Using default QuestaSim makefile found in {default_questa_makefile}"
             )
 
     if not default_questa_makefile:
@@ -87,9 +71,7 @@ def main():
     previous_mkfile_name = "prev_Makefile.questa"
     shutil.copy(questa_makefile, previous_mkfile_name)
     print(
-        "Previous QuestaSim makefile stored at {}".format(
-            os.path.abspath(previous_mkfile_name)
-        )
+        f"Previous QuestaSim makefile stored at {os.path.abspath(previous_mkfile_name)}"
     )
 
     add_lines = [
@@ -109,10 +91,10 @@ def main():
                     waves_cmd_line_no = iline
                 if iline == waves_cmd_line_no + 1 and waves_cmd_line_no > 0:
                     for new_line in add_lines:
-                        new_line = '@echo "{}" >> $@'.format(new_line)
-                        ofile.write("\t{}\n".format(new_line))
-                ofile.write("{}".format(line))
-    print("Updated QuestSim Makefile: {}".format(questa_makefile))
+                        new_line = f'@echo "{new_line}" >> $@'
+                        ofile.write(f"\t{new_line}\n")
+                ofile.write(f"{line}")
+    print(f"Updated QuestaSim Makefile: {questa_makefile}")
 
 
 if __name__ == "__main__":

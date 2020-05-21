@@ -6,8 +6,6 @@ from cocotb.drivers import Driver
 from cocotb.monitors import Monitor
 from cocotb.triggers import RisingEdge, Event, ReadOnly, NextTimeStep, Timer
 
-# import tb_utils
-# from tp_tb.utils import utils
 import tp_tb.utils as utils
 
 
@@ -40,9 +38,7 @@ class FifoWrapper:
                 out_path = Path(out_dir)
             if not out_path.is_dir():
                 cocotb.log.info(
-                    'WARNING Requested output directory (={}) not valid, setting to "./"'.format(
-                        out_dir
-                    )
+                    f'WARNING Requested output directory (={out_dir}) not valid, setting to "./"'
                 )
                 out_path = Path("./")
 
@@ -50,17 +46,15 @@ class FifoWrapper:
             io_name = io_enum.name
             name_num = io_name.split("_")[-1]
             if name_num.isdigit():
-                name_num = "{:02}".format(int(name_num))
+                name_num = f"{int(name_num):02}"
                 io_name = "".join(io_name.split("_")[:-1])
                 io_name += name_num
             else:
                 io_name = io_name.replace("_", "")
             self._output_directory = str(out_path)
-            out_path = out_path / "{}_{}_{:02}_{}.evt".format(
-                str(type(self).__name__.lower()),
-                self.block_name,
-                int(io_enum.value),
-                io_name,
+            out_path = (
+                out_path
+                / f"{str(type(self).__name__.lower())}_{self.block_name}_{int(io_enum.value):02}_{io_name}.evt"
             )
             self._output_filename = str(out_path)
 
@@ -114,14 +108,10 @@ class FifoWrapper:
         return self._output_filename
 
     def __str__(self):
-        return "{} {} (port_num={}, active={})".format(
-            type(self).__name__, self.block_name, self.io_port_num, self.is_actice
-        )
+        return f"{type(self).__name__} {self.block_name} (port_num={self.io_port_num}, active={self.is_active})"
 
     def __repr__(self):
-        return "{} {} (port_num={}, active={})".format(
-            type(self).__name__, self.block_name, self.io_port_num, self.is_actice
-        )
+        return self.__str__()
 
     ##
     ## callbacks/methods
@@ -163,9 +153,9 @@ class FifoWrapper:
         if self.write_out_time:
             with open(self._output_filename_time, wfmt) as ofile:
                 if self._first_write:
-                    ofile.write("info_data_file:{}\n".format(self.output_filename))
-                    ofile.write("info_time_unit:{}\n".format("ns"))
-                ofile.write("{}\n".format(time_ns))
+                    ofile.write(f"info_data_file:{self.output_filename}\n")
+                    ofile.write(f"info_time_unit:{'ns'}\n")
+                ofile.write(f"{time_ns}\n")
         self._first_write = False
 
 
