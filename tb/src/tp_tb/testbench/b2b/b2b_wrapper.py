@@ -48,22 +48,10 @@ class Wrapper:
         return self._output_ports
 
     def __str__(self):
-        return 'Wrapper "{}": (IN,OUT)=({},{}) - ({}, {})'.format(
-            self.name,
-            self.n_input_ports,
-            self.n_output_ports,
-            self._io_bitmask()[0].bin,
-            self._io_bitmask()[1].bin,
-        )
+        return f'Wrapper "{self.name}": (IN,OUT)=({self.n_input_ports},{self.n_output_ports}) = ({self._io_bitmask()[0].bin}, {self._io_bitmask()[1].bin})'
 
     def __repr__(self):
-        return 'Wrapper "{}": (IN,OUT)=({},{}) - ({}, {})'.format(
-            self.name,
-            self.n_input_ports,
-            self.n_output_ports,
-            self._io_bitmask()[0].bin,
-            self._io_bitmask()[1].bin,
-        )
+        return f'Wrapper "{self.name}": (IN,OUT)=({self.n_input_ports},{self.n_output_ports}) = ({self._io_bitmask()[0].bin}, {self._io_bitmask()[1].bin})'
 
     def _io_bitmask(self):
 
@@ -129,9 +117,7 @@ class B2BWrapper(Wrapper):
         io_num = IO.value
         if io_num > self.n_input_ports:
             raise ValueError(
-                'Provided input driver "{}" is registered for invalid IO port {}, B2B block only has {} input ports'.format(
-                    driver.name, io_num, self.n_input_ports
-                )
+                f'Provided input driver "{driver.name}" is registered for invalid IO port {io_num}, B2B block only has {self.n_input_ports} input ports'
             )
 
         self._input_ports[io_num][0] = driver
@@ -143,9 +129,7 @@ class B2BWrapper(Wrapper):
         io_num = IO.value
         if io_num > self.n_output_ports:
             raise ValueError(
-                'Provided output monitor "{}" is registered for invalid IO port {}, B2B block only has {} output ports'.format(
-                    monitor.name, io_num, self.n_output_ports
-                )
+                f'Provided output monitor "{monitor.name}" is registered for invalid IO port {io_num}, B2B block only has {self.n_output_ports} output ports'
             )
 
         self._output_ports[io_num][0] = monitor
@@ -171,9 +155,7 @@ class B2BWrapper(Wrapper):
         n_input_files = len(input_testvectors)
         if n_input_files != self.n_input_ports:
             raise ValueError(
-                "Number of input event tables (={}) is not equal to number of B2B input ports (={})".format(
-                    n_input_files, self.n_input_ports
-                )
+                f"Number of input event tables (={n_input_files}) is not equal to number of B2B input ports (={self.n_input_ports})"
             )
 
         hooks = []
@@ -185,9 +167,7 @@ class B2BWrapper(Wrapper):
                 filename=testvector_file, n_to_load=n_to_send, l0id_request=l0id_request
             )
             cocotb.log.info(
-                "Sending {} events to input (port_num, port_name) = ({}, {}) from testvector {}".format(
-                    len(input_events), io.value, io.name, testvector_file
-                )
+                f"Sending {len(input_events)} events to input (port_num, port_name) = ({io.value}, {io.name}) from testvector {testvector_file}"
             )
 
             hook = None
@@ -215,8 +195,7 @@ class B2BWrapper(Wrapper):
     def compare_port_with_expected(self, port_num, expected_events):
 
         fifo, io, is_active = self.output_ports[port_num]
-        # port_str = "(port_num, port_name) = ({}, {})".format(io.value, io.name)
-        port_str = "({}, {})".format(io.value, io.name)
+        port_str = f"({io.value}, {io.name})"
 
         test_n_events = True
         test_l0ids = True
@@ -257,7 +236,6 @@ class B2BWrapper(Wrapper):
         test_l0ids = set(l0ids_expected) == set(l0ids_observed)
 
         if not test_l0ids:
-            # log.error("TEST {} Observed and expected L0IDs are different for {}".format(port_str, port_str))
             exp_set = set(l0ids_expected)
             obs_set = set(l0ids_observed)
 
@@ -276,7 +254,7 @@ class B2BWrapper(Wrapper):
                     l0id_check.append(-1)
 
             header = [
-                "{}TEST ERROR {}{}".format(bcolors.FAIL, port_str, bcolors.ENDC),
+                f"{bcolors.FAIL}TEST ERROR {port_str}{bcolors.ENDC}",
                 "Expected L0IDs not observed",
                 "Observed L0IDs not expected",
             ]
@@ -308,12 +286,9 @@ class B2BWrapper(Wrapper):
         first_expected_l0id_fail = None
         first_observed_l0id_fail = None
         if not test_l0ids_order:
-            # log.info("TEST {} Observed L0IDs appear in different order than expected!".format(port_str))
             first_expected_l0id_fail_idx = l0id_event_fails[0]
             first_expected_l0id_fail = l0ids_expected[first_expected_l0id_fail_idx]
             first_observed_l0id_fail = l0ids_observed[first_expected_l0id_fail_idx]
-            # log.info("TEST {} First out of order L0ID appears at expected event number {}, with Expected L0ID={} and Observed L0ID={}"
-            #            .format(port_str, first_expected_l0id_fail_idx, hex(first_expected_l0id_fail), hex(first_observed_l0id_fail)))
 
         ##
         ## event-by-event checks
@@ -357,18 +332,13 @@ class B2BWrapper(Wrapper):
                 # only print detailed information if there is a failure
                 header_field_names = observed_event.header_field_names()
                 table_header = [
-                    "{}TEST ERROR {}\nL0ID={}{}".format(
-                        bcolors.FAIL, port_str, hex(l0id), bcolors.ENDC
-                    ),
+                    f"{bcolors.FAIL}TEST ERROR {port_str}\nL0ID={hex(l0id)}{bcolors.ENDC}",
                     "HEADER FIELD",
                     "OBSERVED",
                     "EXPECTED",
                     "ERROR",
                 ]
-                err_str = {
-                    True: "PASS",
-                    False: "{}FAIL{}".format(bcolors.FAIL, bcolors.ENDC),
-                }
+                err_str = {True: "PASS", False: f"{bcolors.FAIL}FAIL{bcolors.ENDC}"}
                 data = []
                 for header_row in header_field_names:
                     for field in header_row:
@@ -397,18 +367,13 @@ class B2BWrapper(Wrapper):
                 # only print detailed information if there is a failure
                 footer_field_names = observed_event.footer_field_names()
                 table_header = [
-                    "{}TEST ERROR {}\nL0ID={}{}".format(
-                        bcolors.FAIL, port_str, hex(l0id), bcolors.ENDC
-                    ),
+                    f"{bcolors.FAIL}TEST ERROR {port_str}\nL0ID={hex(l0id)}{bcolors.ENDC}",
                     "FOOTER FIELD",
                     "OBSERVED",
                     "EXPECTED",
                     "ERROR",
                 ]
-                err_str = {
-                    True: "PASS",
-                    False: "{}FAIL{}".format(bcolors.FAIL, bcolors.ENDC),
-                }
+                err_str = {True: "PASS", False: f"{bcolors.FAIL}FAIL{bcolors.ENDC}"}
                 data = []
                 for footer_row in footer_field_names:
                     for field in footer_row:
@@ -464,9 +429,6 @@ class B2BWrapper(Wrapper):
                 n_mod_len_fail = True
                 break
         if n_h or n_f or n_m or n_mod_len_fail:
-            # log.info("{}TEST ERROR{} {} Unexected event header/footer/number of modules:".format(port_str))
-            # log.info("TEST {} Unexpected event headers (failed in {} events), event footers (failed in {} events), number of modules (failed in {} events)"
-            #    .format(port_str, n_h, n_f, n_m))
             n_rows = max([n_h, n_f, n_m])
             for l0id_check in [
                 l0id_header_fails,
@@ -476,7 +438,7 @@ class B2BWrapper(Wrapper):
                 while len(l0id_check) != n_rows:
                     l0id_check.append(-1)
             headers = [
-                "{}TEST ERROR {} {}".format(bcolors.FAIL, port_str, bcolors.ENDC),
+                f"{bcolors.FAIL}TEST ERROR {port_str} {bcolors.ENDC}",
                 "L0ID w/ Occurrences",
                 "Info",
             ]
@@ -496,7 +458,6 @@ class B2BWrapper(Wrapper):
             #                ff = hex(l0id_footer_fails[i]) if l0id_footer_fails[i] >= 0 else ""
             #                mf = hex(l0id_n_module_fails[i]) if l0id_n_module_fails[i] >= 0 else ""
             #                data.append( ["", hf, ff, mf] )
-            # line = "TEST {} {}\t{}\t{}".format(port_str, hf, ff, mf)
             # log.info(line)
 
             data = [
@@ -512,9 +473,7 @@ class B2BWrapper(Wrapper):
                 for l0 in l0ids:
                     event_fails = []
                     for module_num, faildict in l0id_module_len_fails[l0].items():
-                        fail_str = "Module # {:03} (obs: {}, exp: {})".format(
-                            module_num, faildict["observed"], faildict["expected"]
-                        )
+                        fail_str = f"Module # {module_num:03} (obs: {faildict['observed']}, exp: {faildict['expected']})"
                         event_fails.append(fail_str)
                     event_fails = "\n".join(event_fails)
                     info_str[l0] = event_fails
@@ -523,12 +482,10 @@ class B2BWrapper(Wrapper):
                 for il0, l0 in enumerate(l0ids):
                     if l0id_module_len_fails[l0]:
                         if is_first:
-                            data.append(
-                                ["Module Length Errors", l0, "{}".format(info_str[l0])]
-                            )
+                            data.append(["Module Length Errors", l0, f"{info_str[l0]}"])
                             is_first = False
                         else:
-                            data.append(["", l0, "{}".format(info_str[l0])])
+                            data.append(["", l0, f"{info_str[l0]}"])
             else:
                 data.append(["Module Length Errors", "", ""])
             table = columnar(data, headers, no_borders=False)
@@ -538,36 +495,31 @@ class B2BWrapper(Wrapper):
         test_event_footers = n_f == 0
         test_n_modules = n_m == 0
 
-        result_str = {
-            True: "PASS",
-            False: "{}FAIL{}".format(bcolors.FAIL, bcolors.ENDC),
-        }
+        result_str = {True: "PASS", False: f"{bcolors.FAIL}FAIL{bcolors.ENDC}"}
         n_x = 80
         log.info(n_x * "*")
-        table_header = ["TEST SUMMARY {}\nSub-test".format(port_str), "Result", "Notes"]
+        table_header = [f"TEST SUMMARY {port_str}\nSub-test", "Result", "Notes"]
         data = [
             [
                 "Correct Number of Events",
                 result_str[test_n_events],
-                "# events\n(exp., obs.) = ({},{})".format(n_expected, n_observed),
+                f"# events\n(exp., obs.) = ({n_expected},{n_observed})",
             ],
             ["Correct L0IDs received", result_str[test_l0ids], ""],
             [
                 "L0IDs received in correct order",
                 result_str[test_l0ids_order],
-                "First bad L0ID event:\n(exp., obs.)=({},{})".format(
-                    first_expected_l0id_fail, first_observed_l0id_fail
-                ),
+                f"First bad L0ID event:\n(exp., obs.)=({first_expected_l0id_fail},{first_observed_l0id_fail})",
             ],
             [
                 "Event headers correct",
                 result_str[test_event_headers],
-                "Bad event header fields:\n{}".format(", ".join(failed_header_fields)),
+                f"Bad event header fields:\n{', '.join(failed_header_fields)}",
             ],
             [
                 "Event footers correct",
                 result_str[test_event_footers],
-                "Bad event footer fields:\n{}".format(", ".join(failed_footer_fields)),
+                f"Bad event footer fields:\n{', '.join(failed_footer_fields)}",
             ],
             ["Correct # of modules/event", result_str[test_n_modules], ""],
             ["Module lengths correct", result_str[test_n_words_module], ""],
@@ -599,7 +551,7 @@ class B2BWrapper(Wrapper):
         for port_num, exp_events in enumerate(expected_output_events):
 
             fifo, io, is_active = self.output_ports[port_num]
-            port_str = "({}, {})".format(io.value, io.name)
+            port_str = f"({io.value}, {io.name})"
             port_passed = self.compare_port_with_expected(port_num, exp_events)
             if not port_passed:
                 test_passed = False
@@ -614,7 +566,7 @@ class B2BWrapper(Wrapper):
         data.append([10 * "*" for _ in header])
         data.append(
             [
-                "{}FINAL B2B RESULT{}".format(bcolors.OKBLUE, bcolors.ENDC),
+                f"{bcolors.OKBLUE}FINAL B2B RESULT{bcolors.ENDC}",
                 result_str[test_passed],
             ]
         )

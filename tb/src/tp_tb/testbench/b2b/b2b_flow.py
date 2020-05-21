@@ -21,9 +21,7 @@ def event_rate_delay(io_enum, event, pass_through=False):
 
     if type(io_enum) != b2b_utils.B2BIO.Inputs:
         raise TypeError(
-            'Expected type for io_enum is "{}", got "{}"'.format(
-                "b2b_utils.B2BIO.Inputs", type(io_enum)
-            )
+            f'Expected type for io_enum is "b2b_utils.B2BIO.Inputs", bot "{type(io_enum)}"'
         )
 
     if pass_through:

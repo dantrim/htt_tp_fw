@@ -26,7 +26,7 @@ def check_input(args):
         exists = p.exists()
         is_file = p.is_file()
         if not (exists and is_file):
-            raise Exception("ERROR Input file (={}) not found".format(p))
+            raise Exception(f"ERROR Input file(={p}) not found")
 
     ##
     ## l0id
@@ -72,17 +72,13 @@ def check_events_map(events_map, n_events_request=-1, l0id_request=-1):
         if n_events_request > 0 and n_events != n_events_request:
             ok = False
             print(
-                "ERROR Input (={}) does not have requested number of events (={})".format(
-                    filename, n_events_request
-                )
+                f"ERROR Input (={filename}) does not have requested number of events (={n_events_request})"
             )
 
         if l0id_request > 0 and l0id_request not in l0ids:
             ok = False
             print(
-                "ERROR Requested L0ID (={}) is not found in input file (={})".format(
-                    hex(l0id_request), filename
-                )
+                f"ERROR Requested L0ID (={hex(l0id_request)}) is not found in input file (={filename})"
             )
 
     return ok
@@ -93,20 +89,21 @@ def dump_words(filename, endian="little", load_timing_info=False):
     path = Path(filename)
     ok = path.exists() and path.is_file()
     if not ok:
-        raise Exception("Cannot find provided file {}".format(filename))
+        raise Exception(f"Cannot find provided file {filename}")
 
     with open(filename, "rb") as input_file:
         filesize = os.stat(filename).st_size
         for _ in range(0, filesize, 9):
             data = input_file.read(9)
             if len(data) != 9:
-                raise Exception("Malformed event data file {}".format(filename))
+                raise Exception(f"Malformed event data file {filename}")
             fmt = {"little": "<?Q", "big": ">?Q"}[endian]
             is_metadata, contents = struct.unpack(fmt, data)
             word = events.DataWord(contents, is_metadata)
 
             if load_timing_info:
-                print("{: <15} : {}".format("{} {}".format(word.timestamp, "ns"), word))
+                timestamp_str = f"{word.timestamp} ns"
+                print(f"{timestamp_str: <15} : {word}")
             else:
                 print(word)
 
@@ -114,24 +111,26 @@ def dump_words(filename, endian="little", load_timing_info=False):
 def dump_events(filename, event_list, detailed_modules=False, load_timing_info=False):
 
     print(80 * "=")
-    # print("Dumping events from file: {}".format(filename))
 
-    print("{} DUMPING EVENTS {}".format(32 * "=", 32 * "="))
-    print("Input file : {}".format(filename))
-    print("Number of loaded events : {}".format(len(event_list)))
+    pad = 32 * "="
+    print(f"{pad} DUMPING EVENTS {pad}")
+    print(f"Input file : {filename}")
+    print(f"Number of loaded events : {len(event_list)}")
 
     for ievent, event in enumerate(event_list):
 
         word_count = 0
 
-        print("{} NEW EVENT {:03} {}".format(31 * "=", ievent, 31 * "="))
+        pad = 31 * "="
+        print(f"{pad} NEW EVENT {ievent:03} {pad}")
+        pad = 20 * "="
         print(
-            "{} L0ID={}, N_Modules={}, N_Words={} {}".format(
-                20 * "=", hex(event.l0id), event.n_modules, len(event), 20 * "="
-            )
+            "{pad} L0ID={hex(event.l0id)}, N_Modules={event.n_modules}, N_Words={len(event)} {pad}"
         )
-        print("{}".format(77 * "="))
-        print("{} EVENT HEADER {:03} {}".format("-" * 30, ievent, "-" * 30))
+        pad = 77 * "="
+        print(pad)
+        pad = 30 * "-"
+        print(f"{pad} EVENT HEADER {ievent:03} {pad}")
 
         header_desc = event.header_description_strings()
 
@@ -143,14 +142,11 @@ def dump_events(filename, event_list, detailed_modules=False, load_timing_info=F
         ## event header
         ##
         for iheader, header in enumerate(header_desc):
-            word_str = "{: <6} {}".format(word_count, event.header_words[iheader])
+            word_str = "{word_count: <6} {event.header_words[iheader]}"
             if load_timing_info:
-                word_str = "{: <6} {: <15} {}".format(
-                    word_count,
-                    "{} {}".format(event.header_words[iheader].timestamp, time_units),
-                    event.header_words[iheader],
-                )
-            print("{}  HEADER[{:03}] {}".format(word_str, iheader, header))
+                timestamp_str = f"{event.header_words[iheader].timestamp} {time_units}"
+                word_str = f"{word_count: <6} {timestamp_str: <15} {event.header_words[iheader]}"
+            print(f"{word_str}  HEADER[{iheader:03}] {header}")
             word_count += 1
 
         ##
@@ -158,21 +154,19 @@ def dump_events(filename, event_list, detailed_modules=False, load_timing_info=F
         ##
         modules = event.get_modules()
         for imodule, module in enumerate(modules):
+            pad = 15 * "- "
             print(
-                "{} MODULE HEADER {:03}/{:03} - N_Words={} {}".format(
-                    "- " * 15, ievent, imodule, len(module), "- " * 15
-                )
+                f"{pad} MODULE HEADER {ievent:03}/{imodule:03} - N_Words={len(module)} {pad}"
             )
 
             header_desc = module.header_description_strings()
             footer_desc = module.footer_description_strings()
 
             for i, dw in enumerate(module.data_words):
-                word_str = "{: <6} {}".format(word_count, dw)
+                word_str = f"{word_count: <6} {dw}"
                 if load_timing_info:
-                    word_str = "{: <6} {: <15} {}".format(
-                        word_count, "{} {}".format(dw.timestamp, time_units), dw
-                    )
+                    timestamp_str = f"{dw.timestamp} {time_units}"
+                    word_str = f"{word_count: <6} {timestamp_str} {dw}"
                 description = ""
                 if i == 0:
                     description = header_desc[0]
@@ -180,23 +174,23 @@ def dump_events(filename, event_list, detailed_modules=False, load_timing_info=F
                     description = header_desc[1]
                 elif i == (len(module) - 1):
                     description = footer_desc[0]
-                print("{}  MODULE[{:03}] {}".format(word_str, i, description))
+                print(f"{word_str}  MODULE[{i:03}] {description}")
                 word_count += 1
 
         ##
         ## event footer
         ##
         footer_desc = event.footer_description_strings()
-        print("{} EVENT FOOTER {:03} {}".format("- " * 15, ievent, "- " * 15))
+        pad = 15 * "- "
+        print(f"{pad} EVENT FOOTER {ievent:03} {pad}")
         for ifooter, footer in enumerate(footer_desc):
-            word_str = "{: <6} {}".format(word_count, event.footer_words[ifooter])
+            word_str = f"{word_count: <6} {event.footer_words[ifooter]}"
             if load_timing_info:
-                word_str = "{: <6} {: <15} {}".format(
-                    word_count,
-                    "{} {}".format(event.footer_words[ifooter].timestamp, time_units),
-                    event.footer_words[ifooter],
+                timestamp_str = f"{event.footer_words[ifooter].timestamp} {time_units}"
+                word_str = (
+                    f"{word_count} {timestamp_str: <15} {event.footer_words[ifooter]}"
                 )
-            print("{}  FOOTER[{:03}]  {}".format(word_str, ifooter, footer))
+            print(f"{word_str}  FOOTER[{ifooter:03}]  {footer}")
             word_count += 1
 
 

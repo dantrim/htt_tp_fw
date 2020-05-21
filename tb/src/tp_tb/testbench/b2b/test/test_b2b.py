@@ -66,13 +66,8 @@ def initialize_test_state(dut):
     n_io_ports_ok = n_inputs_ok and n_outputs_ok
     if not n_io_ports_ok:
         raise Exception(
-            "ERROR # of B2B io ports differ between CocoTB and RTL simulation: \
-                CocoTB expects (IN,OUT)=({},{})\n\t -> RTL expects (IN,OUT)=({},{})".format(
-                len(b2b_utils.B2BIO.Inputs),
-                len(b2b_utils.B2BIO.Outputs),
-                len(input_fifos),
-                len(output_fifos),
-            )
+            f"ERROR # of B2B io ports differ between CocoTB and RTL simulation: \
+                CocoTB expects (IN,OUT)=({len(b2b_utils.B2BIO.Inputs)},{len(b2b_utils.B2BIO.Outputs)})\n\t -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
         )
 
     initialize_spybuffers(fifos=input_fifos)
@@ -115,20 +110,16 @@ def b2b_test_0(dut):
         b2b_utils.B2BIO.Outputs.AMTP_0
     )  # hardcode for now, later take BOARD_ID from env and set the B2B inst to this value
     board_id = int(dut.board2board_switching_inst.BOARD_ID)
-    dut._log.info("Instantiating B2B block with BOARD_ID = {}".format(board_id))
+    dut._log.info(f"Instantiating B2B block with BOARD_ID = {board_id}")
     this_tp = None
     for io in b2b_utils.B2BIO.Outputs:
         if int(io.value) == board_id:
             this_tp = io
             break
     if not this_tp:
-        raise ValueError(
-            "Unable to find associated IO for B2B BOARD_ID={}".format(board_id)
-        )
+        raise ValueError(f"Unable to find associated IO for B2B BOARD_ID={board_id}")
     dut._log.info(
-        "Setting test IO with base (port_name, port_num) = ({}, {})".format(
-            this_tp.name, this_tp.value
-        )
+        f"Setting test IO with base (port_name, port_num) = ({this_tp.name}, {this_tp.value})"
     )
 
     ##
@@ -200,9 +191,7 @@ def b2b_test_0(dut):
     )
     if not send_finished_signal:
         raise cocotb.result.TestFailure(
-            "ERROR Event sending timed out! Number of expected inputs with events = {}".format(
-                len(send_finished_signal)
-            )
+            f"ERROR Event sending timed out! Number of expected inputs with events = {len(send_finished_signal)}"
         )
     yield Combine(*send_finished_signal)
     dut._log.info("Sending finished!")
@@ -228,9 +217,7 @@ def b2b_test_0(dut):
         words = monitor.observed_words
         recvd_events = events.load_events(words, "little")
         cocotb.log.info(
-            "Output for {} (output port num {}) received {} events".format(
-                io.name, io.value, len(recvd_events)
-            )
+            f"Output for {io.name} (output port num {io.value}) received {len(recvd_events)} events"
         )
 
         ##
@@ -245,9 +232,9 @@ def b2b_test_0(dut):
             recvd_events, expected_output_events[io.value], verbose=False
         )
         result_summary = result_handler.result_summary_dict(
-            "B2B_Output_{:02}".format(io.value),
+            f"B2B_Output_{io.value:02}",
             str(output_testvector_files[io.value]),
-            test_name="TEST_B2B_SRC{:02}_DEST{:02}".format(this_tp.value, io.value),
+            test_name=f"TEST_B2B_SRC{this_tp.value:02}_DEST{io.value:02}",
             test_results=test_results,
         )
         all_tests_passed = (
@@ -255,11 +242,12 @@ def b2b_test_0(dut):
         )
         all_test_results.append(result_summary)
 
-        output_json_name = "test_results_summary_B2B_src{}_dest{}.json".format(
-            "{}{:02}".format(
-                this_tp.name.split("_")[0], int(this_tp.name.split("_")[1])
-            ),
-            "{}{:02}".format(io.name.split("_")[0], int(io.name.split("_")[1])),
+        this_tp_name = (
+            f"{this_tp.name.split('_')[0]}{int(this_tp.name.split('_')[1]):02}"
+        )
+        out_io_name = f"{io.name.split('_')[0]}{int(io.name.split('_')[1]):02}"
+        output_json_name = (
+            f"test_results_summary_B2B_src{this_tp_name}_dest{out_io_name}.json"
         )
         with open(output_json_name, "w", encoding="utf-8") as f:
             json.dump(result_summary, f, ensure_ascii=False, indent=4)

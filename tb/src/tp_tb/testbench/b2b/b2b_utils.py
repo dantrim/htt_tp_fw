@@ -53,21 +53,19 @@ def testvec_dir_from_env():
 def get_testvector_files(base_tp, testvec_dir, which):
 
     if type(base_tp) != B2BIO.Outputs:
-        raise Exception("ERROR base_tp must be of type {}".format(type(B2BIO.Outputs)))
+        raise Exception(f"ERROR base_tp must be of type {type(B2BIO.Outputs)}")
 
     tdir = Path(str(testvec_dir))
     ok = tdir.exists() and tdir.is_dir()
     if not ok:
         raise Exception(
-            "ERROR Provided testvector directory (={}) not found".format(
-                str(testvec_dir)
-            )
+            f"ERROR Provided testvector directory (={str(testvec_dir)}) not found"
         )
 
     file_fmt = {"input": "BoardToBoardInput_", "output": "TPtoSync_src"}[which.lower()]
 
     file_fmt += B2BIO.simplename(base_tp)
-    testvec_files = list(tdir.glob("{}_*".format(file_fmt)))
+    testvec_files = list(tdir.glob(f"{file_fmt}_*"))
 
     io_enum = {"input": B2BIO.Inputs, "output": B2BIO.Outputs}[which.lower()]
 
