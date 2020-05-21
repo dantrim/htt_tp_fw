@@ -3,6 +3,7 @@ import os
 import click
 
 from ..utils import test_config
+from ..utils import simulator_support
 from ..testbench import defined_testbenches
 
 
@@ -22,7 +23,16 @@ def run(config):
     config_data, err = test_config.config_from_file(config)
     if err:
         print(f"Cannot run test: {err}")
-        return
+        sys.exit(1)
+
+    ##
+    ## update the makefile
+    ##
+    updated_ok, err = simulator_support.update_questa_makefile()
+    if not updated_ok:
+        print(
+            f"WARNING Could not update QuestaSim makefile used by CocoTB, will use default:\n -> {err}"
+        )
 
     run_config = config_data["run_config"]
     test_name = config_data["test_name"]
@@ -58,6 +68,7 @@ def run(config):
     import subprocess
 
     subprocess.call(cmd, shell=True)
+    sys.exit(0)
 
 
 @cli.command()

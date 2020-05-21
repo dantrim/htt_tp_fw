@@ -7,6 +7,7 @@ from pathlib import Path
 from ..utils import tb_diff
 from ..utils import tb_dump
 from ..utils import result_handler
+from ..utils import simulator_support
 
 
 def int_base_convert(value):
@@ -258,3 +259,21 @@ def diff(inputs, n_events, endian, l0id, verbose, table, event_detail):
     )
 
     sys.exit(int(not diff))
+
+
+@cli.command()
+@click.option("-v", "--verbose", is_flag=True, help="Print out detailed reporting")
+def update_makefile(verbose):
+    """
+    Update the QuestaSim makefile used by CocoTB to dump all signals (external AND internal)
+    to output waveform file.
+    """
+
+    updated_ok, err = simulator_support.update_questa_makefile(verbose=verbose)
+    if not updated_ok:
+        if verbose and err:
+            print(f"Makefile update: FAIL\n{err}")
+        sys.exit(1)
+    if verbose:
+        print("Makefile updated: SUCCESS")
+    sys.exit(0)
