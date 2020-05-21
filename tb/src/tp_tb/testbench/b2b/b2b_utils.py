@@ -44,9 +44,9 @@ class B2BIO:
 
 def testvec_dir_from_env():
 
-    testvecdir = os.environ.get("TESTVECDIR")
+    testvecdir = os.environ.get("TESTVECTOR_DIR")
     if not testvecdir:
-        raise Exception('ERROR Environtment "TESTVECDIR" is empty')
+        raise Exception('ERROR Environtment "TESTVECTOR_DIR" is empty')
     return testvecdir
 
 

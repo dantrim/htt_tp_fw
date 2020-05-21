@@ -14,6 +14,8 @@
        {
            "output_directory_name" : "b2b"
            ,"test_location" : "src/tp_tb/testbench/b2b/test"
+           ,"testvector_dir" : "/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/"
+           ,"components_lib_dir" : "/home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1/"
        }
     }
 }

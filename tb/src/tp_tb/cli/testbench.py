@@ -59,7 +59,12 @@ def run(config):
 
     makefile = "Makefile"
     sim_build_out = f"{relative_output_path}/test_output/{output_dir_name}"
-    cmd = f"SIM_BUILD={sim_build_out} TESTBENCH_TOPLEVEL=TopLevel_{test_name} TESTBENCH_TEST_MODULE=test_{test_name} WAVES=1 make -f {makefile}"
+    cmd = f"SIM_BUILD={sim_build_out} TESTBENCH_TOPLEVEL=TopLevel_{test_name} TESTBENCH_TEST_MODULE=test_{test_name}"  # WAVES=1 make -f {makefile}"
+    for rc, rc_val in run_config.items():
+        if rc in ["output_directory", "test_location"]:
+            continue
+        cmd += f" {rc.upper()}={rc_val} "
+    cmd = f"{cmd} WAVES=1 make -f {makefile}"
     cwd = os.getcwd()
     print(80 * "*")
     print(f"Beginning test: {test_name}")

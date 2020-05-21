@@ -14,9 +14,11 @@
             "type": "object",
             "properties": {
                 "output_directory_name" : { "type": "string" },
-                "test_location" : { "type" : "string" }
+                "test_location" : { "type" : "string" },
+                "testvector_dir" : { "type" : "string" },
+                "components_lib_dir" : { "type" : "string" }
             },
-            "required": ["output_directory_name", "test_location"]
+            "required": ["output_directory_name", "test_location", "testvector_dir", "components_lib_dir"]
         }
     },
     "type": "object",

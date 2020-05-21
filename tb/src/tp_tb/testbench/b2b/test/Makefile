@@ -1,21 +1,36 @@
+
+##############################################################################
+#
+# THE USER MUST NOT EDIT THESE LINES
+#
+##############################################################################
+
+$(info *** SIM_BUILD=$(SIM_BUILD))
+$(info *** TESTBENCH_TOPLEVEL=$(TESTBENCH_TOPLEVEL))
+$(info *** TESTBENCH_TEST_MODULE=$(TESTBENCH_TEST_MODULE))
+$(info *** COMPONENTS_LIB_DIR=$(COMPONENTS_LIB_DIR))
+$(info *** TESTVECTOR_DIR=$(TESTVECTOR_DIR))
+
+##############################################################################
+#
+# BELOW HERE THE USER CAN EDIT THE LINES
+#
+##############################################################################
+
 # Default simulator; prefer QUESTA if not overridden.
 SIM ?= questa
-COMPLIB_DIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1
-export TESTVECDIR=/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/
 
 # Location of sources (and spy buffer sources).
-#SRCDIR = $(PWD)/../../../../src
 SRCDIR = $(PWD)/../../../../../../src
 SBDIR = $(SRCDIR)/SpyBuffer
-#B2BDIR= $(SRCDIR)/board2board_switching
-B2BDIR = /home/dantrim/work/tdaq-htt-firmware/priya_stuff/tp-fw/src/board2board_switching
+B2BDIR= $(SRCDIR)/board2board_switching
 
-# Toplevel (RTL) and module (Python) for tests.
-#COCOTB_RESULTS_FILE=$(PWD)/results.xml
-#TESTBENCH_TOPLEVEL ?= TopLevel_b2b
-#TESTBENCH_TEST_MODULE ?= test_b2b
+# CocoTB configuration of our TopLevel and associated CocoTB test file
+TOPLEVEL_LANG=verilog
+TOPLEVEL=$(TESTBENCH_TOPLEVEL)
+MODULE=$(TESTBENCH_TEST_MODULE)
 
-# All Verilog source files.
+# Verilog source files
 VERILOG_SOURCES = \
     $(PWD)/$(TESTBENCH_TOPLEVEL).v \
     $(SBDIR)/SpyBuffer.v \
@@ -35,19 +50,20 @@ VERILOG_SOURCES = \
     $(B2BDIR)/rtl/cluster_sync_engine.sv \
     $(B2BDIR)/rtl/board2board_switching.sv
 
-# Any VHDL sources.
+# HDL sources files
 VHDL_SOURCES =
-TOPLEVEL=$(TESTBENCH_TOPLEVEL)
-TOPLEVEL_LANG=verilog
-MODULE=$(TESTBENCH_TEST_MODULE)
 
 
-# We need to set the include path appropriately!
-EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip -L $(COMPLIB_DIR)/unisims_ver -L $(COMPLIB_DIR)/unisim
+# Set the include path and compilation flags for CocoTB
+EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip -L $(COMPONENTS_LIB_DIR)/unisims_ver -L $(COMPONENTS_LIB_DIR)/unisim
 VSIM_ARGS  += glbl -debugDB -voptargs="+acc"
-HTT_TEST=1
 
-# Boilerplate includes.
+##############################################################################
+#
+# THE USER MUST NOT EDIT THE LINES BELOW
+#
+##############################################################################
+
+# Necessary includes for CocoTB
 include $(shell cocotb-config --makefiles)/Makefile.inc
 include $(shell cocotb-config --makefiles)/Makefile.sim
-
