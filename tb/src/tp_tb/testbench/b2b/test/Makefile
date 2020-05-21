@@ -1,4 +1,3 @@
-
 ##############################################################################
 #
 # THE USER MUST NOT EDIT THESE LINES
@@ -53,7 +52,6 @@ VERILOG_SOURCES = \
 # HDL sources files
 VHDL_SOURCES =
 
-
 # Set the include path and compilation flags for CocoTB
 EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(B2BDIR)/include +incdir+$(B2BDIR)/ip -L $(COMPONENTS_LIB_DIR)/unisims_ver -L $(COMPONENTS_LIB_DIR)/unisim
 VSIM_ARGS  += glbl -debugDB -voptargs="+acc"
@@ -63,7 +61,5 @@ VSIM_ARGS  += glbl -debugDB -voptargs="+acc"
 # THE USER MUST NOT EDIT THE LINES BELOW
 #
 ##############################################################################
-
-# Necessary includes for CocoTB
 include $(shell cocotb-config --makefiles)/Makefile.inc
 include $(shell cocotb-config --makefiles)/Makefile.sim
