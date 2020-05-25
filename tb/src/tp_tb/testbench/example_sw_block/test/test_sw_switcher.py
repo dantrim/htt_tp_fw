@@ -6,10 +6,10 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge, Combine, Timer
 from cocotb.result import TestFailure, TestSuccess
 
-from tp_tb.testbench.example_sw_block import sw_block_utils
+from tp_tb.testbench.example_sw_block import sw_switcher_utils
 
 # import tp_tb.testbench.b2b.b2b_wrapper as wrapper
-import tp_tb.testbench.example_sw_block.sw_blocK_wrapper as wrapper
+import tp_tb.testbench.example_sw_block.sw_switcher_wrapper as wrapper
 import tp_tb.testbench.example_sw_block.sw_switcher_block as sw_switcher_block
 
 from tp_tb.utils import test_config
@@ -39,15 +39,15 @@ def initialize_test_state(dut):
     ## initialize the FIFOs
     ##
     input_fifos = [x.spybuffer for x in dut.input_spybuffers]
-    n_inputs_ok = len(input_fifos) == len(sw_block_utils.SWBlockIO.Inputs)
+    n_inputs_ok = len(input_fifos) == len(sw_switcher_utils.SWSwitcherIO.Inputs)
 
     output_fifos = [x.spybuffer for x in dut.output_spybuffers]
-    n_outputs_ok = len(output_fifos) == len(sw_block_utils.SWBlockIO.Outputs)
+    n_outputs_ok = len(output_fifos) == len(sw_switcher_utils.SWSwitcherIO.Outputs)
 
     n_io_ports_ok = n_inputs_ok and n_outputs_ok
     if not n_io_ports_ok:
         raise Exception(
-            "ERROR # of SWBlock IO ports differ between CocoTB and RTL simulation"
+            f"ERROR # of SWSwitcher io ports differ between CocoTB and RTL simulation:\n -> CocoTB expects (IN,OUT)=({len(sw_switcher_utils.SWSwitcherIO.Inputs)},{len(sw_switcher_utils.SWSwitcherIO.Outputs)})\n -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
         )
     initialize_spybuffers(input_fifos)
     initialize_spybuffers(output_fifos)
@@ -83,7 +83,7 @@ def sw_block_test(dut):
     ## create the software DUT
     ##
     switcher_block = sw_switcher_block.SWSwitcherBlock(dut.clock, "SWSwitcherBlock")
-    for i, io in enumerate(sw_block_utils.SWBlockIO.Inputs):
+    for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Inputs):
         switcher_block.add_fifo(
             dut.input_spybuffers[i].spybuffer,
             dut.clock,
@@ -91,7 +91,7 @@ def sw_block_test(dut):
             io,
             direction="in",
         )
-    for i, io in enumerate(sw_block_utils.SWBlockIO.Outputs):
+    for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Outputs):
         switcher_block.add_fifo(
             dut.output_spybuffers[i].spybuffer,
             dut.clock,
@@ -123,31 +123,35 @@ def sw_block_test(dut):
     ## get the testvectors
     ##
     testvector_dir = "/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/"
-    input_testvector_files = sw_block_utils.get_testvector_files(
+    input_testvector_files = sw_switcher_utils.get_testvector_files(
         testvector_dir, "input"
     )
-    # output_testvector_files = sw_block_utils.get_testvector_files(
+    # output_testvector_files = sw_switcher_utils.get_testvector_files(
     #    testvector_dir, "output"
     # )[::-1]
 
     ##
     ## initialize the (software-based) block wrapper
     ##
-    swblock_wrapper = wrapper.SWBlockWrapper(dut.clock, name="SWBlockWrapper")
-    for i, io in enumerate(sw_block_utils.SWBlockIO.Inputs):
+    swblock_wrapper = wrapper.SWSwitcherWrapper(dut.clock, name="SWSwitcherWrapper")
+    for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Inputs):
         port_num = io.value
         driver = FifoDriver(
             dut.input_spybuffers[port_num].spybuffer,
             dut.clock,
-            "SWBlock",
+            "SWSwitcher",
             io,
             write_out=True,
         )
         swblock_wrapper.add_input_driver(driver, io)
 
-    for i, io in enumerate(sw_block_utils.SWBlockIO.Outputs):
+    for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Outputs):
         monitor = FifoMonitor(
-            dut.output_spybufers[i].spybuffer, dut.clock, "SWBlock", io, write_out=True
+            dut.output_spybuffers[i].spybuffer,
+            dut.clock,
+            "SWSwitcher",
+            io,
+            write_out=True,
         )
         swblock_wrapper.add_output_monitor(monitor, io, active=True)
     swblock_wrapper.sort_ports()

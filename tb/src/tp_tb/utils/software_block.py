@@ -1,6 +1,6 @@
 import cocotb
 
-from .utils import fifo_wrapper
+from . import fifo_wrapper
 
 
 class SoftwareBlock:
@@ -31,7 +31,7 @@ class SoftwareBlock:
     def name(self):
         return self._name
 
-    def add_fifo(self, fifo_block, clock, name, io_enum, callback, direction="in"):
+    def add_fifo(self, fifo_block, clock, name, io_enum, direction="in"):
 
         if direction.lower() == "in":
             callback = self.input_callbacks[io_enum.value]

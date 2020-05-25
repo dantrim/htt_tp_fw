@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-module TopLevel_sw_block #(
+module TopLevel_sw_switcher #(
     parameter SIZE = 65,
     parameter DATA_WIDTH = 65,
     parameter FIFO_DEPTH = 6,
@@ -30,7 +30,7 @@ module TopLevel_sw_block #(
                     .rclock(clock),
                     .wclock(clock),
                     .rreset(reset_n),
-                    .wreset(reset_n),
+                    .wreset(reset_n)
                 );
             end
     endgenerate
@@ -48,7 +48,7 @@ module TopLevel_sw_block #(
                     .rclock(clock),
                     .wclock(clock),
                     .rreset(reset_n),
-                    .wreset(reset_n),
+                    .wreset(reset_n)
                 );
             end
     endgenerate
