@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 
 import cocotb
 from cocotb.clock import Clock
@@ -8,7 +9,6 @@ from cocotb.result import TestFailure, TestSuccess
 
 from tp_tb.testbench.example_sw_block import sw_switcher_utils
 
-# import tp_tb.testbench.b2b.b2b_wrapper as wrapper
 import tp_tb.testbench.example_sw_block.sw_switcher_wrapper as wrapper
 import tp_tb.testbench.example_sw_block.sw_switcher_block as sw_switcher_block
 
@@ -126,9 +126,9 @@ def sw_block_test(dut):
     input_testvector_files = sw_switcher_utils.get_testvector_files(
         testvector_dir, "input"
     )
-    # output_testvector_files = sw_switcher_utils.get_testvector_files(
-    #    testvector_dir, "output"
-    # )[::-1]
+    output_testvector_files = sw_switcher_utils.get_testvector_files(
+        testvector_dir, "output"
+    )[::-1]
 
     ##
     ## initialize the (software-based) block wrapper
@@ -168,6 +168,53 @@ def sw_block_test(dut):
     yield Combine(*send_finished_signal)
     dut._log.info("Sending finished!")
 
-    timer = Timer(20, "us")
+    timer = Timer(500, "us")
     dut._log.info("Going to wait 20 microseconds")
     yield timer
+
+    ##
+    ## run switcher test
+    ##
+    expected_output_events = []
+    for port_num, test_vec in enumerate(output_testvector_files):
+        out_events = events.load_events_from_file(
+            test_vec, n_to_load=num_events_to_process
+        )
+        expected_output_events.append(out_events)
+
+    all_tests_passed = True
+    all_test_results = []
+    for oport in swblock_wrapper.output_ports:
+        monitor, io, _ = oport
+        words = monitor.observed_words
+        recvd_events = events.load_events(words, "little")
+        cocotb.log.info(
+            f"Output for {io.name} (output port num {io.value}) received {len(recvd_events)} events"
+        )
+
+        events_equal, test_results = tb_diff.events_are_equal(
+            recvd_events, expected_output_events[io.value], verbose=False
+        )
+        result_summary = result_handler.result_summary_dict(
+            f"SWSwitcher_Output_{io.value:02}",
+            str(output_testvector_files[io.value]),
+            test_name=f"TEST_SWSWITCHER_DEST{io.value:02}",
+            test_results=test_results,
+        )
+
+        all_tests_passed = (
+            all_tests_passed and result_summary["test_results"]["test_success"]
+        )
+        all_test_results.append(result_summary)
+
+        output_json_name = f"test_results_summary_SWSwitcher_dest{io.value:02}.json"
+        with open(output_json_name, "w", encoding="utf-8") as f:
+            json.dump(result_summary, f, ensure_ascii=False, indent=4)
+
+    result_handler.dump_test_results(all_test_results, event_detail=False)
+
+    cocotb_result = {True: cocotb.result.TestSuccess, False: cocotb.result.TestFailure}[
+        all_tests_passed
+    ]
+
+    raise cocotb_result

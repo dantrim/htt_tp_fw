@@ -4,7 +4,7 @@
        "test_name" : "sw_switcher"
        ,"input_args" :
        {
-           "n_events" : 2
+           "n_events" : 5
            ,"event_delays" : true
            ,"clock_period" : 5
            ,"clock_time_unit" : "ns"
