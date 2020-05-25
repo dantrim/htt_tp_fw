@@ -1,0 +1,20 @@
+{
+    "testbench_config" :
+    {
+       "test_name" : "sw_switcher"
+       ,"input_args" :
+       {
+           "n_events" : 2
+           ,"event_delays" : true
+           ,"clock_period" : 5
+           ,"clock_time_unit" : "ns"
+       },
+       "run_config" :
+       {
+           "output_directory_name" : "sw_switcher"
+           ,"test_location" : "src/tp_tb/testbench/example_sw_block/test"
+           ,"testvector_dir" : "/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/"
+           ,"components_lib_dir" : "/home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1/"
+       }
+    }
+}
