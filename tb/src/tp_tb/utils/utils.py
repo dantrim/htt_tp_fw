@@ -78,7 +78,7 @@ def validate_against_schema(instance, schema_type):
 
     schema_file = get_schema_file(schema_type=schema_type)
     if schema_file is None:
-        raise Exception("Could not find schema file of type={schema_type}")
+        raise Exception(f"Could not find schema file of type={schema_type}")
 
     with open(schema_file, "r") as infile:
         schema_data = json.load(infile)
@@ -92,7 +92,14 @@ def validate_against_schema(instance, schema_type):
 
 def allowed_schema_types():
 
-    return ["test_config", "test_results_summary"]
+    all_schema_files = get_schema_files()
+    allowed_types = []
+    for sf in all_schema_files:
+        sf = str(sf).split("/")[-1]
+        sf = sf.replace(".json", "")
+        sf = sf.replace("schema_", "")
+        allowed_types.append(sf)
+    return allowed_types
 
 
 def tp_fw_path():
