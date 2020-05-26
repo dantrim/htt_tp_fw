@@ -11,12 +11,8 @@ class SWSwitcherBlock(software_block.SoftwareBlock):
     def __init__(self, clock, name):
         super().__init__(clock, name)
 
-        self._dummy_delay_0 = 100
-        self._dummy_delay_1 = 0
-        self._dummy_delay_unit_str = "ns"
-
         self._l0id_recvd = []
-        self._event_hook = Event()
+        self._event_hook = Event()  # used to sync up writing to outputs
 
     def input_callback_gen(self, input_num):
         if input_num == 0:
@@ -50,33 +46,38 @@ class SWSwitcherBlock(software_block.SoftwareBlock):
         self._l0id_recvd.append(l0id)
         c = Counter(self._l0id_recvd)
         if c[l0id] >= len(self.output_drivers):
+            self._event_hook.set()
             return True
         elif c[l0id] >= 1:
             return False
-        return None
+        else:
+            self._event_hook.clear()
+            return False
+
+    @cocotb.coroutine
+    def _sync_event_header(self, l0id, output_num=-1, data_word=-1):
+        if l0id and not self.event_is_ready(l0id):
+            yield self._event_hook.wait()
+            self._event_hook.clear()
 
     @cocotb.coroutine
     def _output_port_0_handler(self, transaction):
         data, timestamp = transaction
         driver = self.output_drivers[0]
-        # time = cocotb.utils.get_sim_time(units="ns")
-        # l0id = events.l0id_from_word(events.raw_to_word(data))
-        # event_is_ready = self.event_is_ready(l0id)
-        # if event_is_ready is None :
-        #    self._event_hook.clear()
-        # elif event_is_ready :
-        #    self._event_hook.set()
-        # else :
-        #    print(f"FOO going to wait for EVENT_ HOOK L0iD={hex(l0id)}: {time}")
-        #    yield self._event_hook.wait()
-        #    time = cocotb.utils.get_sim_time(units="ns")
-        #    print(f"FOO DONE WAITING FOR EVENT_HOOK L0ID={hex(l0id)}: {time}")
+        data_word = utils.transaction_to_data_word(data)
+        l0id = utils.l0id_from_data_word(data_word)
 
         ##
         ## mimic some logic taking some time
         ##
         time_delay = Timer(100, "ns")
         yield time_delay
+
+        ##
+        ## sync up the writing of output data between the
+        ## two outputs, based on event-boundaries
+        ##
+        yield self._sync_event_header(l0id)
 
         ##
         ## write the output
@@ -87,19 +88,14 @@ class SWSwitcherBlock(software_block.SoftwareBlock):
     def _output_port_1_handler(self, transaction):
         data, timestamp = transaction
         driver = self.output_drivers[1]
-        # data_word = utils.transaction_to_data_word(data)
-        # l0id = utils.l0id_from_data_word(data_word)
-        # l0id = events.l0id_from_word(events.raw_to_word(int(data)))
-        # event_is_ready = self.event_is_ready(l0id)
-        # if event_is_ready is None :
-        #    self._event_hook.clear()
-        # elif event_is_ready :
-        #    self._event_hook.set()
-        # else :
-        #    print(f"FOO going to wait for EVENT_ HOOK L0iD={hex(l0id)}: {time}")
-        #    yield self._event_hook.wait()
-        #    time = cocotb.utils.get_sim_time(units="ns")
-        #    print(f"FOO DONE WAITING FOR EVENT_HOOK L0ID={hex(l0id)}: {time}")
+        data_word = utils.transaction_to_data_word(data)
+        l0id = utils.l0id_from_data_word(data_word)
+
+        ##
+        ## sync up the writing of output data between the
+        ## two outputs, based on event-boundaries
+        ##
+        yield self._sync_event_header(l0id)
 
         ##
         ## write the output
