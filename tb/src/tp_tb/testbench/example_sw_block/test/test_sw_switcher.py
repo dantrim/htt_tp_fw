@@ -16,11 +16,6 @@ from tp_tb.utils import test_config
 from tp_tb.utils import events, tb_diff, result_handler
 from tp_tb.utils.fifo_wrapper import FifoDriver, FifoMonitor
 
-##
-## CONSTANTS
-##
-TEST_CONFIG_ENV = "COCOTB_TEST_CONFIG_FILE"
-
 
 def initialize_spybuffers(fifos=[]):
 
@@ -73,11 +68,15 @@ def reset(dut):
 def sw_block_test(dut):
 
     ##
+    ## first grab the testbench configuration
+    ##
+    config = test_config.get_config()
+
+    ##
     ## process input arguments for this test
     ##
-    input_args = test_config.input_args_from_config(os.environ.get(TEST_CONFIG_ENV, ""))
+    input_args = config["input_args"]
     num_events_to_process = int(input_args["n_events"])
-    # event_delay = int(input_args["event_delay"])
 
     ##
     ## create the software DUT
@@ -123,7 +122,7 @@ def sw_block_test(dut):
     ##
     ## get the testvectors
     ##
-    testvector_dir = "/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/"
+    testvector_dir = config["run_config"]["testvector_dir"]
     input_testvector_files = sw_switcher_utils.get_testvector_files(
         testvector_dir, "input"
     )

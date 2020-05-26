@@ -14,32 +14,6 @@ from tp_tb.utils import test_config
 from tp_tb.utils import events, tb_diff, result_handler
 from tp_tb.utils.fifo_wrapper import FifoDriver, FifoMonitor
 
-##
-## CONSTANTS
-##
-# CLOCK_PERIOD = 5 # ns
-TEST_CONFIG_ENV = "COCOTB_TEST_CONFIG_FILE"
-
-##
-## communicate "command line arguments"
-##
-test_args = {
-    "N_EVENTS": 2,
-    "EVENT_DELAYS": False,
-    "EVENT_DETAIL": False,
-    "CLOCK_PERIOD": 5,  # ns period
-    "CLOCK_TIME_UNIT": "ns",
-}
-
-
-def check_input_args():
-    global test_args
-    for input_arg, default_value in test_args.items():
-        test_args[input_arg] = os.environ.get(input_arg, default_value)
-
-
-check_input_args()
-
 
 def initialize_spybuffers(fifos=[]):
 
@@ -94,9 +68,14 @@ def reset(dut):
 def b2b_test_0(dut):
 
     ##
+    ## first grab the testbench configuration
+    ##
+    config = test_config.get_config()
+
+    ##
     ## process input arguments for this test
     ##
-    input_args = test_config.input_args_from_config(os.environ.get(TEST_CONFIG_ENV, ""))
+    input_args = config["input_args"]
     num_events_to_process = int(input_args["n_events"])
     event_delays = bool(input_args["event_delays"])
     event_level_detail_in_summary = bool(input_args["event_detail"])
@@ -143,7 +122,7 @@ def b2b_test_0(dut):
     ##
     ## get testvectors
     ##
-    testvector_dir = b2b_utils.testvec_dir_from_env()
+    testvector_dir = config["run_config"]["testvector_dir"]
     input_testvector_files = b2b_utils.get_testvector_files(
         this_tp, testvector_dir, "input"
     )

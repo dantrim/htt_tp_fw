@@ -1,8 +1,32 @@
 import json
+import os
 from pathlib import Path
 
 from .utils import get_schema_file
 from .utils import validate_against_schema
+
+
+TEST_CONFIG_ENV = "COCOTB_TEST_CONFIG_FILE"
+
+
+def get_config(config_filename=""):
+
+    ##
+    ## if nothing passed, try from ENV
+    ##
+    if not config_filename:
+        config_filename = os.environ.get(TEST_CONFIG_ENV, "")
+        if not config_filename:
+            raise Exception(
+                f"ERROR Could not get test configuration file from environment (={TEST_CONFIG_ENV})"
+            )
+    p = Path(config_filename)
+    file_ok = p.exists() and p.is_file()
+    if not file_ok:
+        raise Exception(
+            f"ERROR Test configuration file (={config_filename}) could not be found/opened"
+        )
+    return testbench_config_from_file(config_filename)
 
 
 def testbench_config_from_file(config_file):
