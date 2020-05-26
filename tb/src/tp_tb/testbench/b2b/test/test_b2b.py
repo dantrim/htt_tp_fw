@@ -66,8 +66,7 @@ def initialize_test_state(dut):
     n_io_ports_ok = n_inputs_ok and n_outputs_ok
     if not n_io_ports_ok:
         raise Exception(
-            f"ERROR # of B2B io ports differ between CocoTB and RTL simulation: \
-                CocoTB expects (IN,OUT)=({len(b2b_utils.B2BIO.Inputs)},{len(b2b_utils.B2BIO.Outputs)})\n\t -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
+            f"ERROR # of B2B io ports differ between CocoTB and RTL simulation:\n -> CocoTB expects (IN,OUT)=({len(b2b_utils.B2BIO.Inputs)},{len(b2b_utils.B2BIO.Outputs)})\n -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
         )
 
     initialize_spybuffers(fifos=input_fifos)

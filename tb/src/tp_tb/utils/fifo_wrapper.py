@@ -6,7 +6,7 @@ from cocotb.drivers import Driver
 from cocotb.monitors import Monitor
 from cocotb.triggers import RisingEdge, Event, ReadOnly, NextTimeStep, Timer
 
-import tp_tb.utils as utils
+from tp_tb.utils import utils
 
 
 class FifoWrapper:
@@ -117,33 +117,17 @@ class FifoWrapper:
     ## callbacks/methods
     ##
 
-    def transaction_to_data_word(self, transaction):
-
-        # at this point "transaction" is a 65-bit word with the MSB the meta-flag,
-        # and we want to store it in the same format as our testvector files which
-        # have 9-bytes (72-bits) per data word and with the LSB the byte holding the
-        # meta-data flag
-
-        transaction = int(transaction)
-
-        endian = "little"  # hard-code, not sure this is ever going to change
-        fmt = {"little": "<Q?", "big": ">?Q"}[endian]
-        data = transaction.to_bytes(9, endian)
-        contents, is_metadata = struct.unpack(fmt, data)
-        word = utils.events.DataWord(contents, is_metadata)
-        return word
-
     def store_word(self, transaction_tuple):
 
         transaction, time_ns = transaction_tuple
-        dword = self.transaction_to_data_word(transaction)
+        dword = utils.transaction_to_data_word(transaction)
         dword.set_timestamp(time_ns, units="ns")
         self._observed_words.append(dword)
 
     def write_word(self, transaction_tuple):
 
         transaction, time_ns = transaction_tuple
-        word = self.transaction_to_data_word(transaction)
+        word = utils.transaction_to_data_word(transaction)
         word.set_timestamp(time_ns, units="ns")
         wfmt = {True: "wb", False: "ab"}[self._first_write]
         with open(self.output_filename, wfmt) as ofile:
