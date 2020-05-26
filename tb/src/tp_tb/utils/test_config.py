@@ -54,6 +54,34 @@ def check_config_file(config_file):
     return valid_ok, err
 
 
+def find_toplevel_module_in_file(filename, top_level_name):
+    """
+    Looks for Verilog module named "top_level_name" in provided file "filename".
+
+    Note: This method assumes that the format of the module definition is:
+        ...
+        module <top_level_name> #(
+        ...
+
+        If this fails, we can probably split all text by the module parameter
+        list token "#(" instead as an alternative.
+    """
+
+    top_level_name = top_level_name.replace(".v", "")
+    with open(filename, "r") as infile:
+        for line in infile:
+            line = line.strip()
+            if "module" not in line:
+                continue
+            if "endmodule" in line:
+                continue
+            cols = line.split()
+            module_name = cols[1]
+            if module_name == top_level_name:
+                return True
+    return False
+
+
 def inspect_test_config(config_file):
 
     config = testbench_config_from_file(config_file)
@@ -67,11 +95,11 @@ def inspect_test_config(config_file):
 
     expected_test_module = f"test_{test_name}.py"
     expected_makefile = "Makefile"
-    expected_top_level = f"TopLevel_{test_name}.v"
+    expected_top_level_name = f"TopLevel_{test_name}.v"
 
     expected_test_module = test_location / Path(expected_test_module)
     expected_makefile = test_location / Path(expected_makefile)
-    expected_top_level = test_location / Path(expected_top_level)
+    expected_top_level = test_location / Path(expected_top_level_name)
 
     file_ok = expected_test_module.exists() and expected_test_module.is_file()
     if not file_ok:
@@ -85,6 +113,16 @@ def inspect_test_config(config_file):
             False,
             f"ERROR Expected top level verilog (={str(expected_top_level)}) not found",
         )
+
+    file_ok = find_toplevel_module_in_file(
+        filename=str(expected_top_level), top_level_name=expected_top_level_name
+    )
+    if not file_ok:
+        return (
+            False,
+            f"ERROR Expected top level module (={str(expected_top_level_name).replace('.v','')}) does not appear to be defined in file \"{str(expected_top_level)}\"",
+        )
+
     file_ok = expected_makefile.exists() and expected_makefile.is_file()
     if not file_ok:
         return (
