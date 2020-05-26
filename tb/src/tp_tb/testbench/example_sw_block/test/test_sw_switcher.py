@@ -134,7 +134,7 @@ def sw_block_test(dut):
     ##
     ## initialize the (software-based) block wrapper
     ##
-    swblock_wrapper = wrapper.SWSwitcherWrapper(dut.clock, name="SWSwitcherWrapper")
+    sw_switcher_wrapper = wrapper.SWSwitcherWrapper(dut.clock, name="SWSwitcherWrapper")
     for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Inputs):
         port_num = io.value
         driver = FifoDriver(
@@ -144,7 +144,7 @@ def sw_block_test(dut):
             io,
             write_out=True,
         )
-        swblock_wrapper.add_input_driver(driver, io)
+        sw_switcher_wrapper.add_input_driver(driver, io)
 
     for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Outputs):
         monitor = FifoMonitor(
@@ -154,14 +154,14 @@ def sw_block_test(dut):
             io,
             write_out=True,
         )
-        swblock_wrapper.add_output_monitor(monitor, io, active=True)
-    swblock_wrapper.sort_ports()
+        sw_switcher_wrapper.add_output_monitor(monitor, io, active=True)
+    sw_switcher_wrapper.sort_ports()
 
     ##
     ## send input events
     ##
     dut._log.info("Sending input events")
-    send_finished_signal = swblock_wrapper.send_input_events(
+    send_finished_signal = sw_switcher_wrapper.send_input_events(
         input_testvector_files, n_to_send=num_events_to_process
     )
     if not send_finished_signal:
@@ -185,7 +185,7 @@ def sw_block_test(dut):
 
     all_tests_passed = True
     all_test_results = []
-    for oport in swblock_wrapper.output_ports:
+    for oport in sw_switcher_wrapper.output_ports:
         monitor, io, _ = oport
         words = monitor.observed_words
         recvd_events = events.load_events(words, "little")
