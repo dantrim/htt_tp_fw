@@ -99,6 +99,7 @@ def sw_block_test(dut):
             io,
             direction="out",
         )
+    switcher_block.start()
 
     ##
     ## setup the clock and start it running

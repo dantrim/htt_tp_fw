@@ -2,9 +2,38 @@ import os
 import struct
 from pathlib import Path
 
-from . import utils
+from tp_tb.utils import utils
+
 from DataFormat import DataFormat, BitField  # , BitFieldWordValue
 from DataFormat.DataFormatIO import SubwordUnpacker
+
+# def raw_to_word(word, endian = "little"):
+#    fmt = {"little": "<?Q", "big": ">?Q"}[endian]
+#    is_metadata, contents = struct.unpack(fmt, word.to_bytes(9, endian))
+#    data_word = DataWord(contents, is_metadata)
+#    return data_word
+
+# def transaction_to_data_word(transaction):
+#
+#    # at this point "transaction" is a 65-bit word with the MSB the meta-flag,
+#    # so we have 9-bytes (72-bits) per data word
+#
+#    transaction = int(transaction)
+#
+#    endian = "little"  # hard-code, not sure this is ever going to change
+#    fmt = {"little": "<Q?", "big": ">?Q"}[endian]
+#    data = transaction.to_bytes(9, endian)
+#    contents, is_metadata = struct.unpack(fmt, data)
+#    word = DataWord(contents, is_metadata)
+#    return word
+
+
+# def l0id_from_word(data_word) :
+#    if data_word.is_start_of_event() :
+#        header = DataFormat.BitFieldWordValue(DataFormat.EVT_HDR1, data_word.contents)
+#        l0id = header.getField("L0ID")
+#        return l0id
+#    return None
 
 
 class DataWord:
