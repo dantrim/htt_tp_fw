@@ -1,3 +1,4 @@
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 # TP-FW
 
 This repository holds the source code for several of the firmware blocks of the
