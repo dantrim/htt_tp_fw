@@ -42,15 +42,7 @@ class B2BIO:
         return str(io_enum.name).replace("_", "")
 
 
-def testvec_dir_from_env():
-
-    testvecdir = os.environ.get("TESTVECTOR_DIR")
-    if not testvecdir:
-        raise Exception('ERROR Environtment "TESTVECTOR_DIR" is empty')
-    return testvecdir
-
-
-def get_testvector_files(base_tp, testvec_dir, which):
+def get_testvector_files(testvec_dir, base_tp=B2BIO.Outputs.AMTP_0, which="input"):
 
     if type(base_tp) != B2BIO.Outputs:
         raise Exception(f"ERROR base_tp must be of type {type(B2BIO.Outputs)}")

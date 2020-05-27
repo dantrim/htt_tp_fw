@@ -26,7 +26,7 @@ def initialize_spybuffers(fifos=[]):
         fifo.write_data <= 0
 
 
-def initialize_test_state(dut):
+def initialize_dut(dut):
 
     ##
     ## initialize the FIFOs
@@ -111,7 +111,7 @@ def b2b_test_0(dut):
     ##
     ## initialize dut for test
     ##
-    initialize_test_state(dut)
+    initialize_dut(dut)
 
     ##
     ## reset testbench
@@ -124,16 +124,18 @@ def b2b_test_0(dut):
     ##
     testvector_dir = config["run_config"]["testvector_dir"]
     input_testvector_files = b2b_utils.get_testvector_files(
-        this_tp, testvector_dir, "input"
+        testvector_dir, this_tp, "input"
     )
     output_testvector_files = b2b_utils.get_testvector_files(
-        this_tp, testvector_dir, "output"
+        testvector_dir, this_tp, "output"
     )
 
     ##
     ## initialize B2B block wrapper
     ##
-    b2b = wrapper.B2BWrapper(clock=dut.clock, name="B2BWrapper")
+    b2b = wrapper.B2BWrapper(
+        clock=dut.clock, name=f"B2BWrapper_{b2b_utils.B2BIO.simplename(this_tp)}"
+    )
     for i, io in enumerate(b2b_utils.B2BIO.Inputs):
         port_num = io.value
         driver = FifoDriver(

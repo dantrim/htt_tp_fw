@@ -28,7 +28,7 @@ def initialize_spybuffers(fifos=[]):
         fifo.write_data <= 0
 
 
-def initialize_test_state(dut):
+def initialize_dut(dut):
 
     ##
     ## initialize the FIFOs
@@ -111,7 +111,7 @@ def sw_block_test(dut):
     ##
     ## initialize dut
     ##
-    initialize_test_state(dut)
+    initialize_dut(dut)
 
     ##
     ## reset the testbench

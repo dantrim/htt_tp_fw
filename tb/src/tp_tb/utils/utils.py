@@ -6,6 +6,8 @@ from jsonschema import validate
 from cocotb import binary
 
 from tp_tb.utils import events
+
+# from tp_tb.utils import
 from DataFormat import DataFormat, BitField
 
 
@@ -110,6 +112,19 @@ def tp_fw_path():
             if p.exists():
                 return p
     return None
+
+
+def tb_test_config_directory():
+
+    p_tp_fw = tp_fw_path()
+    if not p_tp_fw:
+        return None
+
+    p_config = p_tp_fw / "tb" / "test_config"
+    if p_config.exists():
+        return p_config
+    else:
+        return None
 
 
 def tb_schema_directory():

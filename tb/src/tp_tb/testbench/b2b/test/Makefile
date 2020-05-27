@@ -22,7 +22,7 @@ SIM ?= questa
 # Location of sources (and spy buffer sources).
 SRCDIR = $(PWD)/../../../../../../src
 SBDIR = $(SRCDIR)/SpyBuffer
-B2BDIR= $(SRCDIR)/board2board_switching
+B2BDIR = $(SRCDIR)/board2board_switching
 
 # CocoTB configuration of our TopLevel and associated CocoTB test file
 TOPLEVEL_LANG=verilog
@@ -41,13 +41,13 @@ VERILOG_SOURCES = \
     $(SBDIR)/aFifo/sync_r2w.v \
     $(SBDIR)/aFifo/sync_w2r.v \
     $(SBDIR)/aFifo/wptr_full.v \
-	$(B2BDIR)/rtl/find_idx.sv \
+	$(B2BDIR)/rtl/find_idx.v \
 	$(B2BDIR)/ip/fifo_65/fifo_65_sim_netlist.v \
-    $(B2BDIR)/rtl/merge_event_handler.sv \
-    $(B2BDIR)/rtl/cluster_merge_engine.sv \
-    $(B2BDIR)/rtl/cluster_routing_engine.sv \
-    $(B2BDIR)/rtl/cluster_sync_engine.sv \
-    $(B2BDIR)/rtl/board2board_switching.sv
+    $(B2BDIR)/rtl/merge_event_handler.v \
+    $(B2BDIR)/rtl/cluster_merge_engine.v \
+    $(B2BDIR)/rtl/cluster_routing_engine.v \
+    $(B2BDIR)/rtl/cluster_sync_engine.v \
+    $(B2BDIR)/rtl/board2board_switching.v
 
 # HDL sources files
 VHDL_SOURCES =
