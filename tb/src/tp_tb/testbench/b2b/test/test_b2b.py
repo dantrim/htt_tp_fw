@@ -123,11 +123,10 @@ def b2b_test_0(dut):
     ##
     ## get testvectors
     ##
-    testvector_config = config["testvectors"]
     (
         input_testvector_files,
         output_testvector_files,
-    ) = test_config.get_testvector_files_from_config(testvector_config)
+    ) = test_config.get_testvector_files_from_config(config)
 
     ##
     ## initialize B2B block wrapper
@@ -180,18 +179,15 @@ def b2b_test_0(dut):
     yield timer
 
     ##
-    ## dump monitors
+    ## perform testvector comparison test
     ##
-    expected_output_events = []
-    for port_num, testvec in enumerate(output_testvector_files):
-        out_events = events.load_events_from_file(
-            testvec, n_to_load=num_events_to_process
-        )
-        expected_output_events.append(out_events)
-
     all_tests_passed = True
     all_test_results = []
     for oport in b2b.output_ports:
+
+        ##
+        ## extract the observed data for this output
+        ##
         monitor, io, _ = oport
         words = monitor.observed_words
         recvd_events = events.load_events(words, "little")
@@ -200,19 +196,34 @@ def b2b_test_0(dut):
         )
 
         ##
+        ## extract the expected data for this output
+        ##
+        if config["run_config"]["expected_is_observed"]:
+            dut._log.warning(
+                "WARNING Taking expected events to be the same as the observed events!"
+            )
+            output_testvector_file = "expected_is_observed"
+            expected_output_events = recvd_events
+        else:
+            output_testvector_file = output_testvector_files[io.value]
+            expected_output_events = events.load_events_from_file(
+                output_testvector_file, n_to_load=num_events_to_process
+            )
+
+        ##
         ## we expect nothing from the current board but there may be testvectors,
         ## so "zero" out any testvectors for this output
         ##
         if io.value == this_tp.value:
-            expected_output_events[io.value] = []
+            expected_output_events = []
 
         ## test
         events_equal, test_results = tb_diff.events_are_equal(
-            recvd_events, expected_output_events[io.value], verbose=False
+            recvd_events, expected_output_events, verbose=False
         )
         result_summary = result_handler.result_summary_dict(
             f"B2B_Output_{io.value:02}",
-            str(output_testvector_files[io.value]),
+            str(output_testvector_file),
             test_name=f"TEST_B2B_SRC{this_tp.value:02}_DEST{io.value:02}",
             test_results=test_results,
         )

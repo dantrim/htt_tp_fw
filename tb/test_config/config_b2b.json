@@ -14,6 +14,7 @@
        {
            "output_directory_name" : "b2b"
            ,"test_location" : "src/tp_tb/testbench/b2b/test"
+           ,"expected_is_observed" : false
            ,"components_lib_dir" : "/home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1/"
        },
         "testvectors" :

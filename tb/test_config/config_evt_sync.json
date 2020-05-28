@@ -13,6 +13,7 @@
        {
            "output_directory_name" : "evt_sync"
            ,"test_location" : "src/tp_tb/testbench/evt_sync/test"
+           ,"expected_is_observed" : true
            ,"components_lib_dir" : "/home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1/"
        },
         "testvectors" :

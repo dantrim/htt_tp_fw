@@ -121,11 +121,10 @@ def sw_block_test(dut):
     ##
     ## get the testvectors
     ##
-    testvector_config = config["testvectors"]
     (
         input_testvector_files,
         output_testvector_files,
-    ) = test_config.get_testvector_files_from_config(testvector_config)
+    ) = test_config.get_testvector_files_from_config(config)
 
     ##
     ## initialize the (software-based) block wrapper
@@ -170,18 +169,15 @@ def sw_block_test(dut):
     yield timer
 
     ##
-    ## run switcher test
+    ## perform testvector comparison test
     ##
-    expected_output_events = []
-    for port_num, test_vec in enumerate(output_testvector_files):
-        out_events = events.load_events_from_file(
-            test_vec, n_to_load=num_events_to_process
-        )
-        expected_output_events.append(out_events)
-
     all_tests_passed = True
     all_test_results = []
     for oport in sw_switcher_wrapper.output_ports:
+
+        ##
+        ## extract the observed data for this output
+        ##
         monitor, io, _ = oport
         words = monitor.observed_words
         recvd_events = events.load_events(words, "little")
@@ -189,12 +185,31 @@ def sw_block_test(dut):
             f"Output for {io.name} (output port num {io.value}) received {len(recvd_events)} events"
         )
 
+        ##
+        ## extract the expected data for this output
+        ##
+        if config["run_config"]["expected_is_observed"]:
+            # map the "expected" to be the same as the "observed"
+            dut._log.warning(
+                "WARNING Taking expected events to be the same as the observed events!"
+            )
+            output_testvector_file = "expected_is_observed"
+            expected_output_events = recvd_events
+        else:
+            output_testvector_file = output_testvector_files[io.value]
+            expected_output_events = events.load_events_from_file(
+                output_testvector_file, n_to_load=num_events_to_process
+            )
+
+        ##
+        ## perform test by comparison with expected testvectors
+        ##
         events_equal, test_results = tb_diff.events_are_equal(
-            recvd_events, expected_output_events[io.value], verbose=False
+            recvd_events, expected_output_events, verbose=False
         )
         result_summary = result_handler.result_summary_dict(
             f"SWSwitcher_Output_{io.value:02}",
-            str(output_testvector_files[io.value]),
+            str(output_testvector_file),
             test_name=f"TEST_SWSWITCHER_DEST{io.value:02}",
             test_results=test_results,
         )

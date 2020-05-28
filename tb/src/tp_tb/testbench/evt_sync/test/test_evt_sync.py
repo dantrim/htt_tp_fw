@@ -115,14 +115,10 @@ def evt_sync_test(dut):
     ##
     ## get testvectors
     ##
-    testvector_config = config["testvectors"]
-    # input_testvector_files = evt_sync_utils.get_testvector_files(
-    #    testvector_dir, this_tp, "input"
-    # )
     (
         input_testvector_files,
         output_testvector_files,
-    ) = test_config.get_testvector_files_from_config(testvector_config)
+    ) = test_config.get_testvector_files_from_config(config)
 
     ##
     ## initialize the EvtSync block wrapper
@@ -176,11 +172,15 @@ def evt_sync_test(dut):
     yield timer
 
     ##
-    ## dump monitors
+    ## perform testvector comparison test
     ##
     all_tests_passed = True
     all_test_results = []
     for oport in evt_sync_wrapper.output_ports:
+
+        ##
+        ## extract the observed data for this output
+        ##
         monitor, io, is_active = oport
         words = monitor.observed_words
         recvd_events = events.load_events(words, "little")
@@ -189,15 +189,26 @@ def evt_sync_test(dut):
         )
 
         ##
-        ## test by comparison with expected testvectors
+        ## extract the expected data for this output
         ##
-        dut._log.warning(
-            "WARNING Taking expected events to be the same as the observed events!"
-        )
-        output_testvector_file = input_testvector_files[io.value]
+        if config["run_config"]["expected_is_observed"]:
+            # map the "expected" to be the same as the "observed"
+            dut._log.warning(
+                "WARNING Taking expected events to be the same as the observed events!"
+            )
+            output_testvector_file = "expected_is_observed"
+            expected_output_events = recvd_events
+        else:
+            output_testvector_file = output_testvector_files[io.value]
+            expected_output_events = events.load_events_from_file(
+                output_testvector_file, n_to_load=num_events_to_process
+            )
 
+        ##
+        ## perform test by comparison with expected testvectors
+        ##
         events_are_equal, test_results = tb_diff.events_are_equal(
-            recvd_events, recvd_events, verbose=False
+            recvd_events, expected_output_events, verbose=False
         )
         result_summary = result_handler.result_summary_dict(
             f"EVTSYNC_Output_{io.value:02}",

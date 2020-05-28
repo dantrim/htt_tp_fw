@@ -13,6 +13,7 @@
        {
            "output_directory_name" : "sw_switcher"
            ,"test_location" : "src/tp_tb/testbench/example_sw_block/test"
+           ,"expected_is_observed" : false
            ,"components_lib_dir" : "/home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1/"
        },
         "testvectors" :

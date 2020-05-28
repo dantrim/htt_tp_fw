@@ -16,9 +16,10 @@
             "properties": {
                 "output_directory_name" : { "type": "string" },
                 "test_location" : { "type" : "string" },
-                "components_lib_dir" : { "type" : "string" }
+                "components_lib_dir" : { "type" : "string" },
+                "expected_is_observed": {"type" : "boolean" }
             },
-            "required": ["output_directory_name", "test_location", "components_lib_dir"]
+            "required": ["output_directory_name", "test_location", "components_lib_dir", "expected_is_observed"]
         },
         "def_testvectors": {
             "type" : "object",

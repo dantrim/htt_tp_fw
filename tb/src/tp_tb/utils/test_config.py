@@ -2,18 +2,15 @@ import json
 import os
 from pathlib import Path
 
-# from tp_tb.utils import utils #get_schema_file
-from tp_tb.utils import utils  # validate_against_schema
-
-# from .utils import get_schema_file
-# from .utils import validate_against_schema
-# from tp_tb.utils import tb_test_config_directory
+from tp_tb.utils import utils
 
 
 TEST_CONFIG_ENV = "COCOTB_TEST_CONFIG_FILE"
 
 
-def get_testvector_files_from_config(testvector_config):
+def get_testvector_files_from_config(test_config):
+
+    testvector_config = test_config["testvectors"]
 
     input_testvectors = []
     output_testvectors = []
