@@ -13,8 +13,33 @@
        {
            "output_directory_name" : "evt_sync"
            ,"test_location" : "src/tp_tb/testbench/evt_sync/test"
-           ,"testvector_dir" : "/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/"
            ,"components_lib_dir" : "/home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1/"
-       }
+       },
+        "testvectors" :
+        {
+           "testvector_dir" : "/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/",
+            "input":
+            [
+                { "0" : "TPtoSync_srcAMTP0_destAMTP1.evt" },
+                { "1" : "TPtoSync_srcAMTP0_destAMTP2.evt" },
+                { "2" : "TPtoSync_srcAMTP0_destAMTP3.evt" },
+                { "3" : "TPtoSync_srcAMTP0_destAMTP4.evt" },
+                { "4" : "TPtoSync_srcAMTP0_destAMTP5.evt" },
+                { "5" : "TPtoSync_srcAMTP0_destAMTP6.evt" },
+                { "6" : "TPtoSync_srcAMTP0_destAMTP7.evt" },
+                { "7" : "TPtoSync_srcAMTP0_destAMTP8.evt" },
+                { "8" : "TPtoSync_srcAMTP0_destAMTP9.evt" },
+                { "9" : "TPtoSync_srcAMTP0_destAMTP10.evt" },
+                { "10" : "TPtoSync_srcAMTP0_destAMTP11.evt" },
+                { "11" : "TPtoSync_srcAMTP0_destSSTP0.evt" },
+                { "12" : "TPtoSync_srcAMTP0_destSSTP1.evt" },
+                { "13" : "ClusterToSyncEngine_AMTP0_Pixel0.evt" },
+                { "14" : "ClusterToSyncEngine_AMTP0_Pixel1.evt" },
+                { "15" : "ClusterToSyncEngine_AMTP0_Strip0.evt" },
+                { "16" : "ClusterToSyncEngine_AMTP0_Strip1.evt" }
+            ],
+            "output" :
+            []
+        }
     }
 }

@@ -3,7 +3,7 @@ from bitstring import BitArray
 import cocotb
 from cocotb.triggers import Event, Combine, with_timeout, Timer
 
-from tp_tb.testbench.example_sw_block import sw_switcher_utils
+from tp_tb.testbench.example_sw_block.sw_switcher_ports import SWSwitcherPorts
 
 from tp_tb.utils import events
 from tp_tb.utils import block_wrapper
@@ -12,10 +12,7 @@ from tp_tb.utils import block_wrapper
 class SWSwitcherWrapper(block_wrapper.BlockWrapper):
     def __init__(self, clock, name):
         super().__init__(
-            clock,
-            name,
-            len(sw_switcher_utils.SWSwitcherIO.Inputs),
-            len(sw_switcher_utils.SWSwitcherIO.Outputs),
+            clock, name, len(SWSwitcherPorts.Inputs), len(SWSwitcherPorts.Outputs),
         )
 
     def send_input_events(

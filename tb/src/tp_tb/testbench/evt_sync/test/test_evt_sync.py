@@ -7,8 +7,8 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge, Combine, Timer, with_timeout
 from cocotb.result import TestFailure, TestSuccess
 
-from tp_tb.testbench.evt_sync import evt_sync_utils
 import tp_tb.testbench.evt_sync.evt_sync_wrapper as wrapper
+from tp_tb.testbench.evt_sync.evt_sync_ports import EvtSyncPorts
 
 
 from tp_tb.utils import test_config
@@ -34,14 +34,14 @@ def initialize_dut(dut):
     ##
 
     input_fifos = [x.spybuffer for x in dut.input_spybuffers]
-    n_inputs_ok = len(input_fifos) == len(evt_sync_utils.EvtSyncIO.Inputs)
+    n_inputs_ok = len(input_fifos) == len(EvtSyncPorts.Inputs)
 
     output_fifos = [x.spybuffer for x in dut.output_spybuffers]
-    n_outputs_ok = len(output_fifos) == len(evt_sync_utils.EvtSyncIO.Outputs)
+    n_outputs_ok = len(output_fifos) == len(EvtSyncPorts.Outputs)
     n_io_ports_ok = n_inputs_ok and n_outputs_ok
     if not n_io_ports_ok:
         raise Exception(
-            f"ERROR # of EvtSync io ports differ between CocoTB and RTL simulation:\n -> CocoTB expects (IN,OUT)=({len(evt_sync_utils.EvtSyncIO.Inputs)},{len(evt_sync_utils.EvtSyncIO.Outputs)})\n -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
+            f"ERROR # of EvtSync io ports differ between CocoTB and RTL simulation:\n -> CocoTB expects (IN,OUT)=({len(EvtSyncPorts.Inputs)},{len(EvtSyncPorts.Outputs)})\n -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
         )
 
     initialize_spybuffers(fifos=input_fifos)
@@ -85,7 +85,7 @@ def evt_sync_test(dut):
     ##
     board_id = int(dut.event_sync_inst.BOARD_ID)
     dut._log.info(f"Instantiated EventSync block with BOARD_ID = {board_id}")
-    for io in evt_sync_utils.EvtSyncIO.Outputs:
+    for io in EvtSyncPorts.Outputs:
         if int(io.value) == board_id:
             this_tp = io
             break
@@ -115,19 +115,22 @@ def evt_sync_test(dut):
     ##
     ## get testvectors
     ##
-    testvector_dir = config["run_config"]["testvector_dir"]
-    input_testvector_files = evt_sync_utils.get_testvector_files(
-        testvector_dir, this_tp, "input"
-    )
+    testvector_config = config["testvectors"]
+    # input_testvector_files = evt_sync_utils.get_testvector_files(
+    #    testvector_dir, this_tp, "input"
+    # )
+    (
+        input_testvector_files,
+        output_testvector_files,
+    ) = test_config.get_testvector_files_from_config(testvector_config)
 
     ##
     ## initialize the EvtSync block wrapper
     ##
     evt_sync_wrapper = wrapper.EvtSyncWrapper(
-        clock=dut.clock,
-        name=f"EvtSyncWrapper_{evt_sync_utils.EvtSyncIO.simplename(this_tp)}",
+        clock=dut.clock, name=f"EvtSyncWrapper_{EvtSyncPorts.simplename(this_tp)}",
     )
-    for i, io in enumerate(evt_sync_utils.EvtSyncIO.Inputs):
+    for i, io in enumerate(EvtSyncPorts.Inputs):
         driver = FifoDriver(
             dut.input_spybuffers[io.value].spybuffer,
             dut.clock,
@@ -136,7 +139,7 @@ def evt_sync_test(dut):
             write_out=True,
         )
         evt_sync_wrapper.add_input_driver(driver, io)
-    for i, io in enumerate(evt_sync_utils.EvtSyncIO.Outputs):
+    for i, io in enumerate(EvtSyncPorts.Outputs):
         active = True
         monitor = FifoMonitor(
             dut.output_spybuffers[i].spybuffer,

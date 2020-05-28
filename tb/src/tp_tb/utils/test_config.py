@@ -13,6 +13,36 @@ from tp_tb.utils import utils  # validate_against_schema
 TEST_CONFIG_ENV = "COCOTB_TEST_CONFIG_FILE"
 
 
+def get_testvector_files_from_config(testvector_config):
+
+    input_testvectors = []
+    output_testvectors = []
+    testvec_dir = testvector_config["testvector_dir"]
+    inputs = testvector_config["input"]
+    outputs = testvector_config["output"]
+
+    for i, port_config in enumerate([inputs, outputs]):
+        n_ports = len(port_config)
+        for j in range(n_ports):
+            for pc in port_config:
+                port_num, filename = zip(*pc.items())
+                port_num = int(port_num[0])
+                filename = str(filename[0])
+                if port_num == j:
+                    complete_filename = f"{testvec_dir}/{filename}"
+                    p_testvec = Path(complete_filename)
+                    file_ok = p_testvec.exists() and p_testvec.is_file()
+                    if not file_ok:
+                        raise Exception(
+                            f"ERROR Expected testvector file (={complete_filename}) could not be found"
+                        )
+                    if i == 0:
+                        input_testvectors.append(str(p_testvec))
+                    else:
+                        output_testvectors.append(str(p_testvec))
+    return input_testvectors, output_testvectors
+
+
 def get_valid_test_configs():
 
     p_test_config = utils.tb_test_config_directory()

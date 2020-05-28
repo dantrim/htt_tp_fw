@@ -7,10 +7,9 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge, Combine, Timer
 from cocotb.result import TestFailure, TestSuccess
 
-from tp_tb.testbench.example_sw_block import sw_switcher_utils
-
 import tp_tb.testbench.example_sw_block.sw_switcher_wrapper as wrapper
 import tp_tb.testbench.example_sw_block.sw_switcher_block as sw_switcher_block
+from tp_tb.testbench.example_sw_block.sw_switcher_ports import SWSwitcherPorts
 
 from tp_tb.utils import test_config
 from tp_tb.utils import events, tb_diff, result_handler
@@ -34,15 +33,15 @@ def initialize_dut(dut):
     ## initialize the FIFOs
     ##
     input_fifos = [x.spybuffer for x in dut.input_spybuffers]
-    n_inputs_ok = len(input_fifos) == len(sw_switcher_utils.SWSwitcherIO.Inputs)
+    n_inputs_ok = len(input_fifos) == len(SWSwitcherPorts.Inputs)
 
     output_fifos = [x.spybuffer for x in dut.output_spybuffers]
-    n_outputs_ok = len(output_fifos) == len(sw_switcher_utils.SWSwitcherIO.Outputs)
+    n_outputs_ok = len(output_fifos) == len(SWSwitcherPorts.Outputs)
 
     n_io_ports_ok = n_inputs_ok and n_outputs_ok
     if not n_io_ports_ok:
         raise Exception(
-            f"ERROR # of SWSwitcher io ports differ between CocoTB and RTL simulation:\n -> CocoTB expects (IN,OUT)=({len(sw_switcher_utils.SWSwitcherIO.Inputs)},{len(sw_switcher_utils.SWSwitcherIO.Outputs)})\n -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
+            f"ERROR # of SWSwitcher io ports differ between CocoTB and RTL simulation:\n -> CocoTB expects (IN,OUT)=({len(SWSwitcherPorts.Inputs)},{len(SWSwitcherPorts.Outputs)})\n -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
         )
     initialize_spybuffers(input_fifos)
     initialize_spybuffers(output_fifos)
@@ -82,7 +81,7 @@ def sw_block_test(dut):
     ## create the software DUT
     ##
     switcher_block = sw_switcher_block.SWSwitcherBlock(dut.clock, "SWSwitcherBlock")
-    for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Inputs):
+    for i, io in enumerate(SWSwitcherPorts.Inputs):
         switcher_block.add_fifo(
             dut.input_spybuffers[i].spybuffer,
             dut.clock,
@@ -90,7 +89,7 @@ def sw_block_test(dut):
             io,
             direction="in",
         )
-    for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Outputs):
+    for i, io in enumerate(SWSwitcherPorts.Outputs):
         switcher_block.add_fifo(
             dut.output_spybuffers[i].spybuffer,
             dut.clock,
@@ -122,19 +121,17 @@ def sw_block_test(dut):
     ##
     ## get the testvectors
     ##
-    testvector_dir = config["run_config"]["testvector_dir"]
-    input_testvector_files = sw_switcher_utils.get_testvector_files(
-        testvector_dir, "input"
-    )
-    output_testvector_files = sw_switcher_utils.get_testvector_files(
-        testvector_dir, "output"
-    )[::-1]
+    testvector_config = config["testvectors"]
+    (
+        input_testvector_files,
+        output_testvector_files,
+    ) = test_config.get_testvector_files_from_config(testvector_config)
 
     ##
     ## initialize the (software-based) block wrapper
     ##
     sw_switcher_wrapper = wrapper.SWSwitcherWrapper(dut.clock, name="SWSwitcherWrapper")
-    for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Inputs):
+    for i, io in enumerate(SWSwitcherPorts.Inputs):
         port_num = io.value
         driver = FifoDriver(
             dut.input_spybuffers[port_num].spybuffer,
@@ -145,7 +142,7 @@ def sw_block_test(dut):
         )
         sw_switcher_wrapper.add_input_driver(driver, io)
 
-    for i, io in enumerate(sw_switcher_utils.SWSwitcherIO.Outputs):
+    for i, io in enumerate(SWSwitcherPorts.Outputs):
         monitor = FifoMonitor(
             dut.output_spybuffers[i].spybuffer,
             dut.clock,

@@ -4,6 +4,7 @@ import numpy as np  # to set random seed
 
 # from tb_b2b import b2b_utils
 from . import b2b_utils
+from tp_tb.testbench.b2b.b2b_ports import B2BPorts
 
 random_seed_set = []
 
@@ -19,9 +20,9 @@ def truncate(n, decimals=0):
 
 def event_rate_delay(io_enum, event, pass_through=False):
 
-    if type(io_enum) != b2b_utils.B2BIO.Inputs:
+    if type(io_enum) != B2BPorts.Inputs:
         raise TypeError(
-            f'Expected type for io_enum is "b2b_utils.B2BIO.Inputs", bot "{type(io_enum)}"'
+            f'Expected type for io_enum is "B2BPorts.Inputs", bot "{type(io_enum)}"'
         )
 
     if pass_through:

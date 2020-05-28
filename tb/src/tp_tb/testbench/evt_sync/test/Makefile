@@ -8,7 +8,6 @@ $(info *** SIM_BUILD=$(SIM_BUILD))
 $(info *** TESTBENCH_TOPLEVEL=$(TESTBENCH_TOPLEVEL))
 $(info *** TESTBENCH_TEST_MODULE=$(TESTBENCH_TEST_MODULE))
 $(info *** COMPONENTS_LIB_DIR=$(COMPONENTS_LIB_DIR))
-$(info *** TESTVECTOR_DIR=$(TESTVECTOR_DIR))
 
 ##############################################################################
 #

@@ -1,84 +1,49 @@
-import enum
-import os
 from pathlib import Path
-from glob import glob
 import cocotb
 
-
-class B2BIO:
-    class Inputs(enum.Enum):
-        PIXEL_0 = 0
-        PIXEL_1 = 1
-        STRIP_0 = 2
-        STRIP_1 = 3
-
-    class Outputs(enum.Enum):
-        AMTP_0 = 0
-        AMTP_1 = 1
-        AMTP_2 = 2
-        AMTP_3 = 3
-        AMTP_4 = 4
-        AMTP_5 = 5
-        AMTP_6 = 6
-        AMTP_7 = 7
-        AMTP_8 = 8
-        AMTP_9 = 9
-        AMTP_10 = 10
-        AMTP_11 = 11
-        SSTP_0 = 12
-        SSTP_1 = 13
-
-    @staticmethod
-    def allowed_outputs():
-
-        outputs = set()
-        for output in B2BIO.Outputs:
-            outputs.add(str(output.name))
-        return outputs
-
-    @staticmethod
-    def simplename(io_enum):
-
-        return str(io_enum.name).replace("_", "")
+from tp_tb.testbench.b2b.b2b_ports import B2BPorts
 
 
-def get_testvector_files(testvec_dir, base_tp=B2BIO.Outputs.AMTP_0, which="input"):
+def get_testvector_files(testvector_dir="", base_tp=None):
+    """
+    Grabs testvectors for B2B testbench.
+    """
 
-    if type(base_tp) != B2BIO.Outputs:
-        raise Exception(f"ERROR base_tp must be of type {type(B2BIO.Outputs)}")
-
-    tdir = Path(str(testvec_dir))
+    if type(base_tp) != B2BPorts.Outputs:
+        raise Exception(f"ERROR base_tp must be of type {type(B2BPorts.Outputs)}")
+    tdir = Path(str(testvector_dir))
     ok = tdir.exists() and tdir.is_dir()
     if not ok:
         raise Exception(
-            f"ERROR Provided testvector directory (={str(testvec_dir)}) not found"
+            f"ERROR Provided testvector directory (={str(testvector_dir)}) not found"
         )
 
-    file_fmt = {"input": "BoardToBoardInput_", "output": "TPtoSync_src"}[which.lower()]
+    input_testvectors = []
+    output_testvectors = []
+    for i, io_direction in enumerate(["input", "output"]):
+        file_fmt = ["BoardToBoardInput_", "TPtoSync_src"][i]
+        file_fmt += B2BPorts.simplename(base_tp)
+        testvec_files = list(tdir.glob(f"{file_fmt}_*.evt"))
+        io_enum = [B2BPorts.Inputs, B2BPorts.Outputs][i]
+        n_io = len(io_enum)
 
-    file_fmt += B2BIO.simplename(base_tp)
-    testvec_files = list(tdir.glob(f"{file_fmt}_*"))
+        for j in range(n_io):
+            for io in io_enum:
+                if io.value == j:  # this is the io port that we want
+                    name = B2BPorts.simplename(io).lower()
+                    for tfile in testvec_files:
+                        final_tag = (
+                            str(tfile)
+                            .split("_")[-1]
+                            .replace(".evt", "")
+                            .replace("dest", "")
+                            .lower()
+                        )
+                        if final_tag == name:
+                            if io_direction == "input":
+                                input_testvectors.append(str(tfile))
+                            elif io_direction == "output":
+                                output_testvectors.append(str(tfile))
+                            break
 
-    io_enum = {"input": B2BIO.Inputs, "output": B2BIO.Outputs}[which.lower()]
-
-    ##
-    ## order files by their io port number
-    ##
-    ordered_files = []
-    n_io = len(io_enum)
-    for i in range(n_io):
-        for io in io_enum:
-            if io.value == i:  # this is the io port that we want
-                name = B2BIO.simplename(io).lower()
-                for tfile in testvec_files:
-                    final_tag = (
-                        str(tfile)
-                        .split("_")[-1]
-                        .replace(".evt", "")
-                        .replace("dest", "")
-                        .lower()
-                    )
-                    if final_tag == name:
-                        ordered_files.append(tfile)
-                        break
-    return ordered_files
+    return input_testvectors, output_testvectors

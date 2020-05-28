@@ -7,6 +7,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge, Combine, Timer
 from cocotb.result import TestFailure, TestSuccess
 
+from tp_tb.testbench.b2b.b2b_ports import B2BPorts
 from tp_tb.testbench.b2b import b2b_utils
 import tp_tb.testbench.b2b.b2b_wrapper as wrapper
 
@@ -33,14 +34,14 @@ def initialize_dut(dut):
     ##
 
     input_fifos = [x.spybuffer for x in dut.input_spybuffers]
-    n_inputs_ok = len(input_fifos) == len(b2b_utils.B2BIO.Inputs)
+    n_inputs_ok = len(input_fifos) == len(B2BPorts.Inputs)
 
     output_fifos = [x.spybuffer for x in dut.output_spybuffers]
-    n_outputs_ok = len(output_fifos) == len(b2b_utils.B2BIO.Outputs)
+    n_outputs_ok = len(output_fifos) == len(B2BPorts.Outputs)
     n_io_ports_ok = n_inputs_ok and n_outputs_ok
     if not n_io_ports_ok:
         raise Exception(
-            f"ERROR # of B2B io ports differ between CocoTB and RTL simulation:\n -> CocoTB expects (IN,OUT)=({len(b2b_utils.B2BIO.Inputs)},{len(b2b_utils.B2BIO.Outputs)})\n -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
+            f"ERROR # of B2B io ports differ between CocoTB and RTL simulation:\n -> CocoTB expects (IN,OUT)=({len(B2BPorts.Inputs)},{len(B2BPorts.Outputs)})\n -> RTL expects (IN,OUT)=({len(input_fifos)},{len(output_fifos)})"
         )
 
     initialize_spybuffers(fifos=input_fifos)
@@ -85,12 +86,12 @@ def b2b_test_0(dut):
     ##
 
     this_tp = (
-        b2b_utils.B2BIO.Outputs.AMTP_0
+        B2BPorts.Outputs.AMTP_0
     )  # hardcode for now, later take BOARD_ID from env and set the B2B inst to this value
     board_id = int(dut.board2board_switching_inst.BOARD_ID)
     dut._log.info(f"Instantiating B2B block with BOARD_ID = {board_id}")
     this_tp = None
-    for io in b2b_utils.B2BIO.Outputs:
+    for io in B2BPorts.Outputs:
         if int(io.value) == board_id:
             this_tp = io
             break
@@ -122,21 +123,19 @@ def b2b_test_0(dut):
     ##
     ## get testvectors
     ##
-    testvector_dir = config["run_config"]["testvector_dir"]
-    input_testvector_files = b2b_utils.get_testvector_files(
-        testvector_dir, this_tp, "input"
-    )
-    output_testvector_files = b2b_utils.get_testvector_files(
-        testvector_dir, this_tp, "output"
-    )
+    testvector_config = config["testvectors"]
+    (
+        input_testvector_files,
+        output_testvector_files,
+    ) = test_config.get_testvector_files_from_config(testvector_config)
 
     ##
     ## initialize B2B block wrapper
     ##
     b2b = wrapper.B2BWrapper(
-        clock=dut.clock, name=f"B2BWrapper_{b2b_utils.B2BIO.simplename(this_tp)}"
+        clock=dut.clock, name=f"B2BWrapper_{B2BPorts.simplename(this_tp)}"
     )
-    for i, io in enumerate(b2b_utils.B2BIO.Inputs):
+    for i, io in enumerate(B2BPorts.Inputs):
         port_num = io.value
         driver = FifoDriver(
             dut.input_spybuffers[port_num].spybuffer,
@@ -147,7 +146,7 @@ def b2b_test_0(dut):
         )
         b2b.add_input_driver(driver, io)
 
-    for i, io in enumerate(b2b_utils.B2BIO.Outputs):
+    for i, io in enumerate(B2BPorts.Outputs):
         active = this_tp.value != io.value
         monitor = FifoMonitor(
             dut.output_spybuffers[i].spybuffer,

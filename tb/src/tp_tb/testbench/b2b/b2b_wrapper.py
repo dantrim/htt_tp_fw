@@ -4,7 +4,7 @@ from columnar import columnar
 import cocotb
 from cocotb.triggers import Event, Combine, with_timeout, Timer
 
-from tp_tb.testbench.b2b import b2b_utils
+from tp_tb.testbench.b2b.b2b_ports import B2BPorts
 from tp_tb.testbench.b2b import b2b_flow
 
 from tp_tb.utils import events
@@ -13,9 +13,7 @@ from tp_tb.utils import block_wrapper
 
 class B2BWrapper(block_wrapper.BlockWrapper):
     def __init__(self, clock, name):
-        super().__init__(
-            clock, name, len(b2b_utils.B2BIO.Inputs), len(b2b_utils.B2BIO.Outputs)
-        )
+        super().__init__(clock, name, len(B2BPorts.Inputs), len(B2BPorts.Outputs))
 
     def send_input_events(
         self, input_testvectors, n_to_send=-1, l0id_request=-1, event_delays=False
