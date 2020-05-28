@@ -13,8 +13,21 @@
        {
            "output_directory_name" : "sw_switcher"
            ,"test_location" : "src/tp_tb/testbench/example_sw_block/test"
-           ,"testvector_dir" : "/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/"
            ,"components_lib_dir" : "/home/dantrim/work/tdaq-htt-firmware/priya_stuff/xilinx/compiled_libraries/v2019.1/"
-       }
+       },
+        "testvectors" :
+        {
+           "testvector_dir" : "/home/dantrim/work/tdaq-htt-firmware/testvecs/20200410/",
+            "input":
+            [
+                { "0" : "BoardToBoardInput_AMTP0_Pixel0.evt" },
+                { "1" : "BoardToBoardInput_AMTP0_Pixel1.evt" }
+            ],
+            "output":
+            [
+                { "0" : "BoardToBoardInput_AMTP0_Pixel1.evt" },
+                { "1" : "BoardToBoardInput_AMTP0_Pixel0.evt" }
+            ]
+        }
     }
 }
