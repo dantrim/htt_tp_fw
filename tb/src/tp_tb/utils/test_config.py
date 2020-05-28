@@ -2,11 +2,35 @@ import json
 import os
 from pathlib import Path
 
-from .utils import get_schema_file
-from .utils import validate_against_schema
+# from tp_tb.utils import utils #get_schema_file
+from tp_tb.utils import utils  # validate_against_schema
+
+# from .utils import get_schema_file
+# from .utils import validate_against_schema
+# from tp_tb.utils import tb_test_config_directory
 
 
 TEST_CONFIG_ENV = "COCOTB_TEST_CONFIG_FILE"
+
+
+def get_valid_test_configs():
+
+    p_test_config = utils.tb_test_config_directory()
+
+    if p_test_config is None:
+        return [], []
+
+    good_tb = []
+    bad_tb = []
+
+    for itest, test_config in enumerate(p_test_config.glob("config_*.json")):
+        valid, _ = check_and_inspect_config_file(test_config)
+
+        if valid:
+            good_tb.append(test_config)
+        else:
+            bad_tb.append(test_config)
+    return good_tb, bad_tb
 
 
 def get_config(config_filename=""):
@@ -72,7 +96,9 @@ def check_config_file(config_file):
         return False, f"Unable to decode JSON configuration file: {ex}"
 
     try:
-        valid_ok, err = validate_against_schema(config_data, schema_type="test_config")
+        valid_ok, err = utils.validate_against_schema(
+            config_data, schema_type="test_config"
+        )
     except Exception as ex:
         return False, str(ex)
     return valid_ok, err

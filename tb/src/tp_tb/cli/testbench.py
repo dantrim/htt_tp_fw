@@ -2,9 +2,10 @@ import sys
 import os
 import click
 
-from ..utils import test_config
-from ..utils import simulator_support
-from ..testbench import defined_testbenches
+from tp_tb.utils import test_config
+from tp_tb.utils import simulator_support
+
+# from tp_tb.testbench import defined_testbenches
 
 
 ##
@@ -78,10 +79,27 @@ def run(config):
 
 @cli.command()
 def list():
-    """List all available testbenches (and their tests)."""
-    print("Defined testbenches:")
-    for tb_name in defined_testbenches:
-        print(f"{tb_name}")
+    """List all available testbenches and their status."""
+
+    from colorama import Fore
+
+    valid_configs, invalid_configs = test_config.get_valid_test_configs()
+    n_configs_total = len(valid_configs) + len(invalid_configs)
+    if not n_configs_total:
+        print("No defined testbenches found")
+    else:
+        print("Defined testbenches:")
+        n_printed = 0
+        for i, config in enumerate(valid_configs):
+            print(
+                f"[{n_printed:02}] {str(config).split('/')[-1].replace('config_','').replace('.json','')}"
+            )
+            n_printed += 1
+        for i, config in enumerate(invalid_configs):
+            s = f"[{n_printed:02}] {str(config).split('/')[-1].replace('config_','').replace('.json','')}"
+            s += " " + Fore.RED + "INVALID" + Fore.RESET
+            print(s)
+            n_printed += 1
 
 
 @cli.command()

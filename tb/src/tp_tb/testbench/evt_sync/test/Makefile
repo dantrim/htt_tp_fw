@@ -20,9 +20,15 @@ $(info *** TESTVECTOR_DIR=$(TESTVECTOR_DIR))
 SIM ?= questa
 
 # Location of sources (and spy buffer sources).
-SRCDIR = $(PWD)/../../../../../../src
-SBDIR = $(SRCDIR)/SpyBuffer
-B2BDIR = $(SRCDIR)/board2board_switching
+SRCDIR=$(PWD)/../../../../../../src
+SBDIR=$(SRCDIR)/SpyBuffer
+# evt_sync definition depends on b2b implementation
+B2BDIR=$(SRCDIR)/board2board_switching
+EVTSYNCDIR=$(SRCDIR)/evt_sync
+
+#$(info *** SRCDIR = $(SRCDIR))
+#$(info *** SBDIR = $(SBDIR))
+#$(info *** EVTSYNCDIR = $(EVTSYNCDIR))
 
 # CocoTB configuration of our TopLevel and associated CocoTB test file
 TOPLEVEL_LANG=verilog
@@ -31,7 +37,7 @@ MODULE=$(TESTBENCH_TEST_MODULE)
 
 # Verilog source files
 VERILOG_SOURCES = \
-    $(PWD)/$(TESTBENCH_TOPLEVEL).v \
+	$(PWD)/$(TESTBENCH_TOPLEVEL).v \
     $(SBDIR)/SpyBuffer.v \
     $(SBDIR)/SpyController.v \
     $(SBDIR)/SpyMemory.v \
@@ -41,13 +47,16 @@ VERILOG_SOURCES = \
     $(SBDIR)/aFifo/sync_r2w.v \
     $(SBDIR)/aFifo/sync_w2r.v \
     $(SBDIR)/aFifo/wptr_full.v \
-	$(B2BDIR)/rtl/find_idx.v \
-	$(B2BDIR)/ip/fifo_65/fifo_65_sim_netlist.v \
+    $(B2BDIR)/ip/fifo_65/fifo_65_sim_netlist.v \
+    $(B2BDIR)/rtl/find_idx.v \
     $(B2BDIR)/rtl/merge_event_handler.v \
     $(B2BDIR)/rtl/cluster_merge_engine.v \
     $(B2BDIR)/rtl/cluster_routing_engine.v \
     $(B2BDIR)/rtl/cluster_sync_engine.v \
-    $(B2BDIR)/rtl/board2board_switching.v
+    $(B2BDIR)/rtl/board2board_switching.v \
+	$(EVTSYNCDIR)/rtl/evt_sync.v
+
+$(info *** VERILOG_SOURCES=$(VERILOG_SOURCES))
 
 # HDL sources files
 VHDL_SOURCES =
