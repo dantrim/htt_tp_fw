@@ -6,19 +6,28 @@
             "properties": {
                 "test_name" : {"type" : "string"},
                 "input_args" : {"type" : "object"},
-                "run_config": {"$ref": "#/definitions/def_run_config"}
+                "run_config": {"$ref": "#/definitions/def_run_config"},
+                "testvectors": {"$ref": "#/definitions/def_testvectors"}
             },
-            "required": ["test_name", "run_config", "input_args"]
+            "required": ["test_name", "run_config", "input_args", "testvectors"]
         },
         "def_run_config": {
             "type": "object",
             "properties": {
                 "output_directory_name" : { "type": "string" },
                 "test_location" : { "type" : "string" },
-                "testvector_dir" : { "type" : "string" },
                 "components_lib_dir" : { "type" : "string" }
             },
-            "required": ["output_directory_name", "test_location", "testvector_dir", "components_lib_dir"]
+            "required": ["output_directory_name", "test_location", "components_lib_dir"]
+        },
+        "def_testvectors": {
+            "type" : "object",
+            "properties": {
+                "testvector_dir" : {"type" : "string"},
+                "input": {"type" : "array", "items": {"type":"object"}},
+                "output": {"type" : "array", "items": {"type":"object"}}
+            },
+            "required": ["testvector_dir", "input", "output"]
         }
     },
     "type": "object",
