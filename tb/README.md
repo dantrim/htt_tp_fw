@@ -778,6 +778,29 @@ the combination of `-b -c -e -t -p`.
 
 </details>
 
+<details> <summary> <strong>update-makefile</strong> (click to expand)  </summary>
+
+```bash
+(env) $ tb update-makefile -h
+Usage: tb update-makefile [OPTIONS]
+
+  Update the QuestaSim makefile used by CocoTB to dump all signals (external
+  AND internal) to output waveform file.
+
+Options:
+  -v, --verbose  Print out detailed reporting
+  -h, --help     Show this message and exit.
+```
+
+By default, CocoTB's underlying `Makefile` that it uses for its QuestaSim simulator, located at
+`$(cocotb-config --makefiles)/simulators/Makefile.questa`, does not provide the necessary arguments to the `vsim` command
+to report all signals contained in the DUT hiearchy.
+
+Running `tb update-makefile` updates the `Makefile.questa` file accordingly. The update procedure is additionally
+run during each call to `tb run`. As a result, the update procedure is ~automatic.
+
+</details>
+
 </details>
 
 ## Running a test
