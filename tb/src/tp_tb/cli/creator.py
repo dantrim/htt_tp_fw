@@ -64,6 +64,38 @@ def create(test_name, n_inputs, n_outputs, software_block):
         sys.exit(1)
 
     ##
+    ## create test/Makefile
+    ##
+    ok, err = creator.create_test_makefile(test_name)
+    if not ok:
+        print(err)
+        sys.exit(1)
+
+    ##
+    ## create test/TopLevel
+    ##
+    ok, err = creator.create_test_toplevel(test_name, n_inputs, n_outputs)
+    if not ok:
+        print(err)
+        sys.exit(1)
+
+    ##
+    ## create test/module.py
+    ##
+    ok, err = creator.create_test_module(test_name)
+    if not ok:
+        print(err)
+        sys.exit(1)
+
+    ##
+    ## create test configuration file
+    ##
+    ok, err = creator.create_test_configuration(test_name, n_inputs, n_outputs)
+    if not ok:
+        print(err)
+        sys.exit(1)
+
+    ##
     ## all done!
     ##
     sys.exit(0)
