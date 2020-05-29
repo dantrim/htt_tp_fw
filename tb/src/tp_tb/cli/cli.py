@@ -4,6 +4,7 @@ import click
 
 from . import utils
 from . import testbench
+from . import creator
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -18,3 +19,4 @@ tb.add_command(utils.dump)
 tb.add_command(testbench.list)
 tb.add_command(testbench.check_config)
 tb.add_command(utils.update_makefile)
+tb.add_command(creator.create)
