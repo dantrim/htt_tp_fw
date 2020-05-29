@@ -92,7 +92,7 @@ def create(test_name, n_inputs, n_outputs, software_block):
     ##
     ## create test/module.py
     ##
-    ok, err = creator.create_test_module(test_name)
+    ok, err = creator.create_test_module(test_name, software_block)
     if not ok:
         print(err)
         sys.exit(1)
@@ -104,6 +104,12 @@ def create(test_name, n_inputs, n_outputs, software_block):
     if not ok:
         print(err)
         sys.exit(1)
+
+    if software_block:
+        ok, err = creator.create_software_block(test_name)
+        if not ok:
+            print(err)
+            sys.exit(1)
 
     ##
     ## all done!

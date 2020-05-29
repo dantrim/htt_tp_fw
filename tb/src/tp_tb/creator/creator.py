@@ -294,7 +294,7 @@ def create_test_toplevel(test_name, n_inputs, n_outputs):
     return True, None
 
 
-def create_test_module(test_name):
+def create_test_module(test_name, do_software_block=False):
 
     p_test_dir = test_dir_from_test_name(test_name)
     p_module_file = p_test_dir / "test" / f"test_{test_name}.py"
@@ -318,6 +318,10 @@ def create_test_module(test_name):
                 new_line = skeleton_line.replace("CREATORTESTNAME", test_name).replace(
                     "CREATORCLASSNAME", class_name
                 )
+                if "#CREATORSOFTWAREBLOCK" in skeleton_line and do_software_block:
+                    new_line = new_line.replace("#CREATORSOFTWAREBLOCK", "")
+                elif "#CREATORSOFTWAREBLOCK" in skeleton_line and not do_software_block:
+                    continue
                 ofile.write(new_line)
     file_ok = p_module_file.exists() and p_module_file.is_file()
     if not file_ok:
@@ -403,4 +407,38 @@ def create_test_configuration(test_name, n_inputs, n_outputs):
             f"ERROR Generated test configuration file (={str(p_test_config_file)}) failed schema check",
         )
 
+    return True, None
+
+
+def create_software_block(test_name):
+
+    p_test_dir = test_dir_from_test_name(test_name)
+    p_block_file = p_test_dir / f"{test_name}_block.py"
+    class_name = test_class_name(test_name)
+
+    p_creator_dir = creator_dir()
+    p_skeleton_block = p_creator_dir / "CREATOR_SKELETON_sw_block.py"
+    skeleton_ok = p_skeleton_block.exists() and p_skeleton_block.is_file()
+    if not skeleton_ok:
+        return (
+            False,
+            f'ERROR Creator skeleton file "{str(p_skeleton_block)}" could not be found',
+        )
+
+    autogen_lines = autogen_string(test_name)
+    with open(str(p_block_file), "w") as ofile:
+        for line in autogen_lines:
+            ofile.write(f"{line}\n")
+        with open(str(p_skeleton_block), "r") as skeleton_file:
+            for skeleton_line in skeleton_file:
+                new_line = skeleton_line.replace("CREATORTESTNAME", test_name).replace(
+                    "CREATORCLASSNAME", class_name
+                )
+                ofile.write(new_line)
+    file_ok = p_block_file.exists() and p_block_file.is_file()
+    if not file_ok:
+        return (
+            False,
+            f'ERROR Could not create test logic block file "{str(p_block_file)}"',
+        )
     return True, None
