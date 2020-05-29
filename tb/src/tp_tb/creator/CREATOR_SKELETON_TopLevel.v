@@ -22,7 +22,7 @@ module TopLevel_CREATORTESTNAME #(
     //
 
     wire BLOCK_input_write_enable [CREATORNINPUTS];
-    wire [DATAWIDTH-1:0] BLOCK_input_data [CREATORNINPUTS];
+    wire [DATA_WIDTH-1:0] BLOCK_input_data [CREATORNINPUTS];
     wire BLOCK_input_read_enable [CREATORNINPUTS];
     wire BLOCK_input_almost_full [CREATORNINPUTS];
     wire BLOCK_input_empty [CREATORNINPUTS];
@@ -31,7 +31,7 @@ module TopLevel_CREATORTESTNAME #(
     wire [DATA_WIDTH-1:0] BLOCK_output_data [CREATORNOUTPUTS];
     wire BLOCK_output_read_enable [CREATORNOUTPUTS];
     wire BLOCK_output_almost_full [CREATORNOUTPUTS];
-    wire BLOCK_output_empty [CREATORNOUTPUTS]
+    wire BLOCK_output_empty [CREATORNOUTPUTS];
 
     //
     // Input buffers

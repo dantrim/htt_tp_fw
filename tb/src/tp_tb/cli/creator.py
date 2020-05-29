@@ -11,12 +11,20 @@ def cli():
     """The create CLI group."""
 
 
-@click.option("-t", "--test-name", help="Give the test a name")
+@click.option("-t", "--test-name", help="Give the test a name", required=True)
 @click.option(
-    "-i", "--n-inputs", help="Specify the number of input ports for the DUT", type=int
+    "-i",
+    "--n-inputs",
+    help="Specify the number of input ports for the DUT",
+    type=int,
+    required=True,
 )
 @click.option(
-    "-o", "--n-outputs", help="Specify the number of output ports for the DUT", type=int
+    "-o",
+    "--n-outputs",
+    help="Specify the number of output ports for the DUT",
+    type=int,
+    required=True,
 )
 @click.option(
     "--software-block",
@@ -27,6 +35,8 @@ def cli():
 def create(test_name, n_inputs, n_outputs, software_block):
     """Create a new test."""
 
+    test_name = test_name.lower()
+    test_name = test_name.replace("-", "_")
     print(
         f'Creating test "{test_name}" with {n_inputs} inputs and {n_outputs} outputs.'
     )

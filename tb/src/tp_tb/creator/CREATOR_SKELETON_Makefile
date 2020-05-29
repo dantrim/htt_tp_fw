@@ -9,8 +9,6 @@ $(info *** TESTBENCH_TOPLEVEL=$(TESTBENCH_TOPLEVEL))
 $(info *** TESTBENCH_TEST_MODULE=$(TESTBENCH_TEST_MODULE))
 $(info *** COMPONENTS_LIB_DIR=$(COMPONENTS_LIB_DIR))
 
-include $(shell cocotb-config --makefiles)/Makefile.inc
-include $(shell cocotb-config --makefiles)/Makefile.sim
 
 # CocoTB configuration
 TOPLEVEL=$(TESTBENCH_TOPLEVEL)
@@ -50,3 +48,11 @@ VHDL_SOURCES =
 # Set the include path and compilation flags for CocoTB
 EXTRA_ARGS += +incdir+$(SRCDIR) 
 VSIM_ARGS  += -debugDB -voptargs="+acc"
+
+##############################################################################
+#
+# THE USER MUST NOT EDIT THESE LINES
+#
+##############################################################################
+include $(shell cocotb-config --makefiles)/Makefile.inc
+include $(shell cocotb-config --makefiles)/Makefile.sim
