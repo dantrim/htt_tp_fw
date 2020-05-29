@@ -7,8 +7,15 @@ infrastructure.
 
 In order to run the testbenches defined here you must have Python3 (>=3.6) installed
 on your machine and accessible via the `python3` command in your `$PATH`.
+
+
+### Python installation
 If you need to install python3, there are many places online showing how to do this.
 For example, [here](https://realpython.com/installing-python/).
+
+Additionally, you can find an installation script at [this repository](https://github.com/dantrim/danny_installs_python)
+that will install python for you. Beware, python compilation depends on external system libraries and so
+running the script at that repository straight out of the box may fail. Use it as a guide.
 
 ## Installation and Setup
 <details> <summary> Expand </summary>
@@ -49,12 +56,14 @@ Options:
   -h, --help  Show this message and exit.
 
 Commands:
-  check-config  Check/inspect a testbench's configuration (*.json) file.
-  diff          Diff two *.evt files and test for differences.
-  dump          Dump the contents of an *.evt file.
-  list          List all available testbenches (and their tests).
-  run           Setup and run cocotb-based testbenches.
-  test-summary  Dump the test results *.json file.
+  check-config     Check/inspect a testbench's configuration (*.json) file.
+  create           Create a new test.
+  diff             Diff two *.evt files and test for differences.
+  dump             Dump the contents of an *.evt file.
+  list             List all available testbenches and their status.
+  run              Setup and run cocotb-based testbenches.
+  test-summary     Dump the test results *.json file.
+  update-makefile  Update the QuestaSim makefile used by CocoTB
 ```
 If you see the above help message after running the top-level "`tb`" command then
 you should be on your way to running the testbench infrastructure.
@@ -109,12 +118,14 @@ Options:
   -h, --help  Show this message and exit.
 
 Commands:
-  check-config  Check/inspect a testbench's configuration (*.json) file.
-  diff          Diff two *.evt files and test for differences.
-  dump          Dump the contents of an *.evt file.
-  list          List all available testbenches (and their tests).
-  run           Setup and run cocotb-based testbenches.
-  test-summary  Dump the test results *.json file.
+  check-config     Check/inspect a testbench's configuration (*.json) file.
+  create           Create a new test.
+  diff             Diff two *.evt files and test for differences.
+  dump             Dump the contents of an *.evt file.
+  list             List all available testbenches and their status.
+  run              Setup and run cocotb-based testbenches.
+  test-summary     Dump the test results *.json file.
+  update-makefile  Update the QuestaSim makefile used by CocoTB
 ```
 Each command has it's own set of arguments and options, which can be accessed by
 ```bash
