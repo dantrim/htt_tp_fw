@@ -83,7 +83,7 @@ tb/
  └──test_config/
 ```
 
-The layout of the `tb` directory is illustrated in the above schematic (produced from a reducted `tree` command). Below a brief description
+The layout of the `tb` directory is illustrated in the above schematic (produced from a reduced `tree` command). Below a brief description
 is given of each of the `tb` sub-directories.
 
 ### tb/default_makefiles
