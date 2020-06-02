@@ -16,6 +16,7 @@ Table of Contents
    * [Anatomy of a Testbench](#testbench-structure)
    * [How to Run a Testbench](#running-a-testbench)
       * [Testbench Output](#output-generated-by-the-testbenches) 
+   * [How to Create a Testbench](#creating-a-testbench)
    * [Testbench Commands](#functionality)
       * [list](#tb-list)
       * [check-config](#tb-check-config)
@@ -288,6 +289,13 @@ There are analogously named `*timing*.txt` files which contain the timestamp inf
 of the FIFO blocks associated with the generated `fifo*.evt` files.
 
 <!-- </details> -->
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!--------------------------- CREATING A TESTBENCH ---------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+# Creating a Testbench
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
