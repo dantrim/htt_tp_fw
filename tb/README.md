@@ -103,11 +103,6 @@ Python 3.6.8 # looks good!
 ```
 </details>
 
-## High Level Description
-
-![myfig](docs/figures/tp_fw_hdl_only)
-[myfig]: docs/figures/tp_fw_hdl_only
-
 ## Functionality
 <details> <summary> Expand </summary>
 
