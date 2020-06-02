@@ -10,16 +10,27 @@ Table of Contents
    * [Python Installation](#python-installation)
    * [Installation and Setup](#installation-and-setup)
       * [The Virtual Environment Is Required](#the-virtual-environment-is-necessary-for-running-the-testbench)
+      * [Fresh Installation and Reinstallation](#fresh-installation-and-reinstallation)
+   * [Testbench Commands](#functionality)
+      * [list](#tb-list)
+      * [check-config](#tb-check-config)
+      * [create](#tb-create)
+      * [run](#tb-run)
+      * [test-summary](#tb-test-summary)
+      * [diff](#tb-diff)
+      * [dump](#tb-dump)
+      * [update-makefile](#tb-update-makefile)
+
 
 <!--te-->
 
-## Requirements
-
+# Requirements
 In order to run the testbenches defined here you must have Python3 (>=3.6) installed
 on your machine and accessible via the `python3` command in your `$PATH`.
 
 
-### Python installation
+# Python installation
+
 If you need to install python3, there are many places online showing how to do this.
 For example, [here](https://realpython.com/installing-python/).
 
@@ -28,7 +39,7 @@ that will install python for you. Beware, python compilation depends on external
 running the script at that repository straight out of the box may fail. Use it as a guide. It has been tested
 on MacOSX as well as CentOS7.
 
-## Installation and Setup
+# Installation and Setup
 <!-- <details> <summary> Expand </summary> -->
 
 If you have confirmed that you have `python3` on your machine, then the only
@@ -79,7 +90,7 @@ Commands:
 If you see the above help message after running the top-level "`tb`" command then
 you should be on your way to running the testbench infrastructure.
 
-### The virtual environment is necessary for running the testbench
+## The virtual environment is necessary for running the testbench
 In order to return back to the virtual environment for the cocotb testbenches,
 simply run,
 ```bash
@@ -91,7 +102,7 @@ initialize the virtual environment and ensure that the top-level entrypoint "`tb
 
 That is, **`setup_env.sh` must be sourced every time you return back to running the testbenches**.
 
-### Fresh Installation / Re-installation
+## Fresh Installation and Reinstallation
 If you wish to make a clean installation, simply delete the `env/` directory created when you
 ran `setup_env.sh` and re-run the installation procedure,
 ```bash
@@ -99,22 +110,10 @@ $ rm -rf env/
 $ source setup_env.sh
 (env) $ # everything is all fresh now
 ```
-
-### Note:
-
-If you do not have `pip`, this is because
-you do not have `python3` (`pip` comes with `python3` by default). You must check that your
-version of `pip` corresponds to your `python3` instance by running,
-```bash
-$ pip3 --version
-pip 9.0.3 from /foo/bar/python3.6/site-packages (python 3.6)
-$ python3 --version
-Python 3.6.8 # looks good!
-```
 <!-- </details> -->
 
 
-## Functionality
+# Functionality
 <!-- <details> <summary> Expand </summary> -->
 
 Here each of the ```tb``` commands will be briefly described.
@@ -145,7 +144,7 @@ Each command has it's own set of arguments and options, which can be accessed by
 ```
 
 <!-- <details> <summary> <strong>check-config</strong> (click to expand) </summary> -->
-### check-config
+## tb check-config
 
 ```bash
 (env) $ tb check-config -h
@@ -218,7 +217,7 @@ Configuration for test "b2b":
 <!-- </details> -->
 
 <!-- <details> <summary> <strong>create</strong> (click to expand) </summary> -->
-### create
+## tb create
 
 ```bash
 (env) $ tb create -h
@@ -306,7 +305,7 @@ the `input_callbacks` and `handlers` for the `SoftwareBlock` instance that is cr
 <!-- </details> -->
 
 <!-- <details> <summary> <strong>list</strong> (click to expand)  </summary> -->
-### list
+## tb list
 
 ```bash
 (env) $ tb list -h
@@ -330,7 +329,7 @@ b2b
 <!-- </details> -->
 
 <!-- <details> <summary> <strong> run </strong> (click to expand)  </summary> -->
-### run
+## tb run
 
 ```bash
 (env) $ tb run -h
@@ -375,7 +374,7 @@ testbench's JSON configuration.
 <!-- </details> -->
 
 <!-- <details> <summary> <strong>test-summary</strong> (click to expand) </summary> -->
-### test-summary
+## tb test-summary
 
 ```bash
 (env) $ tb test-summary -h
@@ -482,7 +481,7 @@ concatenate their results into a single table. For example:
 <!-- </details> -->
 
 <!-- <details> <summary> <strong>diff</strong> (click to expand) </summary> -->
-### diff
+## tb diff
 
 ```bash
 (env) $ tb diff -h
@@ -634,7 +633,7 @@ of tests of differences in the same format as the `test-summary` utility.
 <!-- </details> -->
 
 <!-- <details> <summary> <strong>dump</strong> (click to expand) </summary> -->
-### dump
+## tb dump
 
 ```bash
 (env) $ tb dump -h
@@ -797,7 +796,7 @@ the combination of `-b -c -e -t -p`.
 <!-- </details> -->
 
 <!-- <details> <summary> <strong>update-makefile</strong> (click to expand)  </summary> -->
-### update-makefile
+## tb update-makefile
 
 ```bash
 (env) $ tb update-makefile -h
@@ -822,7 +821,7 @@ run during each call to `tb run`. As a result, the update procedure is ~automati
 
 <!-- </details> -->
 
-## Running a test
+# Running a test
 <!-- <details> <summary> Expand </summary> -->
 
 To run a testbench, do something like:
