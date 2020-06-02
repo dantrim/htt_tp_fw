@@ -151,11 +151,11 @@ def get_testvector_files(testvector_dir="", **kwargs) :
 function implemented. An example of such a method is implemented for the `board2board_switching`
 firmware block [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/b2b_utils.py#L7).
 
-# Block IO Port Description
+# I/O Port Description
 
 The firmware block under test will have a specified number of inputs and outputs.
 Description of these inputs and outputs for a given firmware block are defined
-in the `testbench/<test_name>_ports.py` file -- the "ports file".
+in the `testbench/<test_name>_ports.py` file -- **the "ports file"**.
 
 A testbench's ports file defines a class with two enums: `Inputs` and `Outputs`
 that provide `{ "port-name" : "port-number" }` pairs. The "port-name" is typically
@@ -200,8 +200,37 @@ class Inputs(enum.Enum):
     Input_BAR = 0
 ```
 This reinforces the fact that the names (e.g. `Input_0`) are relatively arbitrary.
-The enum values are what are used in associating with the hardware description of the
+The enum *values*, and not their names, are what are used in associating with the hardware description of the
 firmware block.
+
+# Block Wrappers
+
+The HDL design under test in your `cocotb` testbench needs to have it's inputs driven
+and outputs monitored. The testbench infrastructure provides "block wrappers" to handle this,
+and each testbench must implement a block wrapper that is a sub-class of
+[BlockWrapper](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/block_wrapper.py).
+
+The [BlockWrapper](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/block_wrapper.py) class
+handles methods for associating [FifoWrapper](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py)
+objects to each of the inputs ([FifoDrivers](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L146))
+and to each of the outputs ([FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204)).
+
+At its minimum, a testbench must implement it's own [BlockWrapper](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/block_wrapper.py)
+sub-class and define a `send_input_events` method,
+
+```python
+def send_input_events(self, input_testvectors, n_to_send=-1, l0id_request=-1, **kwargs):
+```
+
+For our hypothetical two input, two output block `tp_block`, this is `tp_block_wrapper.py`:
+
+### testbench/tp_block_wrapper.py
+
+The minimal content of a testbench block wrapper can be seen in the
+[sw_switcher_block example](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/example_sw_block/sw_switcher_wrapper.py).
+Refer to this and understand it's [send_input_events function](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/example_sw_block/sw_switcher_wrapper.py#L18)
+and you will understand the minimum requirement for a testbench block wrapper.
+
 
 
 
