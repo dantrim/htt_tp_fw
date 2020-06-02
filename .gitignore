@@ -47,7 +47,7 @@ tb/env
 # image files
 *.eps
 *.jpg
-*.pdf
+#*.pdf
 *.jpeg
 
 #Vivado ignores
