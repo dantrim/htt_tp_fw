@@ -49,6 +49,7 @@ Table of Contents
       * [The Virtual Environment Is Required](#the-virtual-environment-is-necessary-for-running-the-testbench)
       * [Fresh Installation and Reinstallation](#fresh-installation-and-reinstallation)
    * [Description of tb Directory Structure](#directory-structure)
+   * [Anatomy of a Testbench](#testbench-structure)
    * [How to Run a Testbench](#running-a-testbench)
       * [Testbench Output](#output-generated-by-the-testbenches) 
    * [Testbench Commands](#functionality)
@@ -65,6 +66,11 @@ Table of Contents
 
 <!--te-->
 
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!-------------------------- DIRECTORY STRUCTURE ------------------------------>
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
 # Directory Structure
 
 ```
@@ -101,6 +107,62 @@ process (see [update-makefile](#tb-update-makefile)) uses the default makefiles 
 **Note:** If in future releases of `cocotb` the structure of the makefiles under `$(cocotb-config --makfiles)/simulators` change,
 the copies located in `default_makefiles` will need to be updated.
 
+### tb/schema
+
+This directory holds the `JSON` schema files for `JSON` structures relevant to
+the testbench infrastructure.
+
+If you are unfamiliar with how to specify or define a schema for `JSON`, and validate
+`JSON` objects within python, see the [Understanding JSON Schema page](https://json-schema.org/understanding-json-schema/index.html)
+and the [jsonschema repository](https://github.com/Julian/jsonschema).
+
+### tb/test_config
+
+This directory holds the `JSON` configuration files for each of the defined tests.
+Users must provide a test configuration to the [tb run](#tb-run) command in order
+to run testbenches.
+
+Testbench conifguration files must satisfy the schema defined in [schema/schema_test_config.json](schema/schema_test_config.json).
+
+### tb/src/tp_tb
+
+Directory containing testbench implementation and modules for creating testbenches.
+
+### tp_tb/cli
+
+Directory defining the top-level command-line-interface (CLI) for the testbench infrastructure.
+It is here where the top-level executable `tb`, and it's [sub-commands](#functionality), are defined.
+
+### tp_tb/creator
+
+This directory holds the module that is responsible for creating new testbenches from
+pre-defined template ("skeleton") files. The [tb create](#tb-create) utility looks in here
+for defining tests.
+
+**Note:** If the format of testbenches change, the [creator module](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/creator/creator.py)
+will need to be updated accordingly, as well as any templates located in this directory.
+
+### tp_tb/utils
+
+This directory houses modules necessary for building and running `cocotb` testbenches,
+as well as other miscellaneous utility methods and modules.
+Defined testbenches will rely on modules and classes implemented in this directory.
+
+### tp_tb/testbench
+
+This directory is where defined `cocotb` testbenches reside. Each testbench,
+for a specific firmware block, gets it's own directory. In the above there
+are three defined testbenches: `b2b`, `evt_sync`, and `example_sw_block`.
+
+# Testbench Structure
+
+
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!------------------------------- REQUIREMENTS -------------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
 # Requirements
 In order to run the testbenches defined here you must have Python3 (>=3.6) installed
 on your machine and accessible via the `python3` command in your `$PATH`.
@@ -116,6 +178,11 @@ that will install python for you. Beware, python compilation depends on external
 running the script at that repository straight out of the box may fail. Use it as a guide. It has been tested
 on MacOSX as well as CentOS7.
 
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!--------------------------- INSTALLATION AND SETUP -------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
 # Installation and Setup
 <!-- <details> <summary> Expand </summary> -->
 
@@ -189,6 +256,11 @@ $ source setup_env.sh
 ```
 <!-- </details> -->
 
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!---------------------------- RUNNING A TESTBENCH ---------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
 # Running a Testbench
 <!-- <details> <summary> Expand </summary> -->
 
@@ -248,6 +320,11 @@ of the FIFO blocks associated with the generated `fifo*.evt` files.
 
 <!-- </details> -->
 
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!------------------------------ FUNCTIONALITY -------------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
 # Functionality
 <!-- <details> <summary> Expand </summary> -->
 
