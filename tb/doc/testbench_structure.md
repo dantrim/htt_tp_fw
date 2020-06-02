@@ -279,7 +279,7 @@ in the `TopLevel_<test_name>.v` file should be `"input_spybuffers"` and `"output
 ### test/test_tp_block.py
 
 The actual `cocotb` tests that are run are defined in so-called `cocotb` test modules.
-For a given testbench, these are defined under the `test` director and must follow
+For a given testbench, these are defined under the `test` directory and must follow
 the naming scheme `"test_<test_name>.py"`.
 
 The test module files are where the user defines the logic of their testbench.
@@ -320,8 +320,11 @@ Minimal tests comparing the observed signals with the expected can use the
 [result_handler module](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/result_handler.py)
 to produce and store the test results in the
 [specified format](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/schema/schema_test_results_summary.json).
-This is exampled [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L224).
 
+**Generation of the formatted test results** is exampled
+[here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L224).
 
+**Storing the formatted test results** is exampled
+[here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L242).
 
 
