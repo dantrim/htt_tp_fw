@@ -7,6 +7,8 @@ as needed on a per-testbench status, can be added by users, **but the
 additions should be kept to the specific testbench's directory under
 tp_tb/testbench/\<name-of-testbench\>!** (see below).
 
+[[_TOC_]]
+
 # Testbench Anatomy
 
 ```
@@ -37,7 +39,7 @@ input ports, and two output ports.
 
 Below is a description of each file and directory illustrated above for the `tp_block` testbench.
 
-[[_TOC_]]
+
 
 # Testbench configuration
 
@@ -230,6 +232,53 @@ The minimal content of a testbench block wrapper can be seen in the
 [sw_switcher_block example](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/example_sw_block/sw_switcher_wrapper.py).
 Refer to this and understand it's [send_input_events function](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/example_sw_block/sw_switcher_wrapper.py#L18)
 and you will understand the minimum requirement for a testbench block wrapper.
+
+# Block Utilities
+
+Your testbench may require additional functions and methods. By default, a test has a `<test_name>_utils.py`
+file for this purpose.
+
+### testbench/tp_block_utils.py
+
+# CocoTB Testbench Module
+
+Each testbench will have an `test` directory under which the `cocotb` test module, `Makefile`, and top-level HDL file housing
+the firmware block under test will be located.
+
+### testbench/tp_block/test/Makefile
+
+The `test/Makefile` file provides `cocotb` with the necessary information for compiling your
+HDL for simulation and points to the `cocotb` TopLevel and testing module.
+A minimal example is provided in the
+[sw_switcher_block testbench](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/example_sw_block/test/Makefile).
+
+### testbench/tp_block/test/TopLevel_tp_block.v
+
+The HDL top-level for the testbench is defined using the following naming scheme: `TopLevel_<test_name>.v`.
+In the case of the testbench for the `tp_block`, this translates to `TopLevel_tp_block.v`.
+
+The top-level file defines the DUT that will be manipulated within the `cocotb` test module.
+It is here where a user wraps the inputs and outputs of their firmware block under test with
+Spy+FIFO blocks.
+The `cocotb` test module will then drive and monitor these Spy+FIFO blocks, with the firmware block
+under test interacting directly with them.
+
+An example of a top-level HDL file for the `board2board_switching` block is
+[here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/TopLevel_b2b.v).
+The firmware block under test is instantiated as
+[board2board_inst](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/TopLevel_b2b.v#L76)
+and its inputs (outputs) are interfaced to the
+[input_spybuffers](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/TopLevel_b2b.v#L42)
+([output_spybuffers](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/TopLevel_b2b.v#L104))
+Spy+FIFO blocks.
+
+**Important Note:** The naming scheme of the *outer most* Spy+FIFO blocks of the DUT defined
+in the `TopLevel_<test_name>.v` file should be `"input_spybuffers"` and `"output_spybuffers"`.
+
+
+### testbench/tp_block/test/test_tp_block.py
+
+
 
 
 
