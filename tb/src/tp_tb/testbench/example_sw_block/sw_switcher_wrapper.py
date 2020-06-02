@@ -22,7 +22,7 @@ class SWSwitcherWrapper(block_wrapper.BlockWrapper):
         n_input_files = len(input_testvectors)
         if n_input_files != self.n_input_ports:
             raise ValueError(
-                f"Number of input event tables (={n_input_files}) is not equal to number of B2B input ports (={self.n_input_ports})"
+                f"Number of input event tables (={n_input_files}) is not equal to number of SWSwitcher input ports (={self.n_input_ports})"
             )
 
         hooks = []
