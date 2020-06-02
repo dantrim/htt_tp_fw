@@ -40,10 +40,10 @@ class SoftwareBlock:
             '"output_handler_gen" function'
         )
 
-    def input_callback_gen(self, input_num):
+    def input_handler_gen(self, input_num):
         raise NotImplementedError(
             "Sub-classes of SoftwareBlock should define a "
-            '"input_callback_gen" function'
+            '"input_handler_gen" function'
         )
 
     class OutputDriver(Driver):
@@ -90,7 +90,7 @@ class SoftwareBlock:
     def add_fifo(self, fifo_block, clock, name, io_enum, direction="in"):
 
         if direction.lower() == "in":
-            callback = self.input_callback_gen(io_enum.value)
+            callback = self.input_handler_gen(io_enum.value)
             wrapper = fifo_wrapper.FifoMonitor(
                 fifo_block, clock, name, io_enum, callbacks=[callback], write_out=False
             )

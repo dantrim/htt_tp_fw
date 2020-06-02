@@ -11,7 +11,7 @@ class CREATORCLASSNAMEBlock(software_block.SoftwareBlock):
     def __init__(self, clock, name):
         super().__init__(clock, name)
 
-    def input_callback_gen(self, input_num):
+    def input_handler_gen(self, input_num):
         return self._default_input_data_handler
 
     def output_handler_gen(self, output_num):

@@ -14,7 +14,7 @@ class SWSwitcherBlock(software_block.SoftwareBlock):
         self._l0id_recvd = []
         self._event_hook = Event()  # used to sync up writing to outputs
 
-    def input_callback_gen(self, input_num):
+    def input_handler_gen(self, input_num):
         if input_num == 0:
             return self._port_0_handle_input_data
         elif input_num == 1:
