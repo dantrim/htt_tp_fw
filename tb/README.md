@@ -3,6 +3,16 @@
 This directory contains the TP's [cocotb](https://github.com/cocotb/cocotb)-based testbench
 infrastructure.
 
+Table of Contents
+=================
+<!--ts-->
+   * [Requirements](#requirements)
+   * [Python Installation](#python-installation)
+   * [Installation and Setup](#installation-and-setup)
+      * [The Virtual Environment Is Required](#the-virtual-environment-is-necessary-for-running-the-testbench)
+
+<!--te-->
+
 ## Requirements
 
 In order to run the testbenches defined here you must have Python3 (>=3.6) installed
@@ -19,7 +29,7 @@ running the script at that repository straight out of the box may fail. Use it a
 on MacOSX as well as CentOS7.
 
 ## Installation and Setup
-<details> <summary> Expand </summary>
+<!-- <details> <summary> Expand </summary> -->
 
 If you have confirmed that you have `python3` on your machine, then the only
 thing that you need to do to install all requirements for running the cocotb-based
@@ -101,10 +111,11 @@ pip 9.0.3 from /foo/bar/python3.6/site-packages (python 3.6)
 $ python3 --version
 Python 3.6.8 # looks good!
 ```
-</details>
+<!-- </details> -->
+
 
 ## Functionality
-<details> <summary> Expand </summary>
+<!-- <details> <summary> Expand </summary> -->
 
 Here each of the ```tb``` commands will be briefly described.
 
@@ -133,7 +144,8 @@ Each command has it's own set of arguments and options, which can be accessed by
 (env) $ tb [command] -h
 ```
 
-<details> <summary> <strong>check-config</strong> (click to expand) </summary>
+<!-- <details> <summary> <strong>check-config</strong> (click to expand) </summary> -->
+### check-config
 
 ```bash
 (env) $ tb check-config -h
@@ -203,9 +215,10 @@ Configuration for test "b2b":
 ------------------------------------------------------------
 ```
 
-</details>
+<!-- </details> -->
 
-<details> <summary> <strong>create</strong> (click to expand) </summary>
+<!-- <details> <summary> <strong>create</strong> (click to expand) </summary> -->
+### create
 
 ```bash
 (env) $ tb create -h
@@ -290,9 +303,10 @@ to have it start running. The user will need to do work to implement this logic 
 the `input_callbacks` and `handlers` for the `SoftwareBlock` instance that is created.
 
 
-</details>
+<!-- </details> -->
 
-<details> <summary> <strong>list</strong> (click to expand)  </summary>
+<!-- <details> <summary> <strong>list</strong> (click to expand)  </summary> -->
+### list
 
 ```bash
 (env) $ tb list -h
@@ -313,9 +327,10 @@ Defined testbenches:
 b2b
 ```
 
-</details>
+<!-- </details> -->
 
-<details> <summary> <strong> run </strong> (click to expand)  </summary>
+<!-- <details> <summary> <strong> run </strong> (click to expand)  </summary> -->
+### run
 
 ```bash
 (env) $ tb run -h
@@ -357,9 +372,10 @@ It is up to the designer of the specific testbench to ensure that these "input_a
 handled within their test, or have suitable defaults in the case of their absence within the
 testbench's JSON configuration.
 
-</details>
+<!-- </details> -->
 
-<details> <summary> <strong>test-summary</strong> (click to expand) </summary>
+<!-- <details> <summary> <strong>test-summary</strong> (click to expand) </summary> -->
+### test-summary
 
 ```bash
 (env) $ tb test-summary -h
@@ -463,9 +479,10 @@ concatenate their results into a single table. For example:
 |TEST_B2B_SRC00_DEST13                   |FAIL                |EVENT_FOOTER                            |
 |----------------------------------------|--------------------|----------------------------------------|
 ```
-</details>
+<!-- </details> -->
 
-<details> <summary> <strong>diff</strong> (click to expand) </summary>
+<!-- <details> <summary> <strong>diff</strong> (click to expand) </summary> -->
+### diff
 
 ```bash
 (env) $ tb diff -h
@@ -614,9 +631,10 @@ within the data where that data is placed. For example, if a module header is mi
 Giving `tb diff` the `-t|--table` option (in combination with the `--event-detail` option) provides tabulated results
 of tests of differences in the same format as the `test-summary` utility.
 
-</details>
+<!-- </details> -->
 
-<details> <summary> <strong>dump</strong> (click to expand) </summary>
+<!-- <details> <summary> <strong>dump</strong> (click to expand) </summary> -->
+### dump
 
 ```bash
 (env) $ tb dump -h
@@ -776,9 +794,10 @@ Any combination of these options can be provided to the `dump` utility. Provide 
 the combination of `-b -c -e -t -p`.
 
 
-</details>
+<!-- </details> -->
 
-<details> <summary> <strong>update-makefile</strong> (click to expand)  </summary>
+<!-- <details> <summary> <strong>update-makefile</strong> (click to expand)  </summary> -->
+### update-makefile
 
 ```bash
 (env) $ tb update-makefile -h
@@ -799,12 +818,12 @@ to report all signals contained in the DUT hiearchy.
 Running `tb update-makefile` updates the `Makefile.questa` file accordingly. The update procedure is additionally
 run during each call to `tb run`. As a result, the update procedure is ~automatic.
 
-</details>
+<!-- </details> -->
 
-</details>
+<!-- </details> -->
 
 ## Running a test
-<details> <summary> Expand </summary>
+<!-- <details> <summary> Expand </summary> -->
 
 To run a testbench, do something like:
 
@@ -860,4 +879,4 @@ The data files named "`fifomonitor*.evt`" correspond to the data observed at the
 There are analogously named `*timing*.txt` files which contain the timestamp information for the data seen in each
 of the FIFO blocks associated with the generated `fifo*.evt` files.
 
-</details>
+<!-- </details> -->
