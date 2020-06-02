@@ -1,5 +1,3 @@
-# Testbench Structure
-
 The following details the components of a valid testbench.
 Described is the minimal structure required to simply begin passing
 data through a testbench.
@@ -28,6 +26,7 @@ tb/
      └── config_tp_block.json
 ```
 
+
 Let's assume that you have a firmware block that you wish to test, and
 that that firmware block is called `tp_block`. The above schematic
 illustrates all relevant directories and files under the `tp-fw/tb/` directory
@@ -36,16 +35,26 @@ that relate to the testbench for `tp_block`.
 For the following, let us further assume that the firmware block `tp_block` has two
 input ports, and two output ports.
 
-Here is a description of each of the files in the above schematic:
+Below is a description of each file and directory illustrated above for the `tp_block` testbench.
+
+[[_TOC_]]
+
+# Testbench configuration
+
+Each testbench is required to have defined a `JSON` configuration file located
+under the `test_config/` directory. The name of each configuration file should be
+unique and should follow the `config_<test_name>.json` scheme.
+
+Validation of a testbench configuration is done by running the [tb check-config](../README.md#tb-check-config)
+utility.
+
+In the case of the testbench for the `tp_block`, this file is called `config_tp_block.json`:
 
 ## test_config/config_tp_block.json
 
 This is the testbench configuration file specific to `tp_block`'s testbench.
 As mentioned in the [README](../README.md), this configuration file must satisfy
 the `jsonschema` defined under [schema_test_config.json](../schema/schema_test_config.json).
-
-The [tb check-config](../README.md#tb-check-config) can be used to check that a testbench
-configuration file is valid.
 
 A valid schema for `tp_block` would look something like:
 ```json
@@ -142,9 +151,57 @@ def get_testvector_files(testvector_dir="", **kwargs) :
 function implemented. An example of such a method is implemented for the `board2board_switching`
 firmware block [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/b2b_utils.py#L7).
 
+# Block IO Port Description
+
+The firmware block under test will have a specified number of inputs and outputs.
+Description of these inputs and outputs for a given firmware block are defined
+in the `testbench/<test_name>_ports.py` file -- the "ports file".
+
+A testbench's ports file defines a class with two enums: `Inputs` and `Outputs`
+that provide `{ "port-name" : "port-number" }` pairs. The "port-name" is typically
+a descriptive (logical) name that can be used for naming output files, etc... For example,
+if output port number `0` of a given firmware block is sending data to another block
+called `TPBlockDownStream`, then the "port-name" could be something like "TPBlockDownStream".
+The association with the output port for the firmware block under test is given
+by the value of the enum.
+
+In the case of the `tp_block` testbench this file is `tp_block_ports.py`:
+
+## testbench/tp_block_ports.py
+
+For the two inputs and two outputs of the firmware block `tp_block`, a minimal
+ports file will look like the following:
+
+```python
+import enum
+
+from tp_tb.utils import port_descriptor
 
 
+class TPBlockPorts(port_descriptor.PortDescriptor):
+    def __init__(self):
+        super().__init__()
 
+    class Inputs(enum.Enum):
+        Input_0 = 0
+        Input_1 = 1
+
+    class Outputs(enum.Enum):
+        Output_0 = 0
+        Outupt_1 = 1
+```
+The input (output) ports have names `Input_0` and `Input_1` (`Output_0` and `Output_1`).
+The values of the enum, for example `1` for `Input_1` are what correspond to the
+actual firmware IO port in the HDL and the ordering in the ports file does **not necessarily
+need to be sequential or ordered**. For example, the following is valid:
+```python
+class Inputs(enum.Enum):
+    Input_FOO = 1
+    Input_BAR = 0
+```
+This reinforces the fact that the names (e.g. `Input_0`) are relatively arbitrary.
+The enum values are what are used in associating with the hardware description of the
+firmware block.
 
 
 
