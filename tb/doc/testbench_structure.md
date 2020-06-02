@@ -52,7 +52,7 @@ utility.
 
 In the case of the testbench for the `tp_block`, this file is called `config_tp_block.json`:
 
-## test_config/config_tp_block.json
+## config_tp_block.json
 
 This is the testbench configuration file specific to `tp_block`'s testbench.
 As mentioned in the [README](../README.md), this configuration file must satisfy
@@ -169,7 +169,7 @@ by the value of the enum.
 
 In the case of the `tp_block` testbench this file is `tp_block_ports.py`:
 
-## testbench/tp_block_ports.py
+## tp_block_ports.py
 
 For the two inputs and two outputs of the firmware block `tp_block`, a minimal
 ports file will look like the following:
@@ -226,7 +226,7 @@ def send_input_events(self, input_testvectors, n_to_send=-1, l0id_request=-1, **
 
 For our hypothetical two input, two output block `tp_block`, this is `tp_block_wrapper.py`:
 
-### testbench/tp_block_wrapper.py
+### tp_block_wrapper.py
 
 The minimal content of a testbench block wrapper can be seen in the
 [sw_switcher_block example](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/example_sw_block/sw_switcher_wrapper.py).
@@ -238,21 +238,21 @@ and you will understand the minimum requirement for a testbench block wrapper.
 Your testbench may require additional functions and methods. By default, a test has a `<test_name>_utils.py`
 file for this purpose.
 
-### testbench/tp_block_utils.py
+### tp_block_utils.py
 
 # CocoTB Testbench Module
 
 Each testbench will have an `test` directory under which the `cocotb` test module, `Makefile`, and top-level HDL file housing
 the firmware block under test will be located.
 
-### testbench/tp_block/test/Makefile
+### test/Makefile
 
 The `test/Makefile` file provides `cocotb` with the necessary information for compiling your
 HDL for simulation and points to the `cocotb` TopLevel and testing module.
 A minimal example is provided in the
 [sw_switcher_block testbench](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/example_sw_block/test/Makefile).
 
-### testbench/tp_block/test/TopLevel_tp_block.v
+### test/TopLevel_tp_block.v
 
 The HDL top-level for the testbench is defined using the following naming scheme: `TopLevel_<test_name>.v`.
 In the case of the testbench for the `tp_block`, this translates to `TopLevel_tp_block.v`.
@@ -276,9 +276,51 @@ Spy+FIFO blocks.
 in the `TopLevel_<test_name>.v` file should be `"input_spybuffers"` and `"output_spybuffers"`.
 
 
-### testbench/tp_block/test/test_tp_block.py
+### test/test_tp_block.py
 
+The actual `cocotb` tests that are run are defined in so-called `cocotb` test modules.
+For a given testbench, these are defined under the `test` director and must follow
+the naming scheme `"test_<test_name>.py"`.
 
+The test module files are where the user defines the logic of their testbench.
+An example can be found in the testbench for the
+[board2board_switching test module](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py)
+where the main `cocotb` test is defined with the ```python @cocotb.test``` decorator
+[here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L69).
+
+#### Accessing the Testbench Configuration
+Test modules can gain access to the testbench configuration data using the `test_config.get_config()` method,
+as exampled [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L74).
+This provides access to the `input_args`, `run_config`, and `testvectors` data provided in
+the defined testbench configuration.
+
+#### Starting the Simulation Clock
+The simulation clock is configured within the test module, as
+[here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L107).
+
+#### Initializing Input and Output FIFO Wrappers
+Input and output drivers and monitors for the input and output Spy+FIFO blocks are
+added to the instantiated block wrapper instance within the test module, as exampled
+[here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L132).
+
+#### Driving Inputs
+Signals from the input testvectors are driven onto the firmware block under test's
+input ports using the instantiated block wrapper's `send_input_events` method, as
+exampled [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L165).
+
+#### Compare the Observed with Expected
+Minimal tests compare the signals observed at the firmware block under test's output
+ports with those signals provided by the testvectors for the output ports.
+This can be done by looping over the output monitors (via the instantiated block wrapper object)
+and comparing the observed output data with the expected using the [tb diff utility](../README.md#tb-diff).
+This is exampled [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L221).
+
+#### Store the Test Results
+Minimal tests comparing the observed signals with the expected can use the
+[result_handler module](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/result_handler.py)
+to produce and store the test results in the
+[specified format](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/schema/schema_test_results_summary.json).
+This is exampled [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L224).
 
 
 
