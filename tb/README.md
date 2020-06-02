@@ -3,6 +3,43 @@
 This directory contains the TP's [cocotb](https://github.com/cocotb/cocotb)-based testbench
 infrastructure.
 
+```
+tb/
+ ├── default_makefiles/
+ ├── schema/
+ ├── src/
+ │   └── tp_tb/
+ │       ├── cli/
+ │       ├── creator/
+ │       ├── testbench/
+ │       │   ├── b2b/
+ │       │   │   ├── test/
+ │       │   │   ├── analysis/
+ │       │   │   ├── b2b_ports.py
+ │       │   │   ├── b2b_wrapper.py
+ │       │   │   ├── b2b_utils.py
+ │       │   │   └── b2b_flow.py
+ │       │   ├── evt_sync/
+ │       │   │   ├── test/
+ │       │   │   ├── evt_sync_ports.py
+ │       │   │   ├── evt_sync_wrapper.py
+ │       │   │   └── evt_sync_utils.py
+ │       │   └── example_sw_block/
+ │       │       ├── test/
+ │       │       ├── sw_switcher_block.py
+ │       │       ├── sw_switcher_ports.py
+ │       │       ├── sw_switcher_wrapper.py
+ │       │       └── sw_switcher_utils.py
+ │       └── utils/
+ ├── test_config/
+ │   ├── config_b2b.json
+ │   ├── config_evt_sync.json
+ │   └── config_sw_switcher.json
+ └── test_output/
+     ├── b2b/
+     └── sw_switcher/
+```
+
 Table of Contents
 =================
 <!--ts-->
