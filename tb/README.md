@@ -48,6 +48,7 @@ Table of Contents
    * [Installation and Setup](#installation-and-setup)
       * [The Virtual Environment Is Required](#the-virtual-environment-is-necessary-for-running-the-testbench)
       * [Fresh Installation and Reinstallation](#fresh-installation-and-reinstallation)
+   * [Description of tb Directory Structure](#directory-structure)
    * [How to Run a Testbench](#running-a-testbench)
       * [Testbench Output](#output-generated-by-the-testbenches) 
    * [Testbench Commands](#functionality)
@@ -63,6 +64,29 @@ Table of Contents
    
 
 <!--te-->
+
+# Directory Structure
+
+```
+tb/
+ ├── default_makefiles/
+ ├── schema/
+ ├── src/
+ │   └── tp_tb/
+ │       ├── cli/
+ │       ├── creator/
+ │       ├── utils/
+ │       └── testbench/
+ │           ├── b2b/
+ │           ├── evt_sync/
+ │           └── example_sw_block/
+ └──test_config/
+```
+
+The layout of the `tb` directory is illustrated in the above schematic (produced from a reducted `tree` command). Below a brief description
+is given of each of the `tb` sub-directories.
+
+### tb/default_makefiles
 
 # Requirements
 In order to run the testbenches defined here you must have Python3 (>=3.6) installed
