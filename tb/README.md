@@ -181,7 +181,7 @@ and the minimal order of operations can be listed as:
 
  1. (`HDL`) Design a logic block that you wish to test
  2. (`HDL`) Wrap the design in `Spy+FIFO` blocks (one such block for each input and output)
- 3. (`python`) Construct a `cocotb` test module in that initializes the `DUT` (the `Spy+FIFO`-wrapped design)
+ 3. (`python`) Construct a `cocotb` test module that initializes the `DUT` (the `Spy+FIFO`-wrapped design)
  4. (`python`) Use [FifoDrivers](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L146) to drive input testvector data onto the `DUT` inputs
  5. (`python`) Use [FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204) to monitor the `DUT` output signals
  6. (`python`) Compare the signals observed by the [FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204) to the output testvectors
