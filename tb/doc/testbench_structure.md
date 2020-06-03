@@ -193,7 +193,7 @@ class TPBlockPorts(port_descriptor.PortDescriptor):
         Outupt_1 = 1
 ```
 The input (output) ports have names `Input_0` and `Input_1` (`Output_0` and `Output_1`).
-The values of the enum, for example `1` for `Input_1` are what correspond to the
+The values of the enum, for example `1` for `Input_1`, are what correspond to the
 actual firmware IO port in the HDL and the ordering in the ports file does **not necessarily
 need to be sequential or ordered**. For example, the following is valid:
 ```python
