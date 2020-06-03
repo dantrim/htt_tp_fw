@@ -210,9 +210,17 @@ at a single time. That is, you can chain together any number of firmware logic
 blocks --- with `Spy+FIFO` interconnects --- and use the testbench infrastructure
 to test the combined logic. For two logic blocks, for example, the above figure(s)
 would be augmented as in the following figure:
+
 <div align="center">
 <img src="doc/figures/tp_fw_two_blocks.png" height="400">
 </div>
+
+By default, the testbench infrastructure will drive and monitor only the **outermost**
+`Spy+FIFO` blocks. Monitoring any internal `Spy+FIFO` blocks can be done by the user
+adding the necessary code to their `cocotb` test module, in the same way as adding
+any code to monitor or drive internal signals of the `DUT` (here we use `"DUT"` to
+not refer to the `Spy+FIFO` logic).
+
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
