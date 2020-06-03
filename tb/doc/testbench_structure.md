@@ -252,6 +252,9 @@ HDL for simulation and points to the `cocotb` TopLevel and testing module.
 A minimal example is provided in the
 [sw_switcher_block testbench](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/example_sw_block/test/Makefile).
 
+Further information on `cocotb` requirements for its Makefiles is given by the official
+[cocotb documentation](https://docs.cocotb.org/en/stable/quickstart.html#creating-a-makefile).
+
 ### test/TopLevel_tp_block.v
 
 The HDL top-level for the testbench is defined using the following naming scheme: `TopLevel_<test_name>.v`.
@@ -287,6 +290,9 @@ An example can be found in the testbench for the
 [board2board_switching test module](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py)
 where the main `cocotb` test is defined with the ```python @cocotb.test``` decorator
 [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L69).
+
+Further information on how to implement a `cocotb` test module is provided by the
+[official documentation](https://docs.cocotb.org/en/stable/quickstart.html#creating-a-test).
 
 #### Accessing the Testbench Configuration
 Test modules can gain access to the testbench configuration data using the `test_config.get_config()` method,
