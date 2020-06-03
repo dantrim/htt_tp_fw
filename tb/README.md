@@ -142,10 +142,56 @@ around testing logic blocks that are interfaced to Spybuffer (`"Spy+FIFO"`) bloc
 This is motivated by the fact that in the HTT Trigger Processor, at least in the
 development/debugging phase, `Spy+FIFO` blocks will be interspersed throughout
 the logic and between functional blocks.
+This is illustrated in the high-level TP block diagram:
 
+<div align="center">
+<img src="doc/figures/tp_fw_tp_overview.png" height = "400">
+</div>
+
+Given this design consideration, the testbench infrastructure here laid out is
+based around designers providing their logic block that they wish to test and
+having it's inputs and outputs interfaced directly to `Spy+FIFO` blocks.
+This is illustrated in the figure below:
 <div align="center">
 <img src="doc/figures/tp_fw_hdl_onlyPNG.png" height="400">
 </div>
+
+Once the `DUT` is interfaced to `Spy+FIFO` blocks as in the above, the
+`cocotb` testbench can be constructed. `cocotb` is a `python` based testbench
+framework that runs `python` defined coroutines side-by-side with the
+RTL simulation. A `cocotb` testbench has complete access to all signals
+(internal and external) of the `DUT` and provides methods for designers of
+testbenches to drive signals onto the inputs of the toplevel design,
+monitor the outputs of the toplevel design, and even control internal registers
+inside of simulation time. It is a powerful tool, and complete information can
+be found in the [official documentation](https://docs.cocotb.org/en/latest/).
+
+With the "`Spy+FIFO`-generalized interface" assumed for all designs to be tested
+by the testbench infrastructure, providing utilities for creating testbenches
+and driving & monitoring the designs is relatively straightforward given
+enough familiarity with `python` and `cocotb`.
+
+The main idea of developing testbenches with this "`Spy+FIFO` generalized interface"
+is illustrated by the following figure,
+<div align="center">
+    <img src="doc/figures/tp_fw_fullPNG.png" height="800">
+</div>
+and the minimal order of operations can be listed as:
+
+ 1. Design a logic block that you wish to test
+ 2. Wrap the design in `Spy+FIFO` blocks (one such block for each input and output)
+ 3. Construct a `cocotb` test module that initializes the `DUT` (the `Spy+FIFO`-wrapped design)
+ 4. Use [FifoDrivers](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L146) to drive input testvector data onto the `DUT` inputs
+ 5. Use [FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204) to monitor the `DUT` output signals
+ 6. Compare the signals observed by the [FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204) to the output testvectors
+
+The work necessary to perform steps 2-6 are, for the most part, handled entirely
+by the testbench infrastructure laid out in this repository.
+As a designer of a logic block, you really only need to provide the testbench
+infrastructure with the source files for your logic design and plug them into
+`Spy+FIFO` blocks.
+Most of the leg work to perform the rest is done by utilizing the testbench infrastructure
+described in the [rest of this README](#directory-structure).
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
