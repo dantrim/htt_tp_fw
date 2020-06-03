@@ -18,6 +18,7 @@ Table of Contents
    * [How to Run a Testbench](#running-a-testbench)
       * [Testbench Output](#output-generated-by-the-testbenches) 
    * [How to Create a Testbench](#creating-a-testbench)
+   * [Creating a Python Defined Logic Block](#defining-logic-blocks-in-python)
    * [Testbench Commands](#functionality)
       * [list](#tb-list)
       * [check-config](#tb-check-config)
@@ -178,12 +179,12 @@ is illustrated by the following figure,
 </div>
 and the minimal order of operations can be listed as:
 
- 1. Design a logic block that you wish to test
- 2. Wrap the design in `Spy+FIFO` blocks (one such block for each input and output)
- 3. Construct a `cocotb` test module that initializes the `DUT` (the `Spy+FIFO`-wrapped design)
- 4. Use [FifoDrivers](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L146) to drive input testvector data onto the `DUT` inputs
- 5. Use [FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204) to monitor the `DUT` output signals
- 6. Compare the signals observed by the [FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204) to the output testvectors
+ 1. (`HDL`) Design a logic block that you wish to test
+ 2. (`HDL`) Wrap the design in `Spy+FIFO` blocks (one such block for each input and output)
+ 3. (`python`) Construct a `cocotb` test module in that initializes the `DUT` (the `Spy+FIFO`-wrapped design)
+ 4. (`python`) Use [FifoDrivers](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L146) to drive input testvector data onto the `DUT` inputs
+ 5. (`python`) Use [FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204) to monitor the `DUT` output signals
+ 6. (`python`) Compare the signals observed by the [FifoMonitors](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/fifo_wrapper.py#L204) to the output testvectors
 
 The work necessary to perform steps 2-6 are, for the most part, handled entirely
 by the testbench infrastructure laid out in this repository.
@@ -192,6 +193,17 @@ infrastructure with the source files for your logic design and plug them into
 `Spy+FIFO` blocks.
 Most of the leg work to perform the rest is done by utilizing the testbench infrastructure
 described in the [rest of this README](#directory-structure).
+
+**Note:** Given the flexibility and strength of the `cocotb` framework, users
+can define logic blocks *entirely within python*. That is, you do  not need to
+have the logic defined and laid out in HDL/RTL (as illustrated in the above figure)
+at all. If you wish to study yet-to-be-designed logic, or add additional control
+logic to a design's interface(s), you can create it entirely within `python` by
+leveraging `cocotb` constructs.
+The testbench infrastructure laid out in this repository provides means for
+users to put together the initial stages of a pure software-defined logic block.
+See the section [Creating a Python Defined Logic Block](#defining-logic-blocks-in-python)
+for more information.
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
@@ -360,6 +372,13 @@ of the FIFO blocks associated with the generated `fifo*.evt` files.
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
 # Creating a Testbench
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!------------------------ SOFTWARE DEFINED BLOCKS ---------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+# Defining Logic Blocks in Python
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
