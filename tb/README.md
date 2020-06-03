@@ -12,6 +12,7 @@ Table of Contents
    * [Installation and Setup](#installation-and-setup)
       * [The Virtual Environment Is Required](#the-virtual-environment-is-necessary-for-running-the-testbench)
       * [Fresh Installation and Reinstallation](#fresh-installation-and-reinstallation)
+   * [Overview of the Testbench Infrastructure](#overview-of-the-testbench-infrastructure)
    * [Description of tb Directory Structure](#directory-structure)
    * [Anatomy of a Testbench](#testbench-structure)
    * [How to Run a Testbench](#running-a-testbench)
@@ -128,6 +129,23 @@ $ source setup_env.sh
 (env) $ # everything is all fresh now
 ```
 <!-- </details> -->
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!------------------------------- OVERVIEW ------------------------------------>
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+# Overview of the Testbench Infrastructure
+
+The `cocotb`-based testbench infrastructure laid out in this repository is based
+around testing logic blocks that are interfaced to Spybuffer (`"Spy+FIFO"`) blocks.
+This is motivated by the fact that in the HTT Trigger Processor, at least in the
+development/debugging phase, `Spy+FIFO` blocks will be interspersed throughout
+the logic and between functional blocks.
+
+<div align="center">
+<img src="doc/figures/tp_fw_hdl_onlyPNG.png" height="400">
+</div>
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
