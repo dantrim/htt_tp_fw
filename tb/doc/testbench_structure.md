@@ -298,8 +298,8 @@ Further information on how to implement a `cocotb` test module is provided by th
 Test modules can gain access to the testbench configuration data
 (see the [Testbench configuration section](#testbench-configuration)) using the `test_config.get_config()` method,
 as exampled [here](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/test/test_b2b.py#L74).
-This provides access to the `input_args`, `run_config`, and `testvectors` data provided in
-the defined testbench configuration.
+This provides access to the `input_args`, `run_config`, and `testvectors` data defined
+in the current test's testbench configuration file.
 
 #### Starting the Simulation Clock
 The simulation clock is configured within the test module, as
