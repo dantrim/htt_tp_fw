@@ -572,7 +572,7 @@ You can see the following files created:
 Providing the `--software-block` option will result in the additional file `testbench/<test_name>/<test_name>_block.py` which has a skeleton
 logic block defined in python. An instance of the logic block will be added to the created CocoTB test module (`testbench/<test_name>/test/test_<test_name>.py`)
 to have it start running. The user will need to do work to implement this logic block, of course, by filling in
-the `input_callbacks` and `handlers` for the `SoftwareBlock` instance that is created.
+the `input_handlers` and `output_handlers` for the `SoftwareBlock` instance that is created.
 
 
 <!-- </details> -->
