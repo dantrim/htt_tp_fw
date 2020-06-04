@@ -664,6 +664,12 @@ almost 72 µs longer for data from the event with `L0ID=0x5` than it did for out
 The time differences here do not correspond to the time delays of `50 ns` and `200 ns`
 that we introduced in our logic block since the two input testvectors present drastically
 different amounts of data to the inputs.
+However, you will see the artificial delay that we injected into our
+logic block occurring in the dump of the slower of the two
+outputs (output 1): `95465 ns - 95260 ns = 205 ns`. This number is `205 ns`
+and not exactly `200 ns` as we injected into our output handler
+for output 1 since there is a one-clock clock-cycle for synchronization
+and we have configured the clock period to be `5 ns` by default.
 
 You can also see this in the simulator waveforms too, by loading the dataset
 contained in `test_output/sw_switcher/vsim.wlf` into your favorite waveform viewer
