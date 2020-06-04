@@ -590,7 +590,7 @@ in `test_config/config_sw_switcher.json` as:
         { "0" : "BoardToBoardInput_AMTP0_Pixel0.evt" },
         { "1" : "BoardToBoardInput_AMTP0_Pixel1.evt" }
     ],
-    output":
+    "output":
     [
         { "0" : "BoardToBoardInput_AMTP0_Pixel1.evt" },
         { "1" : "BoardToBoardInput_AMTP0_Pixel0.evt" }
