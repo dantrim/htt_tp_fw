@@ -10,7 +10,12 @@ command provided by the testbench infrastructure.
       * [Update the Toplevel Makefile](#update-the-toplevel-makefile)
          * [Predefined Makefile Variables](#predefined-makefile-variables)
       * [Instantiate your Logic Block and Connect it to the Spy+FIFO blocks](#connecting-the-blocks)
- 
+      * [Complete the Testbench Configuration](#configure-your-testbench)
+         * [input_args](#testbench-input-args)
+         * [run_config](#testbench-run-config)
+         * [testvectors](#testbench-testvectors)
+   * [Run the Testbench](#run-the-testbench)
+   * [Finsihed!](#all-done)
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
 <!----------------------------- REQUIREMENTS ---------------------------------->
@@ -190,14 +195,12 @@ In addition to including these source files, we'll need to point the `cocotb` co
 to the source directories as well as to the directories housing the external
 components. This corresponds to adjusting the `EXTRA_ARGS` and `VSIM_ARGS` variables
 appearing in the `Makefile`, which initially look something like this:
-
 ```make
 EXTRA_ARGS += +incdir+$(SRCDIR)
 VSIM_ARGS  += -debugDB -voptargs="+acc"
 ```
 
 For compiling the `board2board_switching` logic, we adjust these variables as so:
-
 ```make
 EXTRA_ARGS += +incdir+$(SRCDIR) +incdir+$(TUTORIAL_SRC_DIR)/include +incdir+$(TUTORIAL_SRC_DIR)/ip -L $(COMPONENTS_LIB_DIR)/unisims_ver -L $(COMPONENTS_LIB_DIR)/unisim
 VSIM_ARGS  += glbl -debugDB -voptargs="+acc"
@@ -241,50 +244,283 @@ in quantity corresponding to the `--n-inputs` and `--n-outputs`, respectively,
 provided to `tb create`. These blocks look something like,
 
 ```verilog
-    generate
-        for(genvar i = 0; i < 4; i++)
-            begin:input_spybuffers
-                SpyBuffer #(
-                    .DATA_WIDTH(DATA_WIDTH-1),
-                    .FC_FIFO_WIDTH(FIFO_DEPTH)
-                    ) spybuffer (
-                        .rclock(clock),
-                        .wclock(clock),
-                        .rreset(reset_n),
-                        .wreset(reset_n),
-                        .write_data(input_data[i]),
-                        .write_enable(BLOCK_input_write_enable[i]),
-                        .read_data(BLOCK_input_data[i]),
-                        .read_enable(BLOCK_input_read_enable[i]),
-                        .almost_full(BLOCK_input_almost_full[i]),
-                        .empty(BLOCK_input_empty[i])
-                    );
-            end
-    endgenerate // end input_spybuffers generate
+generate
+    for(genvar i = 0; i < 4; i++)
+        begin:input_spybuffers
+            SpyBuffer #(
+                .DATA_WIDTH(DATA_WIDTH-1),
+                .FC_FIFO_WIDTH(FIFO_DEPTH)
+                ) spybuffer (
+                    .rclock(clock),
+                    .wclock(clock),
+                    .rreset(reset_n),
+                    .wreset(reset_n),
+                    .write_data(input_data[i]),
+                    .write_enable(BLOCK_input_write_enable[i]),
+                    .read_data(BLOCK_input_data[i]),
+                    .read_enable(BLOCK_input_read_enable[i]),
+                    .almost_full(BLOCK_input_almost_full[i]),
+                    .empty(BLOCK_input_empty[i])
+                );
+        end
+endgenerate // end input_spybuffers generate
 ```
 
 There are pre-defined elements for connecting your logic block to the
 `input_spybuffers` and `output_spybuffers` blocks. They may or may not be
-needed by your logic block. In our case, these are:
+needed by your logic block and of course they may be re-named as desired.
+In our case, these elements are:
 
 ```verilog
-    wire BLOCK_input_write_enable [4];
-    wire [DATA_WIDTH-1:0] BLOCK_input_data [4];
-    wire BLOCK_input_read_enable [4];
-    wire BLOCK_input_almost_full [4];
-    wire BLOCK_input_empty [4];
+wire BLOCK_input_write_enable [4];
+wire [DATA_WIDTH-1:0] BLOCK_input_data [4];
+wire BLOCK_input_read_enable [4];
+wire BLOCK_input_almost_full [4];
+wire BLOCK_input_empty [4];
 
-    wire BLOCK_output_write_enable [14];
-    wire [DATA_WIDTH-1:0] BLOCK_output_data [14];
-    wire BLOCK_output_read_enable [14];
-    wire BLOCK_output_almost_full [14];
-    wire BLOCK_output_empty [14];
+wire BLOCK_output_write_enable [14];
+wire [DATA_WIDTH-1:0] BLOCK_output_data [14];
+wire BLOCK_output_read_enable [14];
+wire BLOCK_output_almost_full [14];
+wire BLOCK_output_empty [14];
 ```
 
+We instantiate the `board2board_switching` block and connect it to these
+signals as follows:
+```verilog
+//
+// Here place the DUT block(s)
+//
+board2board_switching #(
+    .DATA_WIDTH(DATA_WIDTH),
+    .TOTAL_CLUSTERS(N_INPUTS),
+    .TOTAL_OUTPUT_BOARDS(N_OUTPUTS),
+    .FIFO_DEPTH_BITS(6),
+    .BOARD_ID(0)
+)
+board2board_switching_inst (
+    .b2b_clk(clock),
+    .b2b_rst_n(reset_n),
+    .b2b_srst_n(reset_n),
+    .cluster_data(BLOCK_input_data),
+    .cluster_req(BLOCK_input_read_enable),
+    .cluster_almost_full(BLOCK_input_almost_full),
+    .cluster_empty(BLOCK_input_empty),
+    .output_board_event(BLOCK_output_data),
+    .output_board_wren(BLOCK_output_write_enable),
+    .output_board_almost_full(BLOCK_output_almost_full)
+);
+```
+Here we see that we have connected the `BLOCK_input` signals to those signals
+responsible for *pulling* data from `input_spybuffers`, and the `BLOCK_output`
+signals to those responsible for *pushing* data into `output_spybuffers`.
 
+With this done, the logic is connected and we are almost ready to start
+driving the testbench.
 
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!------------------------ TESTBENCH CONFIGURATION ---------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
 
+## Configure your Testbench
 
+As mentioned in the [Testbench Structure page](testbench_structure.md#testbench-configuration),
+every testbench is required to have a `JSON` configuration file satisfying the
+[testbench configuration schema](../../schema/schema_test_config.json).
+
+Running `tb create` generates an initial testbench configuration file. For our
+testbench for `tutorial_block`, this file is `config_tutorial_block.json`.
+
+### Testbench Input Args
+
+The `input_args` block of the configuration generated by `tb create` is pre-filled
+with the requisite variables:
+
+```json
+"input_args": {
+    "n_events": 5,
+    "event_detail": false,
+    "clock_period": 5,
+    "clock_time_unit": "ns"
+}
+```
+
+These are responsible for:
+   * `n_events`: The number of events to load from the input testvectors and drive onto the testbench
+   * `event_detail`: A flag to specify if the test output should dump to screen test details for every single event (versus summary reporting) (**note:** regardless of whether or not you set this variable to `true` or `false`, the event-detailed information is still saved in the `test_results_summary*.json` files generated as part of the [testbench output](../README.md#output-generated-by-the-testbenches))
+   * `clock_period`: Sets the simulator's clock period
+   * `clock_time_unit`: The unit of time for the simulator clock
+
+Additional quantities can be added to the `input_args` block. For example,
+let's say that in your testbench you put in the ability to scramble event order
+but you want this to be something that you can toggle on/off between runs.
+You can add a field `scramble_event_order` to the `input_args` field and this
+will be available to your testbench module (`test_tutorial_block.py`):
+```python
+import test_config
+...
+@cocotb.test()
+def tutorial_block_test(dut):
+   ...
+   config = test_config.get_config()
+   input_args = config["input_args"]
+   ...
+   do_event_order_scramble = input_args["scramble_event_order"]
+   ...
+```
+
+### Testbench Run Configuration
+
+The testbench configuration file created by `tb create` fills the required `run_config`
+variables with:
+```json
+"run_config": {
+    "output_directory_name": "tutorial_block",
+    "test_location": "/full/path/tp-fw/tb/src/tp_tb/testbench/tutorial_block/test",
+    "expected_is_observed": false,
+    "components_lib_dir": "/another/full/path/xilinx/compiled_libraries/v2019.1/"
+}
+```
+The `output_directory_name` and `test_location` variables can generally be left alone.
+The `components_lib_dir` path location will need to be updated to the specific path
+on your system, and of course can be left blank if you do not depend on it.
+
+### Testbench Testvectors
+
+The `testvectors` field of the testbench configuration generated by `tb create`
+fills in a dummy path to the `testvector_dir`, which is a path pointing to a 
+directory housing testvector files. The `input` and `output` testvector files
+themselves have dummy names, but appear in correct quantity corresponding to
+the `--n-inputs` and `--n-outputs` variables provided to the `tb create` command:
+```json
+"testvectors" :
+{
+    "testvector_dir" : "/foo/bar/foo/baz",
+    "input": [
+        { "0": "INPUT_FILENAME_0.evt" },
+        { "1": "INPUT_FILENAME_1.evt" },
+        { "2": "INPUT_FILENAME_1.evt" },
+        { "3": "INPUT_FILENAME_1.evt" }
+    ]
+    ...
+    ...
+}
+```
+You will need to update the `testvector_dir` path, and the filenames according to your
+needs.
+
+For example, for the `tutorial_block` testbench, which instantiates the `board2board_switching`
+block, we can fill these files out as follows:
+```json
+{
+    "testvector_dir" : "/foo/bar/foo/baz",
+    "input": [
+        { "0" : "BoardToBoardInput_AMTP0_Pixel0.evt" },
+        { "1" : "BoardToBoardInput_AMTP0_Pixel1.evt" },
+        { "2" : "BoardToBoardInput_AMTP0_Strip0.evt" },
+        { "3" : "BoardToBoardInput_AMTP0_Strip1.evt" }
+    ],
+    "output": [
+        { "0" : "TPtoSync_srcAMTP0_destAMTP0.evt" },
+        { "1" : "TPtoSync_srcAMTP0_destAMTP1.evt" },
+        { "2" : "TPtoSync_srcAMTP0_destAMTP2.evt" },
+        { "3" : "TPtoSync_srcAMTP0_destAMTP3.evt" },
+        { "4" : "TPtoSync_srcAMTP0_destAMTP4.evt" },
+        { "5" : "TPtoSync_srcAMTP0_destAMTP5.evt" },
+        { "6" : "TPtoSync_srcAMTP0_destAMTP6.evt" },
+        { "7" : "TPtoSync_srcAMTP0_destAMTP7.evt" },
+        { "8" : "TPtoSync_srcAMTP0_destAMTP8.evt" },
+        { "9" : "TPtoSync_srcAMTP0_destAMTP9.evt" },
+        { "10" : "TPtoSync_srcAMTP0_destAMTP10.evt" },
+        { "11" : "TPtoSync_srcAMTP0_destAMTP11.evt" },
+        { "12" : "TPtoSync_srcAMTP0_destSSTP0.evt" },
+        { "13" : "TPtoSync_srcAMTP0_destSSTP1.evt" }
+    ]
+}
+```
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!-------------------------- RUN THE TESTBENCH -------------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+
+# Run the Testbench
+
+If you have performed the steps detailed above, you are now ready to run the
+testbench using the minimal setup where you simply:
+
+   1. Load the input testvectors
+   2. Drive the input signals contained in the input testvectors into the `input_spybuffers`
+   3. Monitor the output signals generated by the `output_spybuffers`
+   4. Compare the output signals generated by the `output_spybuffers` to those signals that are expected as given by the output testvectors
+
+If all goes according to plan, the result of the comparison of step `4` will be
+displayed onto the screen.
+
+To run the testbench, do:
+```bash
+(env) $ cd /path/to/tp-fw/tb
+(env) $ tb run ./test_config/config_tutorial_block.py
+...
+... # lots of output
+(env) $ # test done
+```
+
+If the test completes, the output will be located under the `tp-fw/tb/test_output/tutorial_block/`
+directory:
+```bash
+(env) $ ls ./test_output/tutorial_block/
+fifodriver_TutorialBlock_00_Input00.evt           fifomonitor_TutorialBlock_06_Output06_timing.txt  test_results_summary_TutorialBlock_srcOutput00_destOutput00.json
+fifodriver_TutorialBlock_00_Input00_timing.txt    fifomonitor_TutorialBlock_07_Output07.evt         test_results_summary_TutorialBlock_srcOutput00_destOutput01.json
+fifodriver_TutorialBlock_01_Input01.evt           fifomonitor_TutorialBlock_07_Output07_timing.txt  test_results_summary_TutorialBlock_srcOutput00_destOutput02.json
+fifodriver_TutorialBlock_01_Input01_timing.txt    fifomonitor_TutorialBlock_08_Output08.evt         test_results_summary_TutorialBlock_srcOutput00_destOutput03.json
+fifodriver_TutorialBlock_02_Input02.evt           fifomonitor_TutorialBlock_08_Output08_timing.txt  test_results_summary_TutorialBlock_srcOutput00_destOutput04.json
+fifodriver_TutorialBlock_02_Input02_timing.txt    fifomonitor_TutorialBlock_09_Output09.evt         test_results_summary_TutorialBlock_srcOutput00_destOutput05.json
+fifodriver_TutorialBlock_03_Input03.evt           fifomonitor_TutorialBlock_09_Output09_timing.txt  test_results_summary_TutorialBlock_srcOutput00_destOutput06.json
+fifodriver_TutorialBlock_03_Input03_timing.txt    fifomonitor_TutorialBlock_10_Output10.evt         test_results_summary_TutorialBlock_srcOutput00_destOutput07.json
+fifomonitor_TutorialBlock_01_Output01.evt         fifomonitor_TutorialBlock_10_Output10_timing.txt  test_results_summary_TutorialBlock_srcOutput00_destOutput08.json
+fifomonitor_TutorialBlock_01_Output01_timing.txt  fifomonitor_TutorialBlock_11_Output11.evt         test_results_summary_TutorialBlock_srcOutput00_destOutput09.json
+fifomonitor_TutorialBlock_02_Output02.evt         fifomonitor_TutorialBlock_11_Output11_timing.txt  test_results_summary_TutorialBlock_srcOutput00_destOutput10.json
+fifomonitor_TutorialBlock_02_Output02_timing.txt  fifomonitor_TutorialBlock_12_Output12.evt         test_results_summary_TutorialBlock_srcOutput00_destOutput11.json
+fifomonitor_TutorialBlock_03_Output03.evt         fifomonitor_TutorialBlock_12_Output12_timing.txt  test_results_summary_TutorialBlock_srcOutput00_destOutput12.json
+fifomonitor_TutorialBlock_03_Output03_timing.txt  fifomonitor_TutorialBlock_13_Output13.evt         test_results_summary_TutorialBlock_srcOutput00_destOutput13.json
+fifomonitor_TutorialBlock_04_Output04.evt         fifomonitor_TutorialBlock_13_Output13_timing.txt  transcript
+fifomonitor_TutorialBlock_04_Output04_timing.txt  modelsim.ini                                      vish_stacktrace.vstf
+fifomonitor_TutorialBlock_05_Output05.evt         results.xml                                       vsim.dbg
+fifomonitor_TutorialBlock_05_Output05_timing.txt  runsim.do                                         vsim.wlf
+fifomonitor_TutorialBlock_06_Output06.evt         sim.log                                           work
+```
+
+The output from the testbench is described in the [testbench output section of the README](../README.md#testbench-output).
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!-------------------------------- ALL DONE ----------------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+
+# All Done
+
+At this point, if you successfully went through the steps outlined in the sections
+above, you have a testbench that will drive testvector-generated signals
+through your logic block, with the block's outputs compared to the expected output
+provided by the output testvectors.
+
+If you require more complex testbenches (e.g. adding delays, skews, testing logic edge cases, etc...)
+you will need to write some code. You will likely need to modify
+the `test_<test-name>.py` file if you adjust `input_args`, for example.
+If you adjust the dataflow through your block, you will likely need to add
+code to `<test-name>_wrapper.py` and perhaps methods to `<test_name>_utils.py`.
+Adding modules is also allowed, of course. For example, in the `board2board_switching`
+testbench, we add event delays that add simulation time between driving
+new events onto the inputs. This is done by adding a module
+[b2b_flow.py](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/b2b_flow.py)
+which is used in [b2b_wrapper.py](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/testbench/b2b/b2b_wrapper.py#L47)
+to add delays to the driving of signals onto the `input_spybuffers`.
+This option is configurable via the `input_args` variable ["event_delays"](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/test_config/config_b2b.json#L8).
 
 
 
