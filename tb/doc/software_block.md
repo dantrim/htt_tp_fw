@@ -35,7 +35,6 @@ Table of Contents
    * [Define the Purpose of the Software Logic Block](#purpose-of-the-software-block)
    * [Run `tb create` to Initialize the Testbench](#run-tb-create)
    * [Implement the Logic Block](#implement-the-logic-block)
-   * [Plug Your Logic Block Into the Testbench Module](#adding-your-logic-block)
       * [Implement Input Handlers](#create-input-handlers)
       * [OutputDrivers](#output-drivers)
       * [Implement Output Handler Coroutines](#create-output-handler-coroutines)
