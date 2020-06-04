@@ -213,9 +213,10 @@ We can define the *per-input-specific* input handlers as so:
 ```
 
 In the above, we have defined the handlers for each of the two inputs of the
-`sw_switcher` logic block: we map data arriving at input #0 (#1) to output #1 (#0).
+`sw_switcher` logic block: we map data arriving at input 0 (1) to output 1 (0).
 
 You see that we use `output_drivers`. In the next section we'll explain what these are.
+
 
 ## Output Drivers
 
