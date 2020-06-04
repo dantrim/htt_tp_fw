@@ -3,6 +3,9 @@
 Here we walk through how to create a testbench using the [tb create](../README.md#tb-create)
 command provided by the testbench infrastructure.
 
+Each of the sections in this Table of Contents should be followed sequentially in order
+to create a testbench:
+
    * [Requirements](#requirements)
    * [Environment Preparation](#prepare-your-environment)
    * [Run `tb create` to Initialize the Testbench](#run-tb-create)
