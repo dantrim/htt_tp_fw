@@ -306,7 +306,6 @@ block.
 
 We augment the output handlers defined above in the following way:
 ```python
-
 from cocotb.triggers import Timer
 ...
 ...
