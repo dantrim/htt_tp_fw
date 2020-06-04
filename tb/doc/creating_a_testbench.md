@@ -8,7 +8,7 @@ command provided by the testbench infrastructure.
    * [Run `tb create` to Initialize the Testbench](#run-tb-create)
    * [Plug Your Logic Block into the Testbench Toplevel](#adding-your-logic-block)
       * [Update the Toplevel Makefile](#update-the-toplevel-makefile)
-      * [Predefined Makefile Variables](#predefined-makefile-variables)
+         * [Predefined Makefile Variables](#predefined-makefile-variables)
       * [Instantiate your Logic Block and Connect it to the Spy+FIFO blocks](#connecting-the-blocks)
  
 <!----------------------------------------------------------------------------->
@@ -234,6 +234,52 @@ will be made available as environment variables with their name in all capital l
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
 ## Connecting the Blocks
+
+The `TopLevel_tutorial_block.v` file created by `tb create` will initially
+be populated with the `input_spybuffers` and `output_spybuffers` blocks,
+in quantity corresponding to the `--n-inputs` and `--n-outputs`, respectively,
+provided to `tb create`. These blocks look something like,
+
+```verilog
+    generate
+        for(genvar i = 0; i < 4; i++)
+            begin:input_spybuffers
+                SpyBuffer #(
+                    .DATA_WIDTH(DATA_WIDTH-1),
+                    .FC_FIFO_WIDTH(FIFO_DEPTH)
+                    ) spybuffer (
+                        .rclock(clock),
+                        .wclock(clock),
+                        .rreset(reset_n),
+                        .wreset(reset_n),
+                        .write_data(input_data[i]),
+                        .write_enable(BLOCK_input_write_enable[i]),
+                        .read_data(BLOCK_input_data[i]),
+                        .read_enable(BLOCK_input_read_enable[i]),
+                        .almost_full(BLOCK_input_almost_full[i]),
+                        .empty(BLOCK_input_empty[i])
+                    );
+            end
+    endgenerate // end input_spybuffers generate
+```
+
+There are pre-defined elements for connecting your logic block to the
+`input_spybuffers` and `output_spybuffers` blocks. They may or may not be
+needed by your logic block. In our case, these are:
+
+```verilog
+    wire BLOCK_input_write_enable [4];
+    wire [DATA_WIDTH-1:0] BLOCK_input_data [4];
+    wire BLOCK_input_read_enable [4];
+    wire BLOCK_input_almost_full [4];
+    wire BLOCK_input_empty [4];
+
+    wire BLOCK_output_write_enable [14];
+    wire [DATA_WIDTH-1:0] BLOCK_output_data [14];
+    wire BLOCK_output_read_enable [14];
+    wire BLOCK_output_almost_full [14];
+    wire BLOCK_output_empty [14];
+```
 
 
 
