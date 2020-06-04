@@ -20,11 +20,6 @@ def truncate(n, decimals=0):
 
 def event_rate_delay(io_enum, event, pass_through=False):
 
-    if type(io_enum) != B2BPorts.Inputs:
-        raise TypeError(
-            f'Expected type for io_enum is "B2BPorts.Inputs", bot "{type(io_enum)}"'
-        )
-
     if pass_through:
         return {}
 

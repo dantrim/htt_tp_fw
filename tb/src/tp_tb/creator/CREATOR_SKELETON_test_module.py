@@ -198,12 +198,18 @@ def CREATORTESTNAME_test(dut):
         raise cocotb.result.TestFailure(
             f"ERROR Event sending timed out! Number of expected inputs with events = {len(send_finished_signal)}"
         )
-    try:
-        yield with_timeout(Combine(*send_finished_signal), 20, "us")
-    except Exception as ex:
-        raise cocotb.result.TestFailure(
-            f"ERROR Timed out waiting for events to send: {ex}"
-        )
+    yield Combine(*send_finished_signal)
+
+    ##
+    ## if you want to put a timeout on the sending of events use
+    ## "with_timeout" instead of just "Combine"
+    ##
+    # try:
+    #    yield with_timeout(Combine(*send_finished_signal), 20, "us")
+    # except Exception as ex:
+    #    raise cocotb.result.TestFailure(
+    #        f"ERROR Timed out waiting for events to send: {ex}"
+    #    )
     dut._log.info("Sending finished!")
 
     timer = Timer(20, "us")
