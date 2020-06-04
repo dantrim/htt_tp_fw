@@ -10,7 +10,7 @@ from cocotb.result import TestFailure, TestSuccess
 import tp_tb.testbench.CREATORTESTNAME.CREATORTESTNAME_wrapper as wrapper
 from tp_tb.testbench.CREATORTESTNAME.CREATORTESTNAME_ports import CREATORCLASSNAMEPorts
 
-# CREATORSOFTWAREBLOCKimport tp_tb.testbench.CREATORTESTNAME.CREATORTESTNAME_block as CREATORTESTNAME_block
+#CREATORSOFTWAREBLOCKimport tp_tb.testbench.CREATORTESTNAME.CREATORTESTNAME_block as CREATORTESTNAME_block
 
 from tp_tb.utils import test_config
 from tp_tb.utils import events, tb_diff, result_handler
@@ -81,27 +81,27 @@ def CREATORTESTNAME_test(dut):
     num_events_to_process = int(input_args["n_events"])
     event_level_detail_in_sumary = bool(input_args["event_detail"])
 
-    # CREATORSOFTWAREBLOCK##
-    # CREATORSOFTWAREBLOCK## start the software block instance
-    # CREATORSOFTWAREBLOCK##
-    # CREATORSOFTWAREBLOCKCREATORTESTNAME_block_instance = CREATORTESTNAME_block.CREATORCLASSNAMEBlock(dut.clock, "CREATORCLASSNAMEBlock")
-    # CREATORSOFTWAREBLOCKfor i, io in enumerate(CREATORCLASSNAMEPorts.Inputs):
-    # CREATORSOFTWAREBLOCK    CREATORTESTNAME_block_instance.add_fifo(
-    # CREATORSOFTWAREBLOCK        dut.input_spybuffers[i].spybuffer,
-    # CREATORSOFTWAREBLOCK        dut.clock,
-    # CREATORSOFTWAREBLOCK        f"{CREATORTESTNAME_block_instance.name}_Input_{i}",
-    # CREATORSOFTWAREBLOCK        io,
-    # CREATORSOFTWAREBLOCK        direction="in",
-    # CREATORSOFTWAREBLOCK    )
-    # CREATORSOFTWAREBLOCKfor i, io in enumerate(CREATORCLASSNAMEPorts.Outputs):
-    # CREATORSOFTWAREBLOCK    CREATORTESTNAME_block_instance.add_fifo(
-    # CREATORSOFTWAREBLOCK        dut.output_spybuffers[i].spybuffer,
-    # CREATORSOFTWAREBLOCK        dut.clock,
-    # CREATORSOFTWAREBLOCK        f"{CREATORTESTNAME_block_instance.name}_Output_{i}",
-    # CREATORSOFTWAREBLOCK        io,
-    # CREATORSOFTWAREBLOCK        direction="out",
-    # CREATORSOFTWAREBLOCK    )
-    # CREATORSOFTWAREBLOCKCREATORTESTNAME_block_instance.start()
+    #CREATORSOFTWAREBLOCK##
+    #CREATORSOFTWAREBLOCK## start the software block instance
+    #CREATORSOFTWAREBLOCK##
+    #CREATORSOFTWAREBLOCKCREATORTESTNAME_block_instance = CREATORTESTNAME_block.CREATORCLASSNAMEBlock(dut.clock, "CREATORCLASSNAMEBlock")
+    #CREATORSOFTWAREBLOCKfor i, io in enumerate(CREATORCLASSNAMEPorts.Inputs):
+    #CREATORSOFTWAREBLOCK    CREATORTESTNAME_block_instance.add_fifo(
+    #CREATORSOFTWAREBLOCK        dut.input_spybuffers[i].spybuffer,
+    #CREATORSOFTWAREBLOCK        dut.clock,
+    #CREATORSOFTWAREBLOCK        f"{CREATORTESTNAME_block_instance.name}_Input_{i}",
+    #CREATORSOFTWAREBLOCK        io,
+    #CREATORSOFTWAREBLOCK        direction="in",
+    #CREATORSOFTWAREBLOCK    )
+    #CREATORSOFTWAREBLOCKfor i, io in enumerate(CREATORCLASSNAMEPorts.Outputs):
+    #CREATORSOFTWAREBLOCK    CREATORTESTNAME_block_instance.add_fifo(
+    #CREATORSOFTWAREBLOCK        dut.output_spybuffers[i].spybuffer,
+    #CREATORSOFTWAREBLOCK        dut.clock,
+    #CREATORSOFTWAREBLOCK        f"{CREATORTESTNAME_block_instance.name}_Output_{i}",
+    #CREATORSOFTWAREBLOCK        io,
+    #CREATORSOFTWAREBLOCK        direction="out",
+    #CREATORSOFTWAREBLOCK    )
+    #CREATORSOFTWAREBLOCKCREATORTESTNAME_block_instance.start()
 
     ##
     ## mark the current board
