@@ -400,6 +400,9 @@ utility, see the [Creating a Testbench page](doc/creating_a_testbench.md).
 <!----------------------------------------------------------------------------->
 # Defining Logic Blocks in Python
 
+To learn how to create and instantiate a logic block defined purely in python,
+see the [Creating a Logic Block in Python page](doc/software_block.md).
+
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
 <!------------------------------ FUNCTIONALITY -------------------------------->
