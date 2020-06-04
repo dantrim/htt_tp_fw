@@ -19,6 +19,7 @@ to create a testbench:
          * [testvectors](#testbench-testvectors)
    * [Run the Testbench](#run-the-testbench)
    * [Finished!](#all-done)
+   * [Going Further](#going-further)
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
 <!----------------------------- REQUIREMENTS ---------------------------------->
@@ -525,9 +526,91 @@ which is used in [b2b_wrapper.py](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-
 to add delays to the driving of signals onto the `input_spybuffers`.
 This option is configurable via the `input_args` variable ["event_delays"](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/test_config/config_b2b.json#L8).
 
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!------------------------------ GOING FURTHER -------------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
 
+# Going Further
+After running the testbench for `tutorial_block`, you can start using
+the [tb command suite](../README.md#functionality) to inspect the testbench output.
 
+## Dumping contents of an observed output FIFO:
+```bash
+(env) $ tb dump -a -n 1 ./test_output/tutorial_block/fifomonitor_TutorialBlock_01_Output01.evt
+=========================================================================================================== [EVENT 000]
+0        180.0          0x1ab02000000000002   0     FLAG: 0xab, TRK_TYPE: 0x2, L0ID: 0x2
+1        185.0          0x004c00000000785a1   1     BCID: 0x4c, RUNNUMBER: 0x785a1
+2        190.0          0x0000000000fffffff   2     ROI: 0xfffffff
+3        195.0          0x00e3bc00100000000   3     EFPU_ID: 0xe3bc, EFPU_PID: 0x1, TIME: 0x0
+4        200.0          0x00000000000000002   4     CONNECTION_ID: 0x0, TRANSACTION_ID: 0x2
+5        205.0          0x0000000002300bdf9   5     STATUS: 0x0, CRC: 0x2300bdf9
+----------------------------------------------------------------------------------------------------------- [MODULE 000/000]
+6        450.0          0x155400000000001fe   6     FLAG: 0x55, TYPE: 0x1, DET: 0x0, ROUTING: 0xff
+7        455.0          0x0130440002e4fc45e   7     MODID: 0x4c11, MODTYPE: 0x0, ORIENTATION: 0x0
+8        460.0          0x067affe58322904d3   8
+9        465.0          0x00b04bf7e1bb54174   9
+10       470.0          0x032d17a79164ff0fb   10
+...
+...
+55       960.0          0x00675239167b879e2   55
+56       965.0          0x05277e6db9cfdd243   56
+57       970.0          0x0771b000000000000   57    FLAG: 0x77, COUNT: 0x1b, ERROR: 0x0
+----------------------------------------------------------------------------------------------------------- [FOOTER 000]
+58       4960.0         0x1cd0000042300bdf9   58    FLAG: 0xcd, META_COUNT: 0x4, HDR_CRC: 0x2300bdf9
+59       4965.0         0x00000000000000000   59    ERROR_FLAGS: 0x0
+60       4970.0         0x00000003adeadbeef   60    WORD_COUNT: 0x3a, CRC: 0xdeadbeef
+(env) $
+```
 
+## Diffing the testbench output with respect to the expected output
+
+```bash
+(env) $ tb diff -n 1 -v ./test_output/tutorial_block/fifomonitor_TutorialBlock_01_Output01.evt /path/to/testvector_dir/TPtoSync_srcAMTP0_destAMTP1.evt
+================================================================================
+File0: ./test_output/tutorial_block/fifomonitor_TutorialBlock_01_Output01.evt
+File1: /path/to/testvector_dir/TPtoSync_srcAMTP0_destAMTP1.evt
+====================================================================================================
+Comparing event at L0ID=0x2
+           NWORDS   = 61        NWORDS   = 61
+           NMODULES = 3         NMODULES = 3
+           ----------------------------------------
+           0x1ab02000000000002  0x1ab02000000000002  FLAG: 0xab / 0xab          TRK_TYPE: 0x2 / 0x2        SPARE: 0x0 / 0x0           L0ID: 0x2 / 0x2
+           0x004c00000000785a1  0x004c00000000785a1  BCID: 0x4c / 0x4c          SPARE: 0x0 / 0x0           RUNNUMBER: 0x785a1 / 0x785a1
+           0x0000000000fffffff  0x0000000000fffffff  ROI: 0xfffffff / 0xfffffff
+           0x00e3bc00100000000  0x00e3bc00100000000  EFPU_ID: 0xe3bc / 0xe3bc   EFPU_PID: 0x1 / 0x1        TIME: 0x0 / 0x0
+           0x00000000000000002  0x00000000000000002  Connection_ID: 0x0 / 0x0   Transaction_ID: 0x2 / 0x2
+           0x0000000002300bdf9  0x0000000002300bdf9  STATUS: 0x0 / 0x0          CRC: 0x2300bdf9 / 0x2300bdf9
+           ----------------------------------------
+           0x155400000000001fe  0x155400000000001fe  MODULE #000 FLAG: 0x55 / 0x55        TYPE: 0x1 / 0x1          DET: 0x0 / 0x0           ROUTING: 0xff / 0xff
+           0x0130440002e4fc45e  0x01304400034b65f77  MODID: 0x4c11 / 0x4c11   MODTYPE: 0x0 / 0x0       ORIENTATION: 0x0 / 0x0
+           0x067affe58322904d3  0x03e8bf76806b37792
+           0x00b04bf7e1bb54174  0x023ce63e265272015
+           0x032d17a79164ff0fb  0x00fa5d2922513a41f
+                ...
+                ...
+           0x0169dc2902537c99a  0x0272d45000caec8a9
+           0x027f850fd049a7a5e  0x0362eb0d165026b7c
+           0x01120a229593ae9b5  0x0459b755d5765f43d
+           0x00675239167b879e2  0x0124aa5c40f0ed489
+           0x05277e6db9cfdd243  0x027061d1bfcba14e7
+           0x0771b000000000000  0x0771b000000000000  FLAG: 0x77 / 0x77    COUNT: 0x1b / 0x1b   ERROR: 0x0 / 0x0
+           ----------------------------------------
+           0x1cd0000042300bdf9  0x1cd0000042300bdf9  FLAG: 0xcd / 0xcd         SPARE: 0x0 / 0x0          META_COUNT: 0x4 / 0x4     HDR_CRC: 0x2300bdf9 / 0x2300bdf9
+           0x00000000000000000  0x00000000000000000  ERROR_FLAGS: 0x0 / 0x0
+           0x00000003adeadbeef  0x00000003a7f812270  WORD_COUNT: 0x3a / 0x3a   CRC DIFFERROR: 0xdeadbeef / 0x7f812270
+                      ^^^^^^^^             ^^^^^^^^
+           ----------------------------------------
+           EVENT OK? NO
+(env) $
+```
+
+## Perform Analysis on Output Data
+
+You can use the dumped `*.evt` files from the testbench to load the data and perform
+whatever analysis you wish. See the [b2b analysis](../src/tp_tb/testbench/b2b/analysis)
+directory for example(s) for how to setup analysis of loading in event data.
 
 
 
