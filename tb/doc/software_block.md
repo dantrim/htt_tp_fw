@@ -38,7 +38,7 @@ Table of Contents
       * [OutputDrivers](#output-drivers)
       * [Implement Output Handler Coroutines](#create-output-handler-coroutines)
          * [Giving the Logic Some Work to Do](#giving-the-logic-some-work-to-do)
- 
+
    
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
@@ -153,6 +153,8 @@ This is the module where we will define our logic block.
 If we open up the `sw_switcher_block.py` file, we see a class `SwSwitcherBlock`:
 
 ```python
+from tp_tb.utils import software_block
+
 class SwSwitcherBlock(software_block.SoftwareBlock):
     def __init__(self, clock, name):
         super().__init__(clock, name)
@@ -293,9 +295,195 @@ output `Spy+FIFO` blocks at the same time. So if data from an event arrives
 to the output number 1 prior to data arriving at output 0, the the data
 at output number 1 will not be written until the data from output 0 is ready.
 
+### Adding Latency to the Data Paths
 
+Using a `cocotb` [`Timer`](https://docs.cocotb.org/en/latest/triggers.html#timing)
+we can add some delays between the time at which the data arrives to
+the output handler and the time when that data is written to the output `Spy+FIFO`
+block.
 
+We augment the output handlers defined above in the following way:
+```python
 
+from cocotb.triggers import Timer
+...
+...
+def output_handler_gen(self, output_num):
+    if output_num == 0:
+        return self._output_port_0_handler
+    elif output_num == 1:
+        return self._output_port_1_handler
+    
+    @cocotb.coroutine
+    def _output_port_0_handler(self, transaction):
+        data, timestamp = transaction # transaction is a tuple
+        driver = self.output_drivers[0]
+        
+        ##
+        ## add 50 ns delay
+        ##
+        timer = Timer(50, "ns")
+        yield timer
+        
+        ##
+        ## simulation time has advanced 50 ns, now we write
+        ##
+        yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 0
+    
+    @cocotb.coroutine
+    def _output_port_1_handler(self, transaction)
+        data, timestamp = transaction # transaction is a tuple
+        driver = self.output_drivers[1]
+        
+        ##
+        ## add 200 ns delay
+        ##
+        timer = Timer(200, "ns")
+        yield timer
+        
+        ##
+        ## simulation time has advanced 200 ns, now now we write
+        ##
+        yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 1
+```
+
+By `yield`ing back the `Timer` triggers, each output handler is halted for
+the specified amount of simulation time before continuing. It is important
+to realize that the `OutputDriver` objects that are calling these output handlers
+behind the scenes, are happening concurrently. As such, each handler will
+stop and go essentially independently of one another as the simulation
+of our logic progresses.
+
+### Synchronizing the Outputs
+In the previous section, we added arbitrary delays between the
+two data paths of the `sw_switcher` logic. As a result, if we
+drive events onto the inputs of our `DUT` at the same time, they will
+definitely not arrive at the outputs of our `DUT` at the same time.
+Hence, the events will be skewed relative to one another.
+
+What if the logic downstream expects data from a given event (i.e. L0ID) to
+be written to the outputs at the same time? We will need a synchronizing mechanism
+to achieve this, which will be made possibly through the use of a
+[`cocotb` Event](https://docs.cocotb.org/en/latest/triggers.html#synchronization)
+shared between the two handlers.
+
+Here we'll present the full source code with the event synchronization in place,
+and discuss it after:
+
+```python
+from collections import Counter
+
+from cocotb.Triggers import Timer, Event
+
+from tp_tb.utils import software_block
+from tp_tb.utils import utils
+
+class SwSwitcherBlock(software_block.SoftwareBlock):
+    def __init__(self, clock, name):
+        super().__init__(clock, name)
+
+        self._l0id_recvd = [] # a list of L0IDs that we have received so far
+        self._event_hook = Event()  # used to sync up writing to outputs
+
+    def input_handler_gen(self, input_num):
+        if input_num == 0 :
+            return self._input_port_0_handler
+        elif input_num == 1 :
+            return self._input_port_1_handler
+    
+    def _input_port_0_handler(self, transaction):
+
+        ##
+        ## here we tell the data at INPUT 0 to be handled
+        ## by the driver connected to OUTPUT 1 -- this
+        ## effectively performs our "switching" logic
+        ##
+        self.output_drivers[1].append(transaction)
+        
+    def _input_port_1_handler(self, transaction)
+
+        ## here we tell the data at INPUT 1 to be handled
+        ## by the driver connected to OUTPUT 0 -- this
+        ## effectively performs our "switching" logic
+        ##   
+        self.output_drivers[0].append(transaction)
+
+    def event_is_ready(self, l0id):
+        self._l0id_recvd.append(l0id)
+        c = Counter(self._l0id_recvd)
+        if c[l0id] >= len(self.output_drivers):
+            self._event_hook.set()
+            return True
+        elif c[l0id] >= 1:
+            return False
+        else:
+            self._event_hook.clear()
+            return False
+
+    @cocotb.coroutine
+    def _sync_event_header(self, l0id, output_num=-1, data_word=-1):
+        if l0id and not self.event_is_ready(l0id):
+            yield self._event_hook.wait()
+            self._event_hook.clear()
+        
+    @cocotb.coroutine
+    def _output_port_0_handler(self, transaction):
+        data, timestamp = transaction # transaction is a tuple
+        driver = self.output_drivers[0]
+
+        data_word = utils.transaction_to_data_word(data) # convert to DataWord object to get decode L0ID
+        l0id = utils.l0id_from_data_word(data_word) # get the L0ID
+        
+        ##
+        ## add 50 ns delay
+        ##
+        timer = Timer(50, "ns")
+        yield timer
+        
+        ##
+        ## simulation time has advanced 50 ns, continue
+        ##
+        
+        ##
+        ## sync up the writing of output data between the
+        ## two outputs, based on event-boundaries
+        ##
+        yield self._sync_event_header(l0id)
+        
+        ##
+        ## the events are now synchronized, so we can write
+        ##
+        yield driver.write_to_fifo(data)
+    
+    @cocotb.coroutine
+    def _output_port_1_handler(self, transaction)
+        data, timestamp = transaction # transaction is a tuple
+        driver = self.output_drivers[1]
+
+        data_word = utils.transaction_to_data_word(data) # convert to DataWord object to get decode L0ID
+        l0id = utils.l0id_from_data_word(data_word) # get the L0ID
+        
+        ##
+        ## add 200 ns delay
+        ##
+        timer = Timer(200, "ns")
+        yield timer
+
+        ##
+        ## simulation time has advanced 200 ns, continue
+        ##
+        
+        ##
+        ## sync up the writing of output data between the
+        ## two outputs, based on event-boundaries
+        ##
+        yield self._sync_event_header(l0id)
+
+        ##
+        ## the events are now synchronized, so we can write
+        ##
+        yield driver.write_to_fifo(data)
+```
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
