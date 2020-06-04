@@ -331,7 +331,7 @@ driving the testbench. That is, once we have configured it.
 
 As mentioned in the [Testbench Structure page](testbench_structure.md#testbench-configuration),
 every testbench is required to have a `JSON` configuration file satisfying the
-[testbench configuration schema](../../schema/schema_test_config.json).
+[testbench configuration schema](../schema/schema_test_config.json).
 
 Running `tb create` generates an initial testbench configuration file. For our
 testbench for `tutorial_block`, this file is `config_tutorial_block.json`.
