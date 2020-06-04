@@ -32,6 +32,12 @@ Table of Contents
    * [Environment Preparation](#prepare-your-environment)
    * [Define the Purpose of the Software Logic Block](#purpose-of-the-software-block)
    * [Run `tb create` to Initialize the Testbench](#run-tb-create)
+   * [Implement the Logic Block](#implement-the-logic-block)
+   * [Plug Your Logic Block Into the Testbench Module](#adding-your-logic-block)
+      * [Implement Input Handlers](#create-input-handlers)
+      * [OutputDrivers](#output-drivers)
+      * [Implement Output Handler Coroutines](#create-output-handler-coroutines)
+         * [Giving the Logic Some Work to Do](#giving-the-logic-some-work-to-do)
  
    
 <!----------------------------------------------------------------------------->
@@ -83,15 +89,19 @@ Commands:
 # Purpose of the Software Block
 
 Before implementing the logic block, you must first have a clear idea of what
-it is supposed to do.
+you want it to do.
 
 For the sake of this tutorial, let's assume that we want a block that swaps
 the order of it's inputs. That is, the "first" input gets mapped to the "last" output.
+We will call this block `sw_switcher`.
+
 So if we have two inputs and two outputs, the dataflow would look like:
 
 <div align="center">
-    <img src="figures/tp_fw_swswitcher.png" height="400">
+    <img src="figures/tp_fw_swswitcher.png" height="150">
 </div>
+
+That is, the data coming into `input 0` (`input 1`) is output by `output 1` (`output 0`).
    
 
 <!----------------------------------------------------------------------------->
@@ -99,5 +109,199 @@ So if we have two inputs and two outputs, the dataflow would look like:
 <!---------------------------- RUN TB CREATE ---------------------------------->
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
+# Run `tb-create`
+
+We generate the testbench for the software block with the [tb create](../README.md#tb-create)
+command, specifying that we wish it to generate the starting blocks of a
+software block:
+```bash
+(env) $ tb create --test-name sw_switcher --n-inputs 2 --n-outputs 2 --software-block
+Creating test "sw_switcher" with 2 inputs and 2 outputs
+```
+
+This creates the following new directories and files:
+
+```
+tb/
+ ├── src/
+ │   └── tp_tb/
+ │       └── testbench/
+ │           └── sw_switcher/
+ │               ├── test/
+ │               │   ├── Makefile
+ │               │   ├── TopLevel_sw_switcher.v
+ │               │   └── test_sw_switcher.py
+ │               ├── sw_switcher_ports.py
+ │               ├── sw_switcher_wrapper.py
+ │               ├── sw_switcher_utils.py
+ │               └── sw_switcher_block.py
+ │
+ └── test_config/
+     └── config_sw_switcher.json
+```
+
+Where we see that the module `sw_switcher_block.py` is created.
+This is the module where we will define our logic block.
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!---------------------- IMPLEMENT THE LOGIC BLOCK ---------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+# Implement the Logic Block
+
+If we open up the `sw_switcher_block.py` file, we see a class `SwSwitcherBlock`:
+
+```python
+class SwSwitcherBlock(software_block.SoftwareBlock):
+    def __init__(self, clock, name):
+        super().__init__(clock, name)
+
+    def input_handler_gen(self, input_num):
+        return self._default_input_data_handler # raises NotImplementedError!
+
+    def output_handler_gen(self, output_num):
+        return self._default_output_handler # raises NotImplementedError!
+
+```
+
+The bulk of implementing a sub-clas of `SoftwareBlock` is defining the "handlers".
+
+The function `input_handler_gen(self, input_num)` is a function generator and
+is expected to return a function whose main purpose is to receive data
+at this logic block's input port at index `input_num`.
+
+The function `output_handler_gen(self, output_num)` is a function generator and
+is expected to return a **`cocotb` coroutine** whose main purpose is to implement
+the logic of the data that will eventually be exposed to the logic block's
+output port at index `output_num`.
+
+## Create Input Handlers
+
+The `sw_switcher` block considered in this tutorial has two inputs.
+We can define the *per-input-specific* input handlers as so:
+
+```python
+    def input_handler_gen(self, input_num):
+        if input_num == 0 :
+            return self._input_port_0_handler
+        elif input_num == 1 :
+            return self._input_port_1_handler
+    
+    def _input_port_0_handler(self, transaction):
+
+        ##
+        ## here we tell the data at INPUT 0 to be handled
+        ## by the driver connected to OUTPUT 1 -- this
+        ## effectively performs our "switching" logic
+        ##
+        self.output_drivers[1].append(transaction)
+        
+    def _input_port_1_handler(self, transaction)
+
+        ## here we tell the data at INPUT 1 to be handled
+        ## by the driver connected to OUTPUT 0 -- this
+        ## effectively performs our "switching" logic
+        ##   
+        self.output_drivers[0].append(transaction)
+```
+
+In the above, we have defined the handlers for each of the two inputs of the
+`sw_switcher` logic block: we map data arriving at input #0 (#1) to output #1 (#0).
+
+You see that we use `output_drivers`. In the next section we'll explain what these are.
+
+## Output Drivers
+
+In the previous section we saw calls to:
+```python
+self.output_drivers[0].append(transaction)
+```
+The `output_drivers` array is a list of [`OutputDriver`](https://gitlab.cern.ch/atlas_hllhc_uci_htt/tp-fw/-/blob/master/tb/src/tp_tb/utils/software_block.py#L49)
+objects are sub-classed [`cocotb Driver`](https://docs.cocotb.org/en/latest/_modules/cocotb/drivers.html) objects.
+There is one `OutputDriver` per output of your logic block, and its responsibility
+is driving the signals onto the `output_spybuffers` (see figure at the [start of
+this page](#creating-a-logic-block-in-python)) of your `DUT`.
+The `append` method of a `cocotb Driver` essentially will enqueue the
+data to be written to the signal/bus that the driver is connected to (see the
+[Driver documentation](https://docs.cocotb.org/en/latest/_modules/cocotb/drivers.html)).
+
+## Create Output Handler Coroutines
+
+As mentioned above, the `output_handler_gen` should produce `cocotb` coroutines
+that implement the logic of your block.
+When the data transactions enqueued by the `OutputDriver` objects in your
+input handlers are actually serviced by the simulation, the output handler
+will be called to act upon that transaction.
+
+Let's define the `output_handler_gen` function as follows:
+```python
+def output_handler_gen(self, output_num):
+    if output_num == 0:
+        return self._output_port_0_handler
+    elif output_num == 1:
+        return self._output_port_1_handler
+    
+    @cocotb.coroutine
+    def _output_port_0_handler(self, transaction):
+        data, timestamp = transaction # transaction is a tuple
+        driver = self.output_drivers[0]
+        yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 0
+    
+    @cocotb.coroutine
+    def _output_port_1_handler(self, transaction)
+        data, timestamp = transaction # transaction is a tuple
+        driver = self.output_drivers[1]
+        yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 1
+```
+
+In the above we have implemented the bare minimum of what any output handler
+needs to do: write the incoming data to the corresponding `Spy+FIFO` block in the
+`output_spybuffers`. This is done by `yield`ing back the `write_to_fifo`
+coroutine of the corresponding `OutputDriver` object.
+
+Since our logic of "switching" the inputs was already handled by the input handlers
+mapping the input data to the "switched" `OutputDriver` object, we have already
+completed our objective of defining a logic block that swaps input 0 (1) with output 1 (0).
+
+## Giving the Logic Some Work to Do
+
+As we saw above, the bare minimum that your output handlers must do is perform the
+writing of the data transactions to the `output_spybuffers` using the `write_to_fifo`
+methods.
+
+Doing the bare minimum, however, is not very realistic and, in simulation time,
+happens "instantaneously". As the output handlers are cocotb coroutines, we
+can leverage cocotb functionality to give the output handler coroutines
+some realistic interaction with simulation time and/or data flow.
+
+For example, suppose in our `sw_switcher` logic block that the data path
+from input 0 to output 1 takes a longer (or different) amount of time compared
+to that of the data path from input 1 to output 0. This could be the case
+if each data path, in addition to performing the input/output swapping, performs
+other logic functionalities.
+
+In the following we will implement some logic to mimic this. We will add to our
+logic the following:
+   1. Add different latencies between the two data paths
+   2. Synchronize the output writing
+
+The first item is relatively clear to understand conceptually. What is meant by
+the second item is that, despite the different latencies introduced by
+the first time, we wish to have the data from each event latched onto the
+output `Spy+FIFO` blocks at the same time. So if data from an event arrives
+to the output number 1 prior to data arriving at output 0, the the data
+at output number 1 will not be written until the data from output 0 is ready.
+
+
+
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!------------------------ ADDING YOUR LOGIC BLOCK ---------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+
+
 
 
