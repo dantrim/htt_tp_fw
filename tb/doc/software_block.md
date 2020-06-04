@@ -628,7 +628,7 @@ utility:
 If you look at the output of the `tb dump` commands captured in those two text files,
 and compare the timestamp values (the numbers in the second column) at each
 instance of a start of event header (words beginning with `0x1ab`) you will
-see that the timestap for the events between the two outputs (comparing the same event)
+see that the timestamp for the events between the two outputs (comparing the same event)
 are always the same. If you look at the timestamp of the previous word written
 by the outputs, however, you will see that the two times are much different.
 
