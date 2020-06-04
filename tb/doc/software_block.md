@@ -39,6 +39,7 @@ Table of Contents
       * [Implement Output Handler Coroutines](#create-output-handler-coroutines)
          * [Giving the Logic Some Work to Do](#giving-the-logic-some-work-to-do)
    * [Turn your Software Block On](#turning-your-block-on)
+   * [Run the Testbench](#run-the-testbench)
 
    
 <!----------------------------------------------------------------------------->
@@ -571,9 +572,102 @@ to start receiving and handling incoming data.
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
-<!------------------------ ADDING YOUR LOGIC BLOCK ---------------------------->
+<!----------------------------- RUN THE TESTBENCH ----------------------------->
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
+# Run the Testbench
+
+The `sw_switcher` logic block as two inputs and two outputs.
+We expect the data seen at output 1 (0) to be the same as the
+data seen at input 0 (1). So we setup the testvector configuration
+in `test_config/config_sw_switcher.json` as:
+```json
+"testvectors" :
+{
+    "testvector_dir" : "/path/to/testvector_dir",
+    "input":
+    [
+        { "0" : "BoardToBoardInput_AMTP0_Pixel0.evt" },
+        { "1" : "BoardToBoardInput_AMTP0_Pixel1.evt" }
+    ],
+    output":
+    [
+        { "0" : "BoardToBoardInput_AMTP0_Pixel1.evt" },
+        { "1" : "BoardToBoardInput_AMTP0_Pixel0.evt" }
+    ]
+}
+```
+where we have chosen two arbitrary testvector files to use as an example.
+
+With this we can run the `sw_switcher` testbench:
+
+```bash
+(env) $ tb run ./test_config/config_sw_switcher.json
+...
+# |----------------------------|--------------------|----------------------------|
+# |PORT/PATH TESTED            |RESULT SUMMARY      |FAILED TESTS                |
+# |                            |                    |                            |
+# |==============================================================================|
+# |TEST_SWSWITCHER_DEST00      |PASS                |                            |
+# |----------------------------|--------------------|----------------------------|
+# |TEST_SWSWITCHER_DEST01      |PASS                |                            |
+# |----------------------------|--------------------|----------------------------|
+...
+...
+(env) $
+```
+So we see it passed the test, meaning that it swapped the inputs (since our input
+and output testvectors are the same, but swapped)!
+
+In order to observe the event writing synchronization we can use the `tb dump`
+utility:
+```bash
+(env) $ tb dump -a ./test_output/sw_switcher/test_output/sw_switcher/fifomonitor_SWSwitcher_00_Outupt00.evt > sw_switcher_output0.txt
+(env) $ tb dump -a ./test_output/sw_switcher/test_output/sw_switcher/fifomonitor_SWSwitcher_01_Outupt01.evt > sw_switcher_output1.txt
+```
+If you look at the output of the `tb dump` commands captured in those two text files,
+and compare the timestamp values (the numbers in the second column) at each
+instance of a start of event header (words beginning with `0x1ab`) you will
+see that the timestap for the events between the two outputs, for the same event
+are always the same. If you look at the timestamp of the previous word written
+by the outputs, however, you will see that the two times are much different.
+
+Part of `tb dump` from output 0:
+
+```bash
+...
+----------------------------------------------------------------------------------------------------------- [FOOTER 000]
+423      23610.0        0x1cd00000f2300bdf9   423   FLAG: 0xcd, META_COUNT: 0xf, HDR_CRC: 0x2300bdf9
+424      23665.0        0x00000000000000000   424   ERROR_FLAGS: 0x0
+425      23720.0        0x0000001a79a54bfb3   425   WORD_COUNT: 0x1a7, CRC: 0x9a54bfb3
+=========================================================================================================== [EVENT 001]
+426      95465.0        0x1ab02000000000005   0     FLAG: 0xab, TRK_TYPE: 0x2, L0ID: 0x5
+...
+```
+
+Part of `tb dump` from output 1:
+```bash
+...
+----------------------------------------------------------------------------------------------------------- [FOOTER 000]
+461      94850.0        0x1cd0000102300bdf9   461   FLAG: 0xcd, META_COUNT: 0x10, HDR_CRC: 0x2300bdf9
+462      95055.0        0x00000000000000000   462   ERROR_FLAGS: 0x0
+463      95260.0        0x0000001cd4db98940   463   WORD_COUNT: 0x1cd, CRC: 0x4db98940
+=========================================================================================================== [EVENT 001]
+464      95465.0        0x1ab02000000000005   0     FLAG: 0xab, TRK_TYPE: 0x2, L0ID: 0x5
+...
+```
+
+From the partial dumps above, showing the start of event with `L0ID=0x5` for both
+outputs, that the handler at output 0 was waiting for almost **72 µs** before it
+began writing out the data for event with `L0ID=0x5`. That is, it took output 1
+almost 72 µs longer for data from the event with `L0ID=0x5` than it did for output 0.
+The time differences here do not correspond to the time delays of `50 ns` and `200 ns`
+that we introduced in our logic block since the two input testvectors present drastically
+different amounts of data to the inputs.
+
+You can also see this in the simulator waveforms too, by loading the dataset
+contained in `test_output/sw_switcher/vsim.wlf` into your favorite waveform viewer
+and looking at the output `read_data` signals of the `output_spybuffers` object.
 
 
 
