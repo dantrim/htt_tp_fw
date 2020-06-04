@@ -38,6 +38,7 @@ Table of Contents
       * [OutputDrivers](#output-drivers)
       * [Implement Output Handler Coroutines](#create-output-handler-coroutines)
          * [Giving the Logic Some Work to Do](#giving-the-logic-some-work-to-do)
+   * [Turn your Software Block On](#turning-your-block-on)
 
    
 <!----------------------------------------------------------------------------->
@@ -350,7 +351,7 @@ def output_handler_gen(self, output_num):
 By `yield`ing back the `Timer` triggers, each output handler is halted for
 the specified amount of simulation time before continuing. It is important
 to realize that the `OutputDriver` objects that are calling these output handlers
-behind the scenes, are happening concurrently. As such, each handler will
+behind the scenes, are operating concurrently. As such, each handler will
 stop and go essentially independently of one another as the simulation
 of our logic progresses.
 
@@ -484,6 +485,89 @@ class SwSwitcherBlock(software_block.SoftwareBlock):
         ##
         yield driver.write_to_fifo(data)
 ```
+
+In the above, we have added a few things:
+
+   * (variable) `_l0id_recvd`: A `python` list that will hold the L0ID of all events seen at a given point in time
+   * (variable) `_event_hook`: A synchronizing `cocotb` Event that will be used synchronize the output writing
+   * (function) `event_is_ready`: Responsible for waking up any  handlers waiting on the `_event_hook` Event object at the right time
+   * (function) `_sync_event_header`: Sets a given handler to wait until the `_event_hook` Event is triggered (by calling `_event_hook.set()`)
+
+We have added to the handlers calls that will wait until the synchronizing event occurs,
+```python
+yield self._sync_event_header(l0id)
+```
+This method will halt the progression of the handler (via `_event_hook.wait()`) under two cases:
+   1. The provided L0ID (`l0id`) has been seen **zero** times
+   2. The provided L0ID (`l0id`) has been seen **one** time
+
+In all other cases it is assumed that both outputs will be ready to write the event.
+This is because we have two outputs, and if the event header containing each the L0ID
+has reached **both outputs** (i.e. **two** outputs), then we can proceed with writing
+the data to the output `Spy+FIFO` blocks.
+
+It is important to realize that the calls,
+```python
+l0id = utils.l0id_from_data_word(data_word)
+```
+set the value of `l0id` to meaningful (i.e. `!= None`) values only when the `data_word` corresponds
+to the first word of an event header. In this way, data writing proceeds as soon
+as the first word of a given event header (defined by its L0ID) has reached the output.
+Output handlers will wait only as soon as a subsequent event header is observed and if
+the event headers arrive at different times.
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!--------------------- TURNING YOUR LOGIC BLOCK ON --------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+# Turning Your Block On
+
+Now that we have implemented some non-trivial logic, let's turn it on
+and pass some data through it.
+
+When providing the `tb create` command with the `--software-block` flag,
+it adds to the testbench test module the necessary block of code to connect
+your sub-classed `SoftareBlock` instance to the `input_spybuffers` and `output_spybuffers`.
+
+Looking in `test/test_sw_switcher.py` we see the following lines,
+
+```python
+...
+import tp_tb.testbench.sw_switcher.sw_switcher_block as sw_switcher_block
+...
+@cocotb.test()
+def sw_switcher_test(dut):
+    ...
+    ##
+    ## start the software block instance
+    ##
+    sw_switcher_block_instance = sw_switcher_block.SwSwitcherBlock(dut.clock, "SwSwitcherBlock")
+    for i, io in enumerate(SwSwitcherPorts.Inputs):
+        sw_switcher_block_instance.add_fifo(
+            dut.input_spybuffers[i].spybuffer,
+            dut.clock,
+            f"{sw_switcher_block_instance.name}_Input_{i}",
+            io,
+            direction="in",
+        )
+    for i, io in enumerate(SwSwitcherPorts.Outputs):
+        sw_switcher_block_instance.add_fifo(
+            dut.output_spybuffers[i].spybuffer,
+            dut.clock,
+            f"{sw_switcher_block_instance.name}_Output_{i}",
+            io,
+            direction="out",
+        )
+    sw_example_block_instance.start()    
+```
+In those lines we see the `Spy+FIFO` blocks in the `input_spybuffers` and `output_spybuffers`
+arrays being connected to the instance of our `sw_switcher` logic block via the
+`add_fifo` method.
+
+Software blocks are `started` by calling their `start()` method, as seen in the above snippet.
+This sets off the `OutputDrivers` running and sets the block in a state ready
+to start receiving and handling incoming data.
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
