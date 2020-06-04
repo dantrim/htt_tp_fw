@@ -8,6 +8,8 @@ command provided by the testbench infrastructure.
    * [Run `tb create` to Initialize the Testbench](#run-tb-create)
    * [Plug Your Logic Block into the Testbench Toplevel](#adding-your-logic-block)
       * [Update the Toplevel Makefile](#update-the-toplevel-makefile)
+      * [Predefined Makefile Variables](#predefined-makefile-variables)
+      * [Instantiate your Logic Block and Connect it to the Spy+FIFO blocks](#connecting-the-blocks)
  
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
@@ -202,5 +204,47 @@ VSIM_ARGS  += glbl -debugDB -voptargs="+acc"
 ```
 
 A note on these changes:
-   * The variable `COMPONENTS_LIB_DIR` should point to external IP generated, for example, by Vivado and is picked up based on the `components_lib_dir` variable that appears in the testbench configuration file (see the [Testbench Structure page](#testbench_structure.md#testbench-configuration))
+   * The variable `COMPONENTS_LIB_DIR` should point to external IP generated, for example, by Vivado and is picked up based on the `components_lib_dir` variable that appears in the testbench configuration file (see the [Testbench Structure page](testbench_structure.md#testbench-configuration))
    * The `glbl` module provided to `VSIM_ARGS` is required by the Vivado-generated IP for the fifo used by the `board2board_switching` logic
+
+## Predefined Makefile Variables
+
+You will see predefined variables in your toplevel `Makefile`.
+**These variables should not be manipulated by the user.**
+
+These variables are `SIM_BUILD`, `TESTBENCH_TOPLEVEL`, `TESTBENCH_TEST_MODULE`, and `COMPONENTS_LIB_DIR`
+(at the time of writing this). These variables
+are generated during the execution of your testbench (via the [tb run command](../README.md#tb-run)).
+Logically, they correspond to:
+   * `SIM_BUILD`: This will point to the directory in which all [testbench output](../README.md#output-generated-by-the-testbenches) is placed
+   * `TESTBENCH_TOPLEVEL`: This is the name of the toplevel HDL file for your testbench, and is located in the same directory as the `Makefile` and named `TopLevel_<test-name>.v` (the variable `TESTBENCH_TOPLEVEL` does not include the "`.v`" extension)
+   * `TESTBENCH_TEST_MODULE`: This is the name of the python file wherein you will implement the `cocotb` testbench module, and is located in the same directory as the `Makefile` and named `test_<test-name>.py` (the variable `TESTBENCH_TEST_MODULE` does not include the "`.py`" extension)
+   * `COMPONENTS_LIB_DIR`: This is taken from the `components_lib_dir` variable appearing under the `run_config` section of the [testbench configuration](testbench_structure.md#testbench-configuration)
+
+In general, all variables defined in the `run_config` section of the [testbench configuration](testbench_structure.md#testbench-configuration)
+will be made available as environment variables with their name in all capital letters (e.g. `components_lib_dir` gets set to `COMPONENTS_LIB_DIR`).
+
+
+
+
+
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+<!-------------------------- CONNECTING THE BLOCKS ---------------------------->
+<!----------------------------------------------------------------------------->
+<!----------------------------------------------------------------------------->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
