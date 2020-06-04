@@ -15,7 +15,7 @@ command provided by the testbench infrastructure.
          * [run_config](#testbench-run-config)
          * [testvectors](#testbench-testvectors)
    * [Run the Testbench](#run-the-testbench)
-   * [Finsihed!](#all-done)
+   * [Finished!](#all-done)
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
 <!----------------------------- REQUIREMENTS ---------------------------------->
