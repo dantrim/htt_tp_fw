@@ -249,17 +249,17 @@ def output_handler_gen(self, output_num):
     elif output_num == 1:
         return self._output_port_1_handler
     
-    @cocotb.coroutine
-    def _output_port_0_handler(self, transaction):
-        data, timestamp = transaction # transaction is a tuple
-        driver = self.output_drivers[0]
-        yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 0
+@cocotb.coroutine
+def _output_port_0_handler(self, transaction):
+    data, timestamp = transaction # transaction is a tuple
+    driver = self.output_drivers[0]
+    yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 0
     
-    @cocotb.coroutine
-    def _output_port_1_handler(self, transaction)
-        data, timestamp = transaction # transaction is a tuple
-        driver = self.output_drivers[1]
-        yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 1
+@cocotb.coroutine
+def _output_port_1_handler(self, transaction)
+    data, timestamp = transaction # transaction is a tuple
+    driver = self.output_drivers[1]
+    yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 1
 ```
 
 In the above we have implemented the bare minimum of what any output handler
@@ -318,37 +318,37 @@ def output_handler_gen(self, output_num):
     elif output_num == 1:
         return self._output_port_1_handler
     
-    @cocotb.coroutine
-    def _output_port_0_handler(self, transaction):
-        data, timestamp = transaction # transaction is a tuple
-        driver = self.output_drivers[0]
+@cocotb.coroutine
+def _output_port_0_handler(self, transaction):
+    data, timestamp = transaction # transaction is a tuple
+    driver = self.output_drivers[0]
         
-        ##
-        ## add 50 ns delay
-        ##
-        timer = Timer(50, "ns")
-        yield timer
+    ##
+    ## add 50 ns delay
+    ##
+    timer = Timer(50, "ns")
+    yield timer
         
-        ##
-        ## simulation time has advanced 50 ns, now we write
-        ##
-        yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 0
+    ##
+    ## simulation time has advanced 50 ns, now we write
+    ##
+    yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 0
     
-    @cocotb.coroutine
-    def _output_port_1_handler(self, transaction)
-        data, timestamp = transaction # transaction is a tuple
-        driver = self.output_drivers[1]
+@cocotb.coroutine
+def _output_port_1_handler(self, transaction)
+    data, timestamp = transaction # transaction is a tuple
+    driver = self.output_drivers[1]
         
-        ##
-        ## add 200 ns delay
-        ##
-        timer = Timer(200, "ns")
-        yield timer
+    ##
+    ## add 200 ns delay
+    ##
+    timer = Timer(200, "ns")
+    yield timer
         
-        ##
-        ## simulation time has advanced 200 ns, now now we write
-        ##
-        yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 1
+    ##
+    ## simulation time has advanced 200 ns, now now we write
+    ##
+    yield driver.write_to_fifo(data) # push the data to the output Spy+FIFO block at output 1
 ```
 
 By `yield`ing back the `Timer` triggers, each output handler is halted for
