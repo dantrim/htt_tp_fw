@@ -20,6 +20,8 @@ language and `cocotb` constructs.
 In the following we will present a tutorial showing how to implement such a scenario.
 Follow the items in the following Table of Contents sequentially.
 
+The example testbench that we create here is provided under `testbench/example_sw_block`.
+
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
 <!--------------------------- TABLE OF CONTENTS ------------------------------->
