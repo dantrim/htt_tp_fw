@@ -390,6 +390,9 @@ of the FIFO blocks associated with the generated `fifo*.evt` files.
 <!----------------------------------------------------------------------------->
 # Creating a Testbench
 
+To learn how to create a testbench from scratch using the [tb create](#tb-create)
+utility, see the [Creating a Testbench page](doc/creating_a_testbench.md).
+
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
 <!------------------------ SOFTWARE DEFINED BLOCKS ---------------------------->
