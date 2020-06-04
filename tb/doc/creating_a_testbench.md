@@ -319,7 +319,7 @@ responsible for *pulling* data from `input_spybuffers`, and the `BLOCK_output`
 signals to those responsible for *pushing* data into `output_spybuffers`.
 
 With this done, the logic is connected and we are almost ready to start
-driving the testbench.
+driving the testbench. That is, once we have configured it.
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
