@@ -70,7 +70,7 @@ class SWSwitcherBlock(software_block.SoftwareBlock):
         ##
         ## mimic some logic taking some time
         ##
-        time_delay = Timer(100, "ns")
+        time_delay = Timer(50, "ns")
         yield time_delay
 
         ##
@@ -90,6 +90,12 @@ class SWSwitcherBlock(software_block.SoftwareBlock):
         driver = self.output_drivers[1]
         data_word = utils.transaction_to_data_word(data)
         l0id = utils.l0id_from_data_word(data_word)
+
+        ##
+        ## mimic some logic taking some time
+        ##
+        time_delay = Timer(200, "ns")
+        yield time_delay
 
         ##
         ## sync up the writing of output data between the
