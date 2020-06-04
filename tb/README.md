@@ -194,7 +194,7 @@ infrastructure with the source files for your logic design and plug them into
 Most of the leg work to perform the rest is done by utilizing the testbench infrastructure
 described in the [rest of this README](#directory-structure).
 
-**Note:** Given the flexibility and strength of the `cocotb` framework, users
+**Note 1:** Given the flexibility and strength of the `cocotb` framework, users
 can define logic blocks *entirely within python*. That is, you do  not need to
 have the logic defined and laid out in HDL/RTL (as illustrated in the above figure)
 at all. If you wish to study yet-to-be-designed logic, or add additional control
@@ -204,6 +204,23 @@ The testbench infrastructure laid out in this repository provides means for
 users to put together the initial stages of a pure software-defined logic block.
 See the section [Creating a Python Defined Logic Block](#defining-logic-blocks-in-python)
 for more information.
+
+**Note 2:** There is no limit to the number of firmware blocks that can be tested
+at a single time. That is, you can chain together any number of firmware logic
+blocks --- with `Spy+FIFO` interconnects --- and use the testbench infrastructure
+to test the combined logic. For two logic blocks, for example, the above figure(s)
+would be augmented as in the following figure:
+
+<div align="center">
+<img src="doc/figures/tp_fw_two_blocks.png" height="400">
+</div>
+
+By default, the testbench infrastructure will drive and monitor only the **outermost**
+`Spy+FIFO` blocks. Monitoring any internal `Spy+FIFO` blocks can be done by the user
+adding the necessary code to their `cocotb` test module, in the same way as adding
+any code to monitor or drive internal signals of the `DUT` (here we use `"DUT"` to
+not refer to the `Spy+FIFO` logic).
+
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
