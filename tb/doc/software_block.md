@@ -515,8 +515,9 @@ l0id = utils.l0id_from_data_word(data_word)
 set the value of `l0id` to meaningful (i.e. `!= None`) values only when the `data_word` corresponds
 to the first word of an event header. In this way, data writing proceeds as soon
 as the first word of a given event header (defined by its L0ID) has reached the output.
-Output handlers will wait only as soon as a subsequent event header is observed and if
-the event headers arrive at different times.
+Output handlers will enter a waiting stage until subsequent event headers are observed (by the other outputs) and if
+the event headers arrive at different times (if the events arrive all at the same
+time across all outputs then the waiting stage will not be entered).
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------------------------------------------------->
