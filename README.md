@@ -49,4 +49,4 @@ testbench infrastructure.
 
 ### tp-fw/top
 
-Standalone firmware blocks and top-level for testbench creation. (?)
+Standalone firmware blocks and top-level for testbench creation.
