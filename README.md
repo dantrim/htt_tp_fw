@@ -37,6 +37,8 @@ block and up to the developer.
 
 ### tp-fw/tb
 
+Complete documentation for the testbench infrastructure is located in the [tb/](tb/) directory.
+
 This directory contains the [cocotb](https://docs.cocotb.org/en/latest/)-based
 testbench infrastructure.
 
